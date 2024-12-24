@@ -1,0 +1,408 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Android多渠道打包配置方案 | Stephen&#39;s Personal Page</title>
+<meta name="description" content="在行中知，在知中行" />
+<link rel="shortcut icon" href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/favicon.ico">
+<link rel="stylesheet" href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/styles/main.css">
+
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/jquery.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/masonry.pkgd.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/aos.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/pace.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/view-image.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/jquery.magnific-popup.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/functions.js"></script>
+    <meta name="referrer" content="never">
+    <meta name="description" content="​
+背景
+多渠道打包，顾名思义就是用来区分同一个软件，在不同渠道上的释放版本。
+这个手机上大型app几乎是必配置的一个项，给不同型号的手机所用的apk会做一些细微的区别。像笔者使用酷安社区比较多，在官网下载的酷安apk界面顶部有软件管理功能..." />
+    <meta name="keywords" content="Android" />
+    <script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/waterfall.min.js"></script>
+    <script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/prism.min.js"></script>
+  </head>
+  <body>
+            <header id="header" class="grid-container">
+        <!-- start: .menu-wrapper -->
+        <div class="menu-mobile"> 
+          <i class="fa fa-reorder"></i>
+        </div>
+        <div class="menu-wrapper">
+          <div class="">
+            <div class="logo">
+              <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io"><img src="/media/images/logoo.png" alt=""></a>
+            </div>
+            <!-- start: .main-nav -->
+
+            <nav class="main-nav grid-container grid-parent">
+              <ul id="menu-header" class="menu gradient-effect">
+                <li class=""><a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io" class="menu">首页</a></li>
+                
+                  <li class="" >
+                    <a href="/" class="menu">
+                      首页
+                    </a>
+                  </li>
+                
+                  <li class="" >
+                    <a href="/archives" class="menu">
+                      归档
+                    </a>
+                  </li>
+                
+                  <li class="" >
+                    <a href="/tags" class="menu">
+                      标签
+                    </a>
+                  </li>
+                
+                  <li class="" >
+                    <a href="/post/about" class="menu">
+                      关于
+                    </a>
+                  </li>
+                
+                <li class="search-menu-item hide-on-mobile hide-on-tablet"><a href="#search-lightbox" class="lightbox mfp-inline"><i class="fa fa-search-line"></i></a></li>
+              </ul>
+            </nav>
+            <a href="#search-lightbox" class="lightbox epcl-search-button mfp-inline hide-on-tablet hide-on-desktop"><i class="fa fa-search-line"></i></a>
+            <!-- end: .main-nav -->
+            <div class="clear"></div>
+            <div class="border hide-on-tablet hide-on-mobile"></div>
+          </div>    
+          <div class="clear"></div>
+        </div>
+        <!-- end: .menu-wrapper -->
+        <div class="clear"></div>
+      </header>
+      <div class="hide-on-mobile hide-on-tablet hide-on-desktop">
+        <div id="search-lightbox" class="grid-container grid-small grid-parent mfp-hide">
+          <div class="search-wrapper section">
+            <form id="gridea-search-form" data-update="1735025099700" action="/search/index.html" class="search-form" _lpchecked="1">
+              <input type="text" name="q" id="s" value="" class="search-field" placeholder="搜点啥..." aria-label="搜点啥..." required="">
+              <button type="submit" class="submit" aria-label="Submit">
+                <i class="fa fa-search-line"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <main id="single" class="main grid-container fullcover no-sidebar aos-init aos-animate" data-aos="fade">
+
+        <div class="center content">
+          <div class="featured-image cover" style="background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-duo-qu-dao-da-bao-pei-zhi-fang-an.jpg');">
+            <div class="meta top"> 
+              <time class="meta-info" style="float:left;" datetime="2024-06-05"><i class="fa fa-calendar"></i><span class="lately">7 个月前</span></time>
+              
+              <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-duo-qu-dao-da-bao-pei-zhi-fang-an/#comments" class="comments meta-info" title="">
+                <i class="fa fa-comment remixicon"></i><span class="comment-count valine-comment-count" data-xid="/android-duo-qu-dao-da-bao-pei-zhi-fang-an/"> </span>
+              </a>
+              <span id="/android-duo-qu-dao-da-bao-pei-zhi-fang-an/" class="leancloud_visitors views-counter meta-info" title=""><i class="fa fa-leancloud remixicon"></i><span class="leancloud-visitors-count"></span></span>
+              
+            </div>
+            <div class="info">
+              <div class="tags ">
+                
+                      <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/tag/5yQtIxh3Hz/" class="ctag ctag-0 ctag-5yQtIxh3Hz" aria-label="">Android</a>
+                    
+              </div>
+              <h1 class="title ularge white bold">Android多渠道打包配置方案</h1>
+            </div>
+          </div>
+        </div>  
+
+        <div class="epcl-page-wrapper">
+          <div class="left-content grid-70 np-mobile">
+            <article class="main-article post">
+              <section class="post-content">
+                <div class="text">
+                  <p>​</p>
+<h1 id="背景">背景</h1>
+<p>多渠道打包，顾名思义就是用来区分同一个软件，在不同渠道上的释放版本。</p>
+<p>这个手机上大型app几乎是必配置的一个项，给不同型号的手机所用的apk会做一些细微的区别。像笔者使用酷安社区比较多，在官网下载的酷安apk界面顶部有软件管理功能，在其他手机厂的应用商店里下载的酷安就没有这个功能。</p>
+<p>目前我们有需求是要一套软件代码库多个项目共同使用，针对不同的项目打包不同的渠道apk，现学记录一下。</p>
+<h1 id="gradle脚本和manifest文件配置">Gradle脚本和Manifest文件配置</h1>
+<p>不同渠道的apk既然要做细微的功能上的区分，就需要在代码里能拿到一个类似键值对的标志位。并且能够全局调用。首先我们需要在app级的gradle文件里配置不同的channel名称。</p>
+<p>其中flavorDimensions和productFlavors中的维度名称需要一一对应。随便写一个&quot;default&quot;即可。</p>
+<pre><code>defaultConfig {
+
+    xxxx = xxxx
+
+    flavorDimensions.add(&quot;default&quot;)  
+}
+</code></pre>
+<p>gradle.kts语法与Groovy略有不同，要添加自己配置的东西一般是使用create，register之类的关键字，不熟悉配置的可以先试试。</p>
+<p>不同渠道包的域里，我们可以区分很多参数值，像这里我是配置了不同渠道使用不同平台的签名。</p>
+<pre><code> productFlavors {
+        create(&quot;cheetah&quot;) {
+            dimension = &quot;default&quot;
+            signingConfig = signingConfigs.getByName(&quot;cheetah&quot;)
+            manifestPlaceholders[&quot;CHANNEL_VALUE&quot;] = &quot;cheetah_channel&quot;
+        }
+        create(&quot;redfin&quot;) {
+            dimension = &quot;default&quot;
+            signingConfig = signingConfigs.getByName(&quot;aaos&quot;)
+            manifestPlaceholders[&quot;CHANNEL_VALUE&quot;] = &quot;redfin_channel&quot;
+        }
+}
+</code></pre>
+<p>为了可以设置成自己想要的键值对，建议在Manifest清单文件里设置一组元数据，在打包时让Gradle去赋值它。结合上下两段代码，我们在Manifest里的一组元数据，key设为CHANNEL，value为引用型的变量CHANNEL_VALUE，在Gradle渠道配置里，我们使用：</p>
+<pre><code> manifestPlaceholders[&quot;CHANNEL_VALUE&quot;] = &quot;cheetah_channel&quot;
+</code></pre>
+<p>来为其赋值。</p>
+<pre><code>   &lt;meta-data
+            android:name=&quot;CHANNEL&quot;
+            android:value=&quot;${CHANNEL_VALUE}&quot; /&gt;
+</code></pre>
+<p>打包时，可以通过判断flavor的名称，来输出不同的apk名字。</p>
+<pre><code>    android.applicationVariants.configureEach {
+        outputs.all {
+            if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
+                if (flavorName == &quot;redfin&quot;) {
+                    this.outputFileName = &quot;RedfinChannel_V${versionName}.apk&quot;
+                } else if (flavorName == &quot;cheetah&quot;) {
+                    this.outputFileName = &quot;CheetahChannel_V${versionName}.apk&quot;
+                }
+            }
+        }
+    }
+</code></pre>
+<h1 id="代码调用">代码调用</h1>
+<p>全局性的打包配置完毕后，我们如何在代码里去使用区分不同渠道呢。</p>
+<p>这里也有两种方法来获取，一种是直接拿取Gradle脚本里创建时的渠道名，直接通过BuildConfig类的FLAVOR字段来获取；一种是拿取我们在Manifest里设置的元数据的value值，操作稍复杂一些。具体代码如下：</p>
+<pre><code>object FlavorConfig {
+
+    const val REDFIN = &quot;redfin&quot;
+    const val CHEETAH = &quot;cheetah&quot;
+
+    private var manifestMetaData = &quot;&quot;
+    private var gradleData = &quot;&quot;
+
+    init {
+        val appInfo = appContext.packageManager.getApplicationInfo(
+            appContext.packageName,
+            PackageManager.GET_META_DATA
+        )
+        manifestMetaData = appInfo.metaData.getString(&quot;CHANNEL&quot;) as String
+        gradleData = BuildConfig.FLAVOR
+    }
+
+    fun getMetaDataOne() = manifestMetaData.apply {
+        infoLog(&quot;metaData value: $this&quot;)
+    }
+
+    fun getMeatDataTwo() = gradleData.apply {
+        infoLog(&quot;gradle metaData value: $this&quot;)
+    }
+}
+</code></pre>
+<p>​</p>
+
+                </div>
+                <div class="clear"></div>
+              </section>
+            </article>
+            <div class="clear"></div>
+
+            <section class="related section">
+              
+              <article class="prev grid-50 tablet-grid-50 grid-parent">
+                <div class="thumb cover lazy loaded" style="background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan.jpeg');"></div>
+                 <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/" class="full-link"></a>
+                 <div class="info">
+                  <time datetime="2024-06-06">2024-06-06</time>
+                  <h4 class="title white no-margin">Android集成Unity的两种方案实战</h4>
+                </div>
+                 <span class="epcl-button red">
+                  <img src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/images/left-arrow.svg" width="15" alt="Left Arrow">
+                </span>
+                <div class="overlay"></div>
+              </article>
+              
+              
+              <article class="next grid-50 tablet-grid-50 grid-parent">
+                <div class="thumb cover lazy loaded" style="background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-duo-jin-cheng-tong-xin-zhi-dai-hui-diao-de-aidl-shi-xian.jpg');"></div>
+                 <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-duo-jin-cheng-tong-xin-zhi-dai-hui-diao-de-aidl-shi-xian/" class="full-link"></a>
+                 <div class="info">
+                  <time datetime="2024-06-04">2024-06-04</time>
+                  <h4 class="title white no-margin">Android多进程通信之带回调的AIDL实现</h4>
+                </div>
+                 <span class="epcl-button red">
+                  <img src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/images/right-arrow.svg" width="15" alt="Left Arrow">
+                </span>
+                <div class="overlay"></div>
+              </article>
+              
+
+                <div class="clear"></div>
+            </section>
+
+              <div class="clear"></div>
+              
+            
+              <div id="comments" class="bg-white hosted ">
+                
+                  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+<div class="clear"></div>
+
+<script>
+  var gitalk = new Gitalk({
+    clientID: 'Ov23lixgLaEQaGAsum3I',
+    clientSecret: '9b93916755a6b8704580aa244f9fab01735829bf',
+    repo: 'stephencardev.github.io',
+    owner: 'StephenCarDev',
+    admin: ['StephenCarDev'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+                
+                
+              </div>
+            
+
+            </div>
+          </div>
+      </main>
+
+          <footer id="footer" class="grid-container">
+        <div class="widgets row gradient-effect">
+            <div class="default-sidebar border-effect">
+              <div class="grid-33 tablet-grid-50 mobile-grid-100">
+                <section id="tag_cloud-2" class="widget widget_epcl_posts_thumbs underline-effect">
+                  <h4 class="widget-title title white bordered">最新文章</h4>
+                  
+                  
+                  <article class="item post-0 post type-post status-publish format-standard has-post-thumbnail hentry">
+                    <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-chang-yong-diao-shi-ming-ling/" class="thumb hover-effect">
+                      <span class="fullimage cover" style="display:block;border-radius:50%;background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-chang-yong-diao-shi-ming-ling.jpg');"></span>
+                    </a>
+                    <div class="info gradient-effect">
+                      <time datetime="2024-06-06">2024-06-06</time>
+                      <h4 class="title usmall">
+                        <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-chang-yong-diao-shi-ming-ling/">Android常用调试命令</a>
+                      </h4>
+                    </div>
+                    <div class="clear"></div>
+                  </article>
+                  
+                  
+                  
+                  <article class="item post-1 post type-post status-publish format-standard has-post-thumbnail hentry">
+                    <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/" class="thumb hover-effect">
+                      <span class="fullimage cover" style="display:block;border-radius:50%;background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan.jpeg');"></span>
+                    </a>
+                    <div class="info gradient-effect">
+                      <time datetime="2024-06-06">2024-06-06</time>
+                      <h4 class="title usmall">
+                        <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/">Android集成Unity的两种方案实战</a>
+                      </h4>
+                    </div>
+                    <div class="clear"></div>
+                  </article>
+                  
+                  
+                  
+                  <article class="item post-2 post type-post status-publish format-standard has-post-thumbnail hentry">
+                    <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-duo-qu-dao-da-bao-pei-zhi-fang-an/" class="thumb hover-effect">
+                      <span class="fullimage cover" style="display:block;border-radius:50%;background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-duo-qu-dao-da-bao-pei-zhi-fang-an.jpg');"></span>
+                    </a>
+                    <div class="info gradient-effect">
+                      <time datetime="2024-06-05">2024-06-05</time>
+                      <h4 class="title usmall">
+                        <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-duo-qu-dao-da-bao-pei-zhi-fang-an/">Android多渠道打包配置方案</a>
+                      </h4>
+                    </div>
+                    <div class="clear"></div>
+                  </article>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <div class="clear"></div>
+                </section>
+              </div>
+
+              <div class="grid-33 tablet-grid-50 mobile-grid-100">
+                <section id="tag_cloud-2" class="widget widget_tag_cloud underline-effect">
+                  <h4 class="widget-title title white bordered">标签云</h4>
+                  <div class="tagcloud">
+                    
+                      <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/tag/5yQtIxh3Hz/" class="ctag ctag-0 ctag-5yQtIxh3Hz" aria-label="">Android</a>
+                    
+                      <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/tag/4tpluVFZy/" class="ctag ctag-1 ctag-4tpluVFZy" aria-label="">Gridea</a>
+                    
+                  </div>
+                  <div class="clear"></div>
+                </section>
+              </div>
+
+              <div class="grid-33 tablet-grid-50 mobile-grid-100">
+                <section id="epcl_about-2" class="widget widget_epcl_about underline-effect">
+                  <h4 class="widget-title title white bordered">关于我</h4>
+                  <div class="avatar">
+                    <a href="" class="translate-effect thumb"><span class="fullimage cover" style="background-image: url(https://github.com/stepheneasyshot/stepheneasyshot.github.io/images/avatar.png);"></span></a>
+                  </div>
+                  <div class="info">
+                    <h4 class="title small author-name gradient-effect no-margin"><a href="">Stephen&#39;s Personal Page</a></h4>
+                    <p class="founder">在行中知，在知中行</p>
+                    <div class="social">
+                      
+                        
+                      
+                        
+                      
+                        
+                      
+                        
+                      
+                        
+                      
+                    </div> 
+                  </div>
+                  <div class="clear"></div>
+                  </section>
+              </div>
+
+            </div>
+            <div class="clear"></div>
+        </div>
+
+        <div class="logo">
+          <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io"><img src="/media/images/gridea.png" alt=""></a>
+        </div>
+        <p class="published border-effect">
+          ©2019 共 6 篇文章
+          <br/>
+          Theme <a href="https://gridea.dev/" target="_blank">「breek」</a> Powered by <a href="https://gridea.dev/" target="_blank">「Gridea」</a>
+        </p>
+        
+        <a href="javascript:void(0)" id="back-to-top" class="epcl-button dark" style="display:none">
+          <i class="fa fa-arrow"></i>
+        </a>
+    </footer>
+    
+    <div class="clear"></div>
+
+        
+
+      
+    <script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/functions-post.js"></script>
+
+    </div>
+    <!-- end: #wrapper -->
+  </body>
+</html>

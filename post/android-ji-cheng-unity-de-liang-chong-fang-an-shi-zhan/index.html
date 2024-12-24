@@ -1,0 +1,597 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Android集成Unity的两种方案实战 | Stephen&#39;s Personal Page</title>
+<meta name="description" content="在行中知，在知中行" />
+<link rel="shortcut icon" href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/favicon.ico">
+<link rel="stylesheet" href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/styles/main.css">
+
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/jquery.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/masonry.pkgd.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/aos.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/pace.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/view-image.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/jquery.magnific-popup.min.js"></script>
+<script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/functions.js"></script>
+    <meta name="referrer" content="never">
+    <meta name="description" content="Android平台常见动效
+现在市面上的形形色色Android客户端，为了更优的用户体验，我们开发的上游产品和交互往往会在界面里设计很多动效。传统的一页页的静态展示页面已经不足以满足用户的审美需求了。
+而动效的分类也是花样百出的，以播放时机..." />
+    <meta name="keywords" content="Android" />
+    <script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/waterfall.min.js"></script>
+    <script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/prism.min.js"></script>
+  </head>
+  <body>
+            <header id="header" class="grid-container">
+        <!-- start: .menu-wrapper -->
+        <div class="menu-mobile"> 
+          <i class="fa fa-reorder"></i>
+        </div>
+        <div class="menu-wrapper">
+          <div class="">
+            <div class="logo">
+              <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io"><img src="/media/images/logoo.png" alt=""></a>
+            </div>
+            <!-- start: .main-nav -->
+
+            <nav class="main-nav grid-container grid-parent">
+              <ul id="menu-header" class="menu gradient-effect">
+                <li class=""><a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io" class="menu">首页</a></li>
+                
+                  <li class="" >
+                    <a href="/" class="menu">
+                      首页
+                    </a>
+                  </li>
+                
+                  <li class="" >
+                    <a href="/archives" class="menu">
+                      归档
+                    </a>
+                  </li>
+                
+                  <li class="" >
+                    <a href="/tags" class="menu">
+                      标签
+                    </a>
+                  </li>
+                
+                  <li class="" >
+                    <a href="/post/about" class="menu">
+                      关于
+                    </a>
+                  </li>
+                
+                <li class="search-menu-item hide-on-mobile hide-on-tablet"><a href="#search-lightbox" class="lightbox mfp-inline"><i class="fa fa-search-line"></i></a></li>
+              </ul>
+            </nav>
+            <a href="#search-lightbox" class="lightbox epcl-search-button mfp-inline hide-on-tablet hide-on-desktop"><i class="fa fa-search-line"></i></a>
+            <!-- end: .main-nav -->
+            <div class="clear"></div>
+            <div class="border hide-on-tablet hide-on-mobile"></div>
+          </div>    
+          <div class="clear"></div>
+        </div>
+        <!-- end: .menu-wrapper -->
+        <div class="clear"></div>
+      </header>
+      <div class="hide-on-mobile hide-on-tablet hide-on-desktop">
+        <div id="search-lightbox" class="grid-container grid-small grid-parent mfp-hide">
+          <div class="search-wrapper section">
+            <form id="gridea-search-form" data-update="1735025099700" action="/search/index.html" class="search-form" _lpchecked="1">
+              <input type="text" name="q" id="s" value="" class="search-field" placeholder="搜点啥..." aria-label="搜点啥..." required="">
+              <button type="submit" class="submit" aria-label="Submit">
+                <i class="fa fa-search-line"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <main id="single" class="main grid-container fullcover no-sidebar aos-init aos-animate" data-aos="fade">
+
+        <div class="center content">
+          <div class="featured-image cover" style="background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan.jpeg');">
+            <div class="meta top"> 
+              <time class="meta-info" style="float:left;" datetime="2024-06-06"><i class="fa fa-calendar"></i><span class="lately">7 个月前</span></time>
+              
+              <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/#comments" class="comments meta-info" title="">
+                <i class="fa fa-comment remixicon"></i><span class="comment-count valine-comment-count" data-xid="/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/"> </span>
+              </a>
+              <span id="/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/" class="leancloud_visitors views-counter meta-info" title=""><i class="fa fa-leancloud remixicon"></i><span class="leancloud-visitors-count"></span></span>
+              
+            </div>
+            <div class="info">
+              <div class="tags ">
+                
+                      <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/tag/5yQtIxh3Hz/" class="ctag ctag-0 ctag-5yQtIxh3Hz" aria-label="">Android</a>
+                    
+              </div>
+              <h1 class="title ularge white bold">Android集成Unity的两种方案实战</h1>
+            </div>
+          </div>
+        </div>  
+
+        <div class="epcl-page-wrapper">
+          <div class="left-content grid-70 np-mobile">
+            <article class="main-article post">
+              <section class="post-content">
+                <div class="text">
+                  <h1 id="android平台常见动效">Android平台常见动效</h1>
+<p>现在市面上的形形色色Android客户端，为了更优的用户体验，我们开发的上游产品和交互往往会在界面里设计很多动效。传统的一页页的静态展示页面已经不足以满足用户的审美需求了。</p>
+<p>而动效的分类也是花样百出的，以播放时机来说有点击触发，打开页面触发，还有可跟随手指的交互持续触发的等等。有时候一些和数据耦合性较大的动效甚至需要我们自己来手写复杂的自定义View，比如曲线图、图表类型。</p>
+<p>而我日常碰到的大部分的动效需求，还是依赖UI设计的同时来制作提供的，像那些短时间单次的展示类动效，往往实现方式比较随意，对资源的格式要求也不太严苛。一般有以下几种方案:</p>
+<h2 id="帧动画">帧动画</h2>
+<p>在Android中，帧动画是通过Drawable动画实现的。你可以创建一个AnimationDrawable对象，然后在XML中定义一系列的帧（frames），每帧可以是一个Drawable资源。然后在代码中启动这个动画。</p>
+<p>以下是两个简单的例子：</p>
+<ol>
+<li>在res/drawable目录下创建一个名为frame_animation.xml的文件，并定义动画的帧：</li>
+</ol>
+<pre><code>&lt;animation-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+
+android:oneshot=&quot;false&quot;&gt;
+
+&lt;item android:drawable=&quot;@drawable/frame1&quot; android:duration=&quot;100&quot; /&gt;
+
+&lt;item android:drawable=&quot;@drawable/frame2&quot; android:duration=&quot;100&quot; /&gt;
+
+&lt;item android:drawable=&quot;@drawable/frame3&quot; android:duration=&quot;100&quot; /&gt;
+
+&lt;!-- 更多帧 --&gt;
+
+&lt;/animation-list&gt;
+</code></pre>
+<p>这里android:oneshot=&quot;false&quot;表示动画会循环播放，如果设置为true则播放一次。android:duration表示每帧显示的时间。</p>
+<ol>
+<li>在你的布局文件中（例如activity_main.xml），添加一个ImageView来展示动画：</li>
+</ol>
+<pre><code>&lt;ImageView
+
+android:id=&quot;@+id/imageView&quot;
+
+android:layout_width=&quot;wrap_content&quot;
+
+android:layout_height=&quot;wrap_content&quot;
+
+android:src=&quot;@drawable/frame_animation&quot; /&gt;
+</code></pre>
+<p>然后在调用处启动动画：</p>
+<pre><code>ImageView imageView = (ImageView) findViewById(R.id.imageView);
+
+// 获取AnimationDrawable
+
+final AnimationDrawable frameAnimation = (AnimationDrawable) imageView.getDrawable();
+
+// 在UI线程之外启动动画
+
+imageView.post(new Runnable() {
+
+    @Override
+
+    public void run() {
+
+        frameAnimation.start();
+
+    }
+
+});
+</code></pre>
+<p>注意确保你的每个Drawable资源的尺寸是一致的，以便在动画过程中保持帧的正确显示。这样就创建了一个简单的帧动画，当Activity加载时，动画会自动开始循环播放。</p>
+<h2 id="pag动画">PAG动画</h2>
+<p>pag相较于上面的帧动画对性能更加友好。PAG是腾讯公司自主研发的一套完整动画工作流解决方案。 PAG诞生于2016年，最初的原因是为了解决更为复杂的视频编辑场景下动画渲染问题，同时又覆盖了UI动画和直播场景，于2022年1月在Github开源。</p>
+<p>其使用方法可以说相当简单，只需要先从github主页确定版本，到gradle里引入依赖，</p>
+<p>implementation 'com.tencent.tav:libpag:3.2.7.40'</p>
+<p>然后在我们应用的xml布局中放置pagView，没有额外的属性需要配置：</p>
+<pre><code> &lt;org.libpag.PAGView
+        android:id=&quot;@+id/pagview&quot;
+        android:layout_width=&quot;@dimen/dp_1190&quot;
+        android:layout_height=&quot;@dimen/dp_1110&quot;
+        android:layout_marginTop=&quot;@dimen/dp_290&quot;
+        app:layout_constraintEnd_toEndOf=&quot;parent&quot;
+        app:layout_constraintTop_toTopOf=&quot;parent&quot; /&gt;
+</code></pre>
+<p>最后在代码里设置其文件源，循环方式，调用播放即可</p>
+<pre><code>  @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        LogUtils.d(&quot;AirConditioner Start&quot;);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.instance);
+
+        PAGView pagView = findViewById(R.id.pagview); 
+        PAGFile pf = PAGFile.Load(getContext().getAssets(), fileName);
+        pagView.setComposition(pf);
+        pagView.setRepeatCount(-1);
+        pagView.play();
+    }
+</code></pre>
+<h2 id="mp4动画">MP4动画</h2>
+<p>这个单次动效的实现方案是最简单的，不写demo演示了，直接获取mediaplayer实例，绑定surfaceView或者TextureView，再填文件，播放视频即可。需要关注的是surfaceView播放视频一开始可能会有黑屏问题，可以用静态图占位。</p>
+<h1 id="可交互的动效">可交互的动效</h1>
+<p>顾名思义，这一类动效需要能跟随用户的操作而实时改变表现形式。最常见的就是吸顶动效，例如在一个列表滑动过程中，会监听列表的滑动距离，对界面顶部或者侧边的其他View位置和透明度，颜色等做动态设置。还有systemui的allapp界面的翻页动画，负一屏下拉的时候，根据距离对桌面背景做高斯模糊处理等等。</p>
+<h2 id="kanzi动效">Kanzi动效</h2>
+<p>跟手可互动的动效，也不得不谈kanzi动效。以下介绍来自百科与官网：</p>
+<p>Kanzi产品是行业领先的3D引擎和UI开发工具，支持高效率沉浸式3D效果，跨系统多屏互联并能与安卓生态完美融合，已经成为全球主流车厂智能座舱首选的UI开发工具和引擎。更新后的Kanzi架构可与安卓操作系统、生态系统深度兼容。Kanzi可基于安卓的任何功能提供强大的图形设计支持，确保高质量的图像效果。</p>
+<p>对于Kanzi动效的集成使用方式，因为没有自己从头开始对接，我只按照顺序一笔带过，有不对的地方欢迎指正。首先我们集成kanzi运行所需的Runtime.aar，kanziJava支持库aar，资源文件，资源列表的txt等等，还需要在gradle里写明不可压缩的文件类型，以防止无法加载资源。</p>
+<p>在使用上，我们先在XML布局中声明，同时通过属性填入asstes里的资源名，和资源文件绑定：</p>
+<pre><code> &lt;com.rightware.kanzi.KanziTextureView
+        android:id=&quot;@+id/tx_KanziSurfaceView&quot;
+        android:layout_width=&quot;@dimen/dp_2560&quot;
+        android:layout_height=&quot;@dimen/dp_1190&quot;
+        app:clearColor=&quot;@android:color/transparent&quot;
+        app:kzbPathList=&quot;climate.kzb&quot;
+        app:layout_constraintTop_toTopOf=&quot;parent&quot;
+        app:name=&quot;climate&quot;
+        app:startupPrefabUrl=&quot;kzb://climate/StartupPrefab&quot;
+        tools:ignore=&quot;MissingConstraints&quot; /&gt;
+</code></pre>
+<p>在代码里我们需要设置通信的工具类，在里面添加监听器来接收和上行下行信号的交互：</p>
+<pre><code>// 数据接口定义
+public interface AndroidNotifyListener {
+    void notifyDataChanged(String name, String value);
+
+    void dataSourceFinish();
+}
+
+// 添加数据接收监听和下行通信
+AndroidUtils.setListeners(this);
+AndroidUtils.removeListeners(this);
+AndroidUtils.setValue(SourceData.RightMidMove_up2down, y);
+</code></pre>
+<h2 id="unity动效">Unity动效</h2>
+<p>Unity的大名在游戏界可谓如雷贯耳，记得小时候玩的很多游戏的开屏界面即有一个大大的Unity字样和图标。</p>
+<p>以下介绍来自百科和官网：Unity是实时3D互动内容创作和运营平台。包括游戏开发、美术、建筑、汽车设计、影视在内的所有创作者，借助Unity将创意变成现实。Unity平台提供一整套完善的软件解决方案，可用于创作、运营和变现任何实时互动的2D和3D内容，支持平台包括手机、平板电脑、PC、游戏主机、增强现实和虚拟现实设备。Unity作为全球领先的 3D 引擎之一，团结引擎可以为 3D HMI提供全栈支持。即为从概念设计到量产部署的整个 HMI 工作流程提供创意咨询、性能调优、项目开发等解决方案，从而为车载信息娱乐系统和智能驾驶座舱打造令人惊叹的交互式体验。</p>
+<p>其实在第一版我们项目集成的是Kanzi方案，其性能表现较Unity要差一些，关键是项目推进的过程中，对方工程师对动效样式的优化也达不到评测部门的要求，后来更新迭代我们就更换了Unity方案。而本文的重点也是在于Unity3D动效的使用，案例为车载IVI系统空调app的风向调节，交互逻辑比上面举的例子更加复杂，需要实时跟手，在交互热区范围内需要不断变化动效形态，并完成双向通信，保证动效和车载信号的一致性。</p>
+<h2 id="unity集成的两种方案">Unity集成的两种方案</h2>
+<p>前面做了这些动效的铺垫，终于进入正题了。本文暂时不深究Unity的渲染原理，只谈集成和使用。</p>
+<h3 id="通信协议制定">通信协议制定</h3>
+<p>第一步不是创建工程，而是要提前根据HMI的产品交互定义来指定和Unity之间的通信协议。有哪些功能是有开关的，需要调整哪些属性。空调app里就涉及几个出风口的打开关闭，可以以0/1来区分。还有风口的方向调节，需要互传x,y坐标值。Android和Unity之间的是采用JSON字符串来通信的，对于JSON字符串的的打包与解包通过谷歌的Gson等三方库来操作，相当简单。</p>
+<p>而且，两方通信链路和Unity的集成方式还有关，像下面要谈到的第一种进程隔离方案，就是通过集成全量的Unity依赖包，利用其中的JNI接口来通信的，而Client/Server架构就是通过Android的AIDL接口来和单独的服务端进程通信的。另外交互的车载信号链路方案涉及项目架构机密，此处不作描述。</p>
+<h3 id="进程隔离方案-uaalrender-as-library">进程隔离方案-UAAL(Render As Library)</h3>
+<p>这种方式集成的话，Unity会将渲染引擎，资源文件，和Android上层的通信代码都打包导出到一个aar中，其体积随动效的复杂程度而变化，同时会使集成方的apk包体积增加。而且项目里有多少方要使用Unity动效，就需要多少份的渲染引擎。这个方案由客户端来负责Unity控件的创建销毁，显示隐藏，一般适用一对一，通信链路简单的，即项目中可能只有一个模块需要使用Unity动效的情况。在多模块需要使用Unity的情况下，进程隔离的方案对性能的占用也比较高。</p>
+<p>上层使用到的控件——UnityPlayer，它是一个Unity自定义的FrameLayout，里面有他们自己实现的一系列添加view，显示，和渲染逻辑。资源文件均存在于Unity打的依赖包中，对外不开放。</p>
+<h4 id="集成步骤">集成步骤</h4>
+<p>进程隔离的集成方式如下：</p>
+<p>第一步，将Unity提供的aar放置于libs文件夹中，并在gradle里添加其编译引用。</p>
+<pre><code>implementation files('libs/UnityAnimation_0321V4.aar')
+</code></pre>
+<p>第二步，gradle中配置Unity所需的NDK版本，配置abifilters，设置要将哪些架构的动态库打包到apk中，对于车机项目来说只需要固定的某一种架构即可。还有设置不压缩的文件类型，使Unity可以顺利找到资源使用。</p>
+<pre><code>ndkVersion &quot;23.1.7779620&quot;
+
+aaptOptions {
+        noCompress = ['.tj3d', '.ress', '.resource', '.obb', '.bundle', '.tuanjieexp', 'global-metadata.so'] + tuanjieStreamingAssets.tokenize(', ')
+        ignoreAssetsPattern = &quot;!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~&quot;
+    }
+
+ndk{
+    abiFilters 'arm64-v8a'
+}
+</code></pre>
+<p>注意，我们还需要在项目的string.xml资源文件中添加Unity所需的一条String资源，否则Unity侧会空指针。</p>
+<pre><code> &lt;string name=&quot;game_view_content_description&quot;&gt;Game view&lt;/string&gt;
+</code></pre>
+<p>第三步，将要显示Unity动效的页面Activity改为继承自UnityPlayerActivity，Unity的核心显示控件，UnityPlayer，它的创建销毁，显示隐藏，由这个UnityPlayerActivity来统一管理，项目中集成这个Activity的子类再将mUnityPlayer通过addView添加到自己的根布局ViewGroup中当背景即可，而且可以在xml上面继续增加其他View控件。<br>
+第四步，封装Unity通信工具类，Android给Unity发消息可以直接通过UnityPlayer的sendMessage静态方法，传入Unity通信协议中指定的类名。</p>
+<p>UnityPlayer.UnitySendMessage(OBJ_NAME, METHOD_NAME, communicateMessage)<br>
+Unity使用C#开发，其给Android上层发消息则是通过反射回调信号类里的方法实现的，所以我们最好将信号管理类做成单例的，并给其Unity留下一个方法或者成员，可以拿到我们类的实例，顺利反射回调。我这里使用的是一个Kotlin类声明，并对外暴露一个公开的unityInstance成员。而这个方法onReceiveMsgFromUnity，即是Unity的反射调用，我们在其中进行信号的解析，并传到View中去，注意这个方法不是在主线程中反射的，所以后面需要优化一波。</p>
+<pre><code>object UnityMessageHelper {
+
+    val unityInstance = this
+
+    // Unity给Android的消息回调
+    fun onReceiveMsgFromUnity(msg: String) {
+        LogUtils.d(TAG, &quot;onReceiveMsgFromUnity: $msg&quot;)
+        if (listenerList.size &gt; 0) {
+            listenerList.forEach {
+                it.onReceiveUnityMessage(msg)
+            }
+        }
+    }
+}
+</code></pre>
+<h4 id="信号类unitymessagehelper的优化">信号类UnityMessageHelper的优化</h4>
+<p>由于我们的目标工程是空调app，在用户调节风向时的回调频率相当高，而自动扫风模式下，底层上传的数据频率也相当高，所以不适合到主线程中操作这么多的数据，我们用协程，配合Default调度器来处理这种CPU密集型的任务。两条链路，用户手指的拖动操作时，Unity反射回调的线程本身都是工作线程了，所以我们在使用自定义的接口回调到View类的时候，使用MainScope.launch包一层，确保是到主线程更新我们的UI。而自动扫风模式从域控制器接收到风口点击的坐标值时，我们拿到数据后给Unity下发信号，更新动效的指向位置。可以使用协程上下文切换，withContext(Dispatcher.Default)将其切到工作线程里发送给Unity。</p>
+<h4 id="遇到的问题">遇到的问题</h4>
+<p>Unity方给的aar里的基类Activity适用与绝大多数的普通应用，但是我这里空调app的定位是一个悬浮的临时面板，其实我的工程里压根就没有Activity，而是采用WindowManager来添加高层级窗口的View的形式来展示界面。</p>
+<p>这个时候我们用不上他们定义的UnityPlayerActivity，只能使用原生Raw的UnityPlayer，自己管理其创建，销毁，resume和pause。这里需要注意的是，UnityPlayer的创建需要传一个Context上下文，而应用里又没有Activity类型的Context，故只能使用非Activity类型的Context，而且实践中发现，这个UnityPlayer的实例必须是我们的应用拿到可用的窗口句柄之后，才能被成功创建，否则就会报错。</p>
+<p>所以正确的创建与初始化顺序是先使用WindowManager添加一个xml布局inflate来的ViewGroup，在其onAttachToWindow的方法回调之后，再创建UnityPlayer的实例，并添加到这个ViewGroup的布局中去，调用其resume方法。</p>
+<pre><code>    public void initUnity() {
+        if (mUnityPlayer == null) {
+            LogUtils.i(TAG, &quot;initUnity&quot;);
+            unityInitView = (LinearLayout) LayoutInflater.from(mContext).inflate(R.layout.layout_unity_init, null);
+            unityInitView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                @Override
+                public void onViewAttachedToWindow(@NonNull View v) {
+                    LogUtils.w(TAG, &quot;unityInitView onViewAttachedToWindow&quot;);
+                    mUnityPlayer = new UnityPlayer(mContext);
+                    unityInitView.addView(mUnityPlayer);
+                    mUnityPlayer.requestFocus();
+                    mUnityPlayer.resume();
+                    mUnityPlayer.windowFocusChanged(true);
+                }
+
+                @Override
+                public void onViewDetachedFromWindow(@NonNull View v) {
+                    LogUtils.w(TAG, &quot;unityInitView onViewDetachedFromWindow&quot;);
+                    // Unityplayer已经成功移除，通知airView将player添加进去
+                    airConditionerView.addUnityToAirView();
+                }
+            });
+
+           mWindowManager.addView(unityInitView, initUnityWindowParams());
+        }
+    }
+</code></pre>
+<p>注意，这样添加的UnityPlayer有一个无法解决的黑屏问题，因为Unity的渲染加载至少都需要4，5秒，期间我们只能在更上层的View里设置静态背景图覆盖上去，等Unity加载完毕，发送ready的回调之后，我们移除掉这个占位的静态图，展示Unity动效的界面。这也是进程隔离的方案的一个很棘手的问题。我的解决方案是在开机的时候往屏幕外添加一个View专门来初始化加载Unity，加载完毕后，再将UnityPlayer给从里面remove掉，重新添加到实际的要展示的窗口中去，这样打开界面的时候可以略去加载的耗时，稍微减少页面僵直的时间。</p>
+<h3 id="单进程-urasrender-as-service">单进程-URAS(Render As Service)</h3>
+<p>Unity Rendering as Service（简称URAS） 的渲染方案是团结引擎特有的，无需在多个安卓应用中集成多个Unity 3D player，而是后台运行，前端应用可直接调用，节省系统资源，更适合多应用动效一镜到底的设计。</p>
+<h4 id="相较进程隔离方案的优势">相较进程隔离方案的优势</h4>
+<p>这个方案是在UAAL方案的基础上升级的，所以有一些前期工作是重复的，不作重复的阐述。</p>
+<p>它是将要显示的几个Unity引擎都打包到同一个Server服务端去统一管控。其实服务端的apk打包也是拿到Unity提供的服务端AAR打进一个空工程，内部逻辑也隐藏到了AAR中。服务端和客户端的通信采用我们熟知的AIDL接口来实现。而且这个服务端我们需要设置为persistent应用，使其能开机自启，自动执行渲染等工作，其他应用有显示需求可以秒开，并且长时间不显示也不会自己回收资源了，客户端的黑屏问题也可以解决了。</p>
+<p>相比于UAAL方案，客户端需要集成的是一个体积很小的Client.aar，对于客户端apk的体积控制是有优势的。</p>
+<h4 id="集成与使用方式">集成与使用方式</h4>
+<p>我们只需要在gradle里引入这个客户端aar。在gradle sync之后，将远程的UnityView添加到自己的布局中去，配置好display参数(用来给服务端区分是哪个引擎的内容)，并指定服务端的包名。承载的View类型有SurfaceView和TextureView两种，而我的应用界面因为是一个悬浮窗口，设计有进出场的渐隐渐出动效，而SurfaceView不可以线性地设置alpha动画，所以选取TextureView来当作容器。</p>
+<pre><code>&lt;com.unity3d.renderservice.client.TuanjieView
+        android:id=&quot;@+id/unityview&quot;
+        android:layout_width=&quot;match_parent&quot;
+        android:layout_height=&quot;match_parent&quot;
+        app:tuanjieDisplay=&quot;2&quot;
+        app:tuanjieServicePkgName=&quot;com.tuanjie.renderservice&quot;
+        app:tuanjieViewType=&quot;TextureView&quot; /&gt;
+</code></pre>
+<p>剩余的代码逻辑仅仅是服务端Service的启动，添加服务连接的回调，消息回调。由于服务端为若干个Client的公共引擎，所以连resume和pause都不需要处理，因为这两个操作会对所有的客户端都生效。我们只需要确保启动服务，并使用正确的display即可，面板退到后台可以使用setVisbility来控制其显示隐藏。除此之外，我们的通信工具类，UnityMessageHelper还需要实现两个接口，一个服务连接状态接口，一个业务数据的消息回调接口，代码如下：</p>
+<pre><code>object UnityMessageHelper : TuanjieRenderService.Callback, SendMessageCallback {
+
+    fun initUnityService() {
+        LogUtils.i(TAG, &quot;initUnityService&quot;)
+        unityRenderService = 
+            TuanjieRenderService.init(appContext,TUANJIE_PACKAGENAME).apply {
+                enableAutoReconnect = true
+                addCallback(this@UnityMessageHelper)
+                addSendMessageCallback(this@UnityMessageHelper)
+                ensureStarted()
+        }
+    }
+
+
+    override fun onServiceConnected() {
+        LogUtils.w(TAG, &quot;onUnityRenderServiceConnected&quot;)
+    }
+   
+    override fun onServiceDisconnected() {
+        LogUtils.w(TAG, &quot;onUnityRenderServiceDisConnected&quot;)
+        messageScope.launch {
+            delay(500L)
+            initUnityService()
+            unityRenderService.resume()
+        }
+    }
+   
+    override fun onServiceStartRenderView(p0: Int) {
+        LogUtils.i(TAG, &quot;onServiceStartRenderView&quot;)
+    }
+
+    override fun onClientRecvMessage(message: String?) = null
+
+    // 服务端的消息回调
+    override fun onClientRecvMessageWithNoRet(msg: String?) {
+        // 回调消息的解析
+
+    }
+
+}
+</code></pre>
+<p>同时Android给Unity发信号的方法也从UnityPlayer的静态方法换成了这个服务实例的方法调用：</p>
+<pre><code>  unityRenderService.c2sSendMessage(OBJ_NAME, METHOD_NAME, communicateMessage)
+</code></pre>
+<p>接收Unity的回调消息也换成了addSendMessageCallback里设置的回调方法。<br>
+可以说URAS方案由于其统一管控，一对多的特点，在性能和客户端的易集成性方面，是优于UAAL方案的。可以从架构层面上，联动更多的动效使用模块，实现一镜到底的丝滑转场。</p>
+<h1 id="结语">结语</h1>
+<p>以上就是本文对于Android常用几种动效的阐述以及对两种常见的Unity集成方案记录。后续我们除了在最表面的使用层面上，还可以进一步挖掘其原理，甚至自己使用Unity的开发工具，自己体验一把动效的制作和接入，做到全链路知己知彼，才可以更高效的集成Unity为自己的应用锦上添花。</p>
+<p>​</p>
+
+                </div>
+                <div class="clear"></div>
+              </section>
+            </article>
+            <div class="clear"></div>
+
+            <section class="related section">
+              
+              <article class="prev grid-50 tablet-grid-50 grid-parent">
+                <div class="thumb cover lazy loaded" style="background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-chang-yong-diao-shi-ming-ling.jpg');"></div>
+                 <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-chang-yong-diao-shi-ming-ling/" class="full-link"></a>
+                 <div class="info">
+                  <time datetime="2024-06-06">2024-06-06</time>
+                  <h4 class="title white no-margin">Android常用调试命令</h4>
+                </div>
+                 <span class="epcl-button red">
+                  <img src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/images/left-arrow.svg" width="15" alt="Left Arrow">
+                </span>
+                <div class="overlay"></div>
+              </article>
+              
+              
+              <article class="next grid-50 tablet-grid-50 grid-parent">
+                <div class="thumb cover lazy loaded" style="background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-duo-qu-dao-da-bao-pei-zhi-fang-an.jpg');"></div>
+                 <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-duo-qu-dao-da-bao-pei-zhi-fang-an/" class="full-link"></a>
+                 <div class="info">
+                  <time datetime="2024-06-05">2024-06-05</time>
+                  <h4 class="title white no-margin">Android多渠道打包配置方案</h4>
+                </div>
+                 <span class="epcl-button red">
+                  <img src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/images/right-arrow.svg" width="15" alt="Left Arrow">
+                </span>
+                <div class="overlay"></div>
+              </article>
+              
+
+                <div class="clear"></div>
+            </section>
+
+              <div class="clear"></div>
+              
+            
+              <div id="comments" class="bg-white hosted ">
+                
+                  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+<div class="clear"></div>
+
+<script>
+  var gitalk = new Gitalk({
+    clientID: 'Ov23lixgLaEQaGAsum3I',
+    clientSecret: '9b93916755a6b8704580aa244f9fab01735829bf',
+    repo: 'stephencardev.github.io',
+    owner: 'StephenCarDev',
+    admin: ['StephenCarDev'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+</script>
+
+                
+                
+              </div>
+            
+
+            </div>
+          </div>
+      </main>
+
+          <footer id="footer" class="grid-container">
+        <div class="widgets row gradient-effect">
+            <div class="default-sidebar border-effect">
+              <div class="grid-33 tablet-grid-50 mobile-grid-100">
+                <section id="tag_cloud-2" class="widget widget_epcl_posts_thumbs underline-effect">
+                  <h4 class="widget-title title white bordered">最新文章</h4>
+                  
+                  
+                  <article class="item post-0 post type-post status-publish format-standard has-post-thumbnail hentry">
+                    <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-chang-yong-diao-shi-ming-ling/" class="thumb hover-effect">
+                      <span class="fullimage cover" style="display:block;border-radius:50%;background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-chang-yong-diao-shi-ming-ling.jpg');"></span>
+                    </a>
+                    <div class="info gradient-effect">
+                      <time datetime="2024-06-06">2024-06-06</time>
+                      <h4 class="title usmall">
+                        <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-chang-yong-diao-shi-ming-ling/">Android常用调试命令</a>
+                      </h4>
+                    </div>
+                    <div class="clear"></div>
+                  </article>
+                  
+                  
+                  
+                  <article class="item post-1 post type-post status-publish format-standard has-post-thumbnail hentry">
+                    <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/" class="thumb hover-effect">
+                      <span class="fullimage cover" style="display:block;border-radius:50%;background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan.jpeg');"></span>
+                    </a>
+                    <div class="info gradient-effect">
+                      <time datetime="2024-06-06">2024-06-06</time>
+                      <h4 class="title usmall">
+                        <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-ji-cheng-unity-de-liang-chong-fang-an-shi-zhan/">Android集成Unity的两种方案实战</a>
+                      </h4>
+                    </div>
+                    <div class="clear"></div>
+                  </article>
+                  
+                  
+                  
+                  <article class="item post-2 post type-post status-publish format-standard has-post-thumbnail hentry">
+                    <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-duo-qu-dao-da-bao-pei-zhi-fang-an/" class="thumb hover-effect">
+                      <span class="fullimage cover" style="display:block;border-radius:50%;background-image: url('https://github.com/stepheneasyshot/stepheneasyshot.github.io/post-images/android-duo-qu-dao-da-bao-pei-zhi-fang-an.jpg');"></span>
+                    </a>
+                    <div class="info gradient-effect">
+                      <time datetime="2024-06-05">2024-06-05</time>
+                      <h4 class="title usmall">
+                        <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/post/android-duo-qu-dao-da-bao-pei-zhi-fang-an/">Android多渠道打包配置方案</a>
+                      </h4>
+                    </div>
+                    <div class="clear"></div>
+                  </article>
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  
+                  <div class="clear"></div>
+                </section>
+              </div>
+
+              <div class="grid-33 tablet-grid-50 mobile-grid-100">
+                <section id="tag_cloud-2" class="widget widget_tag_cloud underline-effect">
+                  <h4 class="widget-title title white bordered">标签云</h4>
+                  <div class="tagcloud">
+                    
+                      <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/tag/5yQtIxh3Hz/" class="ctag ctag-0 ctag-5yQtIxh3Hz" aria-label="">Android</a>
+                    
+                      <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io/tag/4tpluVFZy/" class="ctag ctag-1 ctag-4tpluVFZy" aria-label="">Gridea</a>
+                    
+                  </div>
+                  <div class="clear"></div>
+                </section>
+              </div>
+
+              <div class="grid-33 tablet-grid-50 mobile-grid-100">
+                <section id="epcl_about-2" class="widget widget_epcl_about underline-effect">
+                  <h4 class="widget-title title white bordered">关于我</h4>
+                  <div class="avatar">
+                    <a href="" class="translate-effect thumb"><span class="fullimage cover" style="background-image: url(https://github.com/stepheneasyshot/stepheneasyshot.github.io/images/avatar.png);"></span></a>
+                  </div>
+                  <div class="info">
+                    <h4 class="title small author-name gradient-effect no-margin"><a href="">Stephen&#39;s Personal Page</a></h4>
+                    <p class="founder">在行中知，在知中行</p>
+                    <div class="social">
+                      
+                        
+                      
+                        
+                      
+                        
+                      
+                        
+                      
+                        
+                      
+                    </div> 
+                  </div>
+                  <div class="clear"></div>
+                  </section>
+              </div>
+
+            </div>
+            <div class="clear"></div>
+        </div>
+
+        <div class="logo">
+          <a href="https://github.com/stepheneasyshot/stepheneasyshot.github.io"><img src="/media/images/gridea.png" alt=""></a>
+        </div>
+        <p class="published border-effect">
+          ©2019 共 6 篇文章
+          <br/>
+          Theme <a href="https://gridea.dev/" target="_blank">「breek」</a> Powered by <a href="https://gridea.dev/" target="_blank">「Gridea」</a>
+        </p>
+        
+        <a href="javascript:void(0)" id="back-to-top" class="epcl-button dark" style="display:none">
+          <i class="fa fa-arrow"></i>
+        </a>
+    </footer>
+    
+    <div class="clear"></div>
+
+        
+
+      
+    <script src="https://github.com/stepheneasyshot/stepheneasyshot.github.io/media/js/functions-post.js"></script>
+
+    </div>
+    <!-- end: #wrapper -->
+  </body>
+</html>

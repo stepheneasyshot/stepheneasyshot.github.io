@@ -2,8 +2,9 @@
 # Must be the same as `author` in `_config.yml`.
 # Change `author1` to your shortname.
 author1:
-  name:              <firstname> <lastname>
-  email:             <mail@domain.tld>
+  # Used by `jekyll-feed`:
+  name:                Stephen Zhan
+  email:               zhanfng990927@gmail.com
 
   # Used at the bottom of each page and at the top of the `about` layout
   # Markdown enabled, can use multiple paragraphs (enabled by `|`)
@@ -28,7 +29,7 @@ author1:
   # You can also provide an absolute URL (starting with https://) instead of usernames
   social:
     twitter:         <username>
-    github:          <username>
+    github:          stepheneasyshot
     # email:           <mail@domain.tld>
     # rss:             https://<url>/feed.xml
     # facebook:        <username>

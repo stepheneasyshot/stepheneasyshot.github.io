@@ -3,12 +3,12 @@ layout: post
 description: > 
   使用Compose Multiplatform开发了一款跨平台的电脑端Android设备调试工具。本文简单介绍了开发背景，功能点，特殊问题解决等信息。
 image: 
-  path: /assets/img/blog/blogs_compose.JPG
+  path: /assets/img/blog/blogs_compose.png
   srcset: 
-    1920w: /assets/img/blog/blogs_compose.JPG
-    960w:  /assets/img/blog/blogs_compose.JPG
-    480w:  /assets/img/blog/blogs_compose.JPG
-accent_image: /assets/img/blog/blogs_compose.JPG
+    1920w: /assets/img/blog/blogs_compose.png
+    960w:  /assets/img/blog/blogs_compose.png
+    480w:  /assets/img/blog/blogs_compose.png
+accent_image: /assets/img/blog/blogs_compose.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---

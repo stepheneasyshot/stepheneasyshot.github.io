@@ -13,7 +13,7 @@ excerpt_separator: <!--more-->
 sitemap: false
 ---
 
-# 使用Compose Multiplatform开发跨平台的Android调试工具
+# 使用CMP开发跨平台的Android调试工具
 ## 背景
 最近对CMP跨平台很感兴趣，为了练手，在移动端做了一个Android和IOS共享UI和逻辑代码的天气软件，简单适配了一下双端的深浅主题切换，网络状态监测，刷新调用振动器接口。
 
@@ -22,7 +22,6 @@ sitemap: false
 然后又了解到CMP不仅仅是移动端的，还可以做web和desktop端。
 
 在我们日常的开发过程中，对于车机设备的adb调试操作很多，一大半全是固定的流程。使用bat脚本的话又不那么灵活，体验也不好。所以我很早就想要做一个带界面的Android设备调试工具。在移动端上写纯原生的Compose界面比较熟悉了，想着这个估计也差不多的，就开启了为期一个多月的Compose for Desktop开发。开发体验可以算中上，很多的问题在stackoverflow和官网上都能找到方案。软件命名为DebugManager。
-
 ## 架构设计
 我没有开发Desktop端的经验，不知道最优的架构设计是什么样的。使用CMP的话Google推崇的MVI模式依然可以通用，所以最初制定的技术路线就是使用响应式的架构。
 
@@ -47,12 +46,9 @@ iconFile.set(project.file("launcher/icon.ico"))
 upgradeUuid = "xxxx-xxxxxxx-xxxxx"
 ```
 1. 更详细的Gradle属性配置参考可以看官方github仓库的教程文档：
-https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/README.md
-
+[JetBrains官方配置文档](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/README.md) 
 2. 关于三个平台应用图标的设置，是参考C上一位大佬的，制作三端的图标文件，大家可以自行搜索配置
-
 目前还发现一个奇怪的bug，就是当我首次配置完，然后过一段时间想再换个应用图标的时候，打包后的安装包大小直接从80M到了2个G，不确定什么原因导致的。
-
 ## Multiplatform适配
 属性配置
 Desktop跨平台的第一个难点就是不同平台的路径连接符不一致：
@@ -188,14 +184,10 @@ public fun androidx.compose.ui.window.WindowScope.WindowDraggableArea(
 }
 ```
 由于各个页面之间的关联不大，无需导航传参，所以我没有用官方的navigation组件，直接在切换tab时切换对应区域的Composable函数。
-
 ## 功能划分
 下面简单介绍下各个页面的调试功能，一般的开发流程里有产品设计，有交互设计，UI设计，给我传达需求，输出资源。
-
 1. 功能设计上，这个软件自己心血来潮要做，只能自己设计了，中间结合日常工作中的调试痛点，还参考了adb的命令介绍，选取了一些组合功能和单次功能，分类添加到了界面内。
-
 2. 在界面UI设计风格上，我是直接参考了每天打开的AndroidStudio里的主题插件，Atom One Dark的颜色风格。
-
 ### 设备信息展示
 首页当然是所连接设备的基本信息展示。
 ![device_info](/assets/img/blog/blogs_cmp_deviceinfo.png){:width="600" height="300" loading="lazy"}
@@ -270,7 +262,6 @@ data class DeviceState(
 录屏，截屏很实用，不用掏出手机到处找角度。我们提前设置好时长，通过自动执行多条指令，等操作完毕，可以直接将截屏录屏文件导出到电脑进行分享，也是我认为最好用的功能之一。
 
 最下面还有一些基础的音量加减，模拟输入法输入等。
-
 ### 轮询查询机制
 值得一提的是，我加入了循环获取连接设备数量和当前连接状态的机制，当电脑端的adb服务一初始化成功，我就开启一个死循环的协程，里面每2s会查询两个状态。
 ```
@@ -320,7 +311,6 @@ data class DeviceState(
 2. 当现在操作的设备断开连接时，会自动切换成其他设备，如果没有其他设备，就弹出警告弹窗，不允许继续操作页面了。
 
 这两个都是轮询的。所以在重新连接设备后，会将当前状态通过state发送到界面，警告弹窗会自动消失。
-
 ### 软件安装管理
 这个功能是耗时最长的板块之一，主要是Android系统里面每个包的信息如何展示，如何进一步对其进行替换，收集了很多指令。APP列表加入了全部包扫描和三方包扫描，对于公司定制的包，也添加到了单独的筛选规则，可以自由选择查看全量信息和精简信息。
 
@@ -340,7 +330,6 @@ data class DeviceState(
 ![app_manage](/assets/img/blog/blogs_cmp_appmanage_2.png){:width="600" height="300" loading="lazy"}
 
 对于选中的单个app，提供了打开应用界面，卸载，提取apk，对于系统应用，还可以push替换apk等操作。我们的测试同事在做非全量的发版验证时非常有用，不用再使用一条条繁琐的命令来替换apk升级了。
-
 ### 文件管理器
 由于我在Android端也没有写过文件管理器应用，所以在这个页面，有些操作也是一拍脑袋想出来的，可能不算规范的解法。仍然是MVI架构，界面去监听StateHolder里面的UiState的Flow，切换目录时重新获取列表数据，update到界面来刷新UI。
 
@@ -368,7 +357,6 @@ modifier = Modifier.clickable {
 android内的文件操作也是使用命令行的形式，cp mv rm等。
 
 还可以将文件pull到电脑端，将电脑端的文件推送到Android端等。
-
 ### 命令模式
 ![cmd](/assets/img/blog/blogs_cmp_cmdexecute.png){:width="600" height="300" loading="lazy"}
 这一页比较简单，大家看到的输入框也是Compose原生的TextField方法，还自带动画，性价比蛮高。
@@ -376,14 +364,12 @@ android内的文件操作也是使用命令行的形式，cp mv rm等。
 主要实现就是将输入框的内容，拼接后直接通过Runtime.getRuntime().exec(command)执行即可。
 
 除了最基础的adb命令透传，配合系统厂商Android端的可执行二进制程序，可以模拟车载信号的回调操作。还有语音部门的通过广播来调试的路径，整合到了DebugManager里面，一键发送广播，模拟可见扫描的点击。
-
 ### 关于页
 ![about](/assets/img/blog/blogs_cmp_about.png){:width="600" height="300" loading="lazy"}
 最后就是关于页了，显示软件版本，缓存文件目录等。通过PlatformAdapter工具类获取路径，执行打开界面即可。
-
 ## 开源计划
 这个软件最初是基于公司业务来设计开发的，有关于公司内部的信息需要抹除。
 等后续有时间我会将其功能进行略微删减，改成通用性质的Android调试工具之后，会开源到Github。对CMP跨平台感兴趣的朋友，可以加关注稍作等待，后面一起进行技术交流。
 
 12月25日已完成剥离修改开源：
-https://github.com/stepheneasyshot/DebugManager
+[DebugManager开源地址](https://github.com/stepheneasyshot/DebugManager) 

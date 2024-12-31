@@ -1,14 +1,14 @@
 ---
 layout: post
 description: > 
-  本文介绍了Android平台两种Unity交互的通信架构和继承方式
+  本文介绍了Android平台两种Unity交互的通信架构和集成方式
 image: 
-  path: /assets/img/blog/unity.JPG
+  path: /assets/img/blog/blogs_unity.JPG
   srcset: 
-    1920w: /assets/img/blog/unity.JPG
-    960w:  /assets/img/blog/unity.JPG
-    480w:  /assets/img/blog/unity.JPG
-accent_image: /assets/img/blog/unity.JPG
+    1920w: /assets/img/blog/blogs_unity.JPG
+    960w:  /assets/img/blog/blogs_unity.JPG
+    480w:  /assets/img/blog/blogs_unity.JPG
+accent_image: /assets/img/blog/blogs_unity.JPG
 excerpt_separator: <!--more-->
 sitemap: false
 ---

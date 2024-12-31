@@ -27,6 +27,7 @@ sitemap: false
 
 由于功能单一，几乎所有操作都是执行一些命令行，获取反馈结果，所以没有抽象的很厉害，数据层直接使用单例类，使用adb工具获取数据透传到StateHolder。StateHolder为界面的状态State管理层，在Composable方法初入时，触发StateHolder的数据获取逻辑，数据拿取到之后，更新State状态，通过界面监听的stateflow通知composable方法刷新UI。
 ![Google_mvi](/assets/img/blog/blogs_mvi.png){:width="400" height="300" loading="lazy"}
+
 事件从上到下，数据状态从下到上，确保唯一可信数据流。
 ## gradle配置
 这一步决定DebugManager项目面向的各个平台的配置，软件版本，安装包。
@@ -191,6 +192,7 @@ public fun androidx.compose.ui.window.WindowScope.WindowDraggableArea(
 ### 设备信息展示
 首页当然是所连接设备的基本信息展示。
 ![device_info](/assets/img/blog/blogs_cmp_deviceinfo.png){:width="600" height="300" loading="lazy"}
+
 定义UiState
 ```
 data class DeviceState(
@@ -359,6 +361,7 @@ android内的文件操作也是使用命令行的形式，cp mv rm等。
 还可以将文件pull到电脑端，将电脑端的文件推送到Android端等。
 ### 命令模式
 ![cmd](/assets/img/blog/blogs_cmp_cmdexecute.png){:width="600" height="300" loading="lazy"}
+
 这一页比较简单，大家看到的输入框也是Compose原生的TextField方法，还自带动画，性价比蛮高。
 
 主要实现就是将输入框的内容，拼接后直接通过Runtime.getRuntime().exec(command)执行即可。
@@ -366,6 +369,7 @@ android内的文件操作也是使用命令行的形式，cp mv rm等。
 除了最基础的adb命令透传，配合系统厂商Android端的可执行二进制程序，可以模拟车载信号的回调操作。还有语音部门的通过广播来调试的路径，整合到了DebugManager里面，一键发送广播，模拟可见扫描的点击。
 ### 关于页
 ![about](/assets/img/blog/blogs_cmp_about.png){:width="600" height="300" loading="lazy"}
+
 最后就是关于页了，显示软件版本，缓存文件目录等。通过PlatformAdapter工具类获取路径，执行打开界面即可。
 ## 开源计划
 这个软件最初是基于公司业务来设计开发的，有关于公司内部的信息需要抹除。

@@ -906,6 +906,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
 }
 ```
 也可以通过 JNIEnv 的函数获取到 JavaVM:
+
 ```
 JavaVM *gJavaVM;
 
@@ -915,6 +916,7 @@ JNIEXPORT jstring JNICALL Java_HelloJNI_sayHello(JNIEnv *env, jobject obj)
     return (*env)->NewStringUTF(env,"Hello from JNI !");
 }
 ```
+
 ## JNIEnv
 JNIEnv 即 Java Native Interface Environment，Java 本地编程接口环境。JNIEnv 内部定义了很多函数用于简化我们的 JNI 编程。
 JNI 把 Java 中的所有对象或者对象数组当作一个 C 指针传递到本地方法中，这个指针指向 JVM 中的内部数据结构(对象用jobject来表示，而对象数组用jobjectArray或者具体是基本类型数组)，而内部的数据结构在内存中的存储方式是不可见的。只能从 JNIEnv 指针指向的函数表中选择合适的 JNI 函数来操作JVM 中的数据结构。

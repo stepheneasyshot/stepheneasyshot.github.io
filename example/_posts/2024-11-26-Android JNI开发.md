@@ -571,7 +571,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_xxx_jni_JNIArrayManager_operateTwoIntDim
     //新建object数组，里面是int[]
     jobjectArray intDimArrayOut = env->NewObjectArray(row_out, clazz, NULL);
 
-    int tmp_array[row_out][col_out] = {{0,1},{2,3}};
+    int tmp_array[row_out][col_out] = { { 0,1 }, { 2,3 } };
     for(i = 0; i< row_out; i ++)
     {
         jintArray intArray = env->NewIntArray(col_out);

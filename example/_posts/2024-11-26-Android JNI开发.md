@@ -819,22 +819,22 @@ Java类型：  java.lang.String
 JNI 域描述符：Ljava/lang/String;  //注意结尾有分号
 
 Java类型：   int[]
-JNI域描述符： \[I
+JNI域描述符： [I
 
 Java类型：   float[]
-JNI域描述符： \[F
+JNI域描述符： [F
 
 Java类型：   String[]
-JNI域描述符： \[Ljava/lang/String;
+JNI域描述符： [Ljava/lang/String;
 
 Java类型：   Object[]
-JNI域描述符： \[Ljava/lang/Object;
+JNI域描述符： [Ljava/lang/Object;
 
 Java类型：   int[][]
-JNI域描述符： \[\[I
+JNI域描述符： [[I
 
 Java类型：   float[][]
-JNI域描述符： \[\[F
+JNI域描述符： [[F
 ```
 ### 方法描述符
 方法描述符是 JVM 中对函数（方法）的标记方式，看几个例子就能基本掌握其命名特点了：
@@ -843,7 +843,7 @@ Java 方法                               方法描述符
 
 String fun()                            ()Ljava/lang/String;
 int fun(int i, Object object)           (ILjava/lang/Object;)I
-void fun(byte[] bytes)                  (\[B)V
+void fun(byte[] bytes)                  ([B)V
 int fun(byte data1, byte data2)         (BB)I
 void fun()                              ()V
 ```

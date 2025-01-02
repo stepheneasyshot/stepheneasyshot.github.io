@@ -1217,6 +1217,7 @@ Native 回调 Java 层方法，被回调的方法抛出异常。这样情况下�
 * Native 层处理异常，异常处理如果和 native 层相关，可以采用这种方式
 ### Native层不处理异常，Java层来处理异常
 java:
+
 ```
 //执行这个方法会抛出异常
 private static int exceptionMethod() {
@@ -1237,6 +1238,7 @@ try {
 }
 ```
 C++:
+
 ```
 extern "C"
 JNIEXPORT void JNICALL
@@ -1263,7 +1265,9 @@ Java_com_yuandaima_myjnidemo_MainActivity_exceptionTest(JNIEnv *env, jobject thi
 有的异常需要在 Native 处理，这里又分为两类：
 * 异常在 Native 层就处理完了
 * 异常在 Native 层处理了，还需要返回给 Java 层，Java 层继续处理
+
 java:
+
 ```
 //执行这个方法会抛出异常
 private static int exceptionMethod() {
@@ -1283,6 +1287,7 @@ try {
 }
 ```
 C++:
+
 ```
 extern "C"
 JNIEXPORT void JNICALL
@@ -1335,6 +1340,7 @@ Java 程序的执行依托于 JVM ，JVM 一般使用 C/C++ 代码编写，需�
 Java 中的对象对应的内存，由 JVM 来管理，他们都有自己的数据结构。当我们通过 JNI 将一个 Java 对象传递给 Native 程序时，Native 程序要操作这块内存时（即操作这个对象），就需要了解这个数据结构，显然这有点麻烦了，所以 JVM 的设计者在 JNIenv 中定义了很多函数（NewStringUTF，FindClass，NewObject 等）来帮你操作和构造这些对象。同时也提供了引用类型（jobject、jstring、jclass、jarray、jintArray等）来引用这些对象。
 ### 明确引用类型的范围
 引用类型是指针，指向的是 Java 中的对象在 JVM 中对应的内存。引用类型的定义如下：
+
 ```
 #ifdef __cplusplus
 
@@ -1422,6 +1428,7 @@ Weak Global Reference 的回收时机是不确定的，有可能在前一行代�
 
 #### 缓存java字段，方法ID
 java:
+
 ```
 public class TestJavaClass {
 
@@ -1435,6 +1442,7 @@ public class TestJavaClass {
 public native void cacheTest();
 ```
 C++:
+
 ```
 extern "C"
 JNIEXPORT void JNICALL
@@ -1480,6 +1488,7 @@ Java_com_yuandaima_myjnidemo_MainActivity_cacheTest(JNIEnv *env, jobject thiz) {
 主要是通过一个全局变量保存 methodid，这样只有第一次调用 native 函数时，才会调用 GetMethodID 去获取，后面的调用都使用缓存起来的值了。这样就避免了不必要的调用，提升了性能。
 #### 静态初始化
 java:
+
 ```
 static {
     System.loadLibrary("myjnidemo");
@@ -1489,6 +1498,7 @@ static {
 public static native void initIDs();
 ```
 C++:
+
 ```
 //定义用于缓存的全局变量
 static jmethodID java_construct_method_id2 = NULL;
@@ -1526,6 +1536,9 @@ Java_com_yuandaima_myjnidemo_MainActivity_initIDs(JNIEnv *env, jclass clazz) {
 JNI 环境下，进行多线程编程，有以下两点是需明确的：
 * JNIEnv 是一个线程作用域的变量，不能跨线程传递，每个线程都有自己的 JNIEnv 且彼此独立
 * 局部引用不能在本地函数中跨函数使用，不能跨线程使用，当然也不能直接缓存起来使用
+
+java:
+
 ```
 public void javaCallback(int count) {
     Log.e(TAG, "onNativeCallBack : " + count);
@@ -1534,6 +1547,7 @@ public void javaCallback(int count) {
 public native void threadTest();
 ```
 C++:
+
 ```
 static int count = 0;
 JavaVM *gJavaVM = NULL;//全局 JavaVM 变量
@@ -1612,6 +1626,7 @@ CPU 可能会调整指令的执行顺序
 ### 非原子操作给多线程编程带来的影响
 原子操作说的是，一个操作的状态要么就是未执行，要么就是已完成，不会看见中间状态。
 下面看一个非原子操作给多线程编程带来的影响：
+
 ```
   int64_t i = 0;     // global variable
 Thread-1:              Thread-2:
@@ -1627,6 +1642,7 @@ C++ 并不保证 i++ 是原子操作。从汇编的角度看，读写内存的�
 
 ### 指令的执行顺序调整给多线程编程带来的影响
 为了优化程序的执行性能，编译器和 CPU 可能会调整指令的执行顺序。为阐述这一点，下面的例子中，让我们假设所有操作都是原子操作：
+
 ```
     int x = 0;     // global variable
           int y = 0;     // global variable
@@ -1636,6 +1652,7 @@ x = 100;               while (y != 200) {}
 y = 200;               std::cout << x;
 ```
 如果 CPU 没有乱序执行指令，那么 Thread-2 将输出 100。然而，对于 Thread-1 来说，x = 100; 和 y = 200; 这两个语句之间没有依赖关系，因此，Thread-1 允许调整语句的执行顺序：
+
 ```
 Thread-1:
 y = 200;
@@ -1644,6 +1661,7 @@ x = 100;
 在这种情况下，Thread-2 将输出 0 或 100。
 ### CPU CACHE 对多线程程序的影响
 CPU cache 也会影响到程序的行为。下面的例子中，假设从时间上来讲，A 操作先于 B 操作发生：
+
 ```
      int x = 0;     // global variable
   
@@ -1663,9 +1681,10 @@ C++ 提供了四种 memory ordering ：
 #### Relaxed ordering
 在这种模型下，std::atomic 的 load() 和 store() 都要带上 memory_order_relaxed 参数。Relaxed ordering 仅仅保证 load() 和 store() 是原子操作，除此之外，不提供任何跨线程的同步。
 先看看一个简单的例子：
+
 ```
-                   std::atomic<int> x = 0;     // global variable
-                   std::atomic<int> y = 0;     // global variable
+         std::atomic<int> x = 0;     // global variable
+         std::atomic<int> y = 0;     // global variable
   
 Thread-1:                              Thread-2:
 //A                                    // C
@@ -1675,6 +1694,7 @@ x.store(r1, memory_order_relaxed);     y.store(42, memory_order_relaxed);
 ```
 执行完上面的程序，可能出现 r1 == r2 == 42。理解这一点并不难，因为编译器允许调整 C 和 D 的执行顺序。如果程序的执行顺序是 D -> A -> B -> C，那么就会出现 r1 == r2 == 42。
 如果某个操作只要求是原子操作，除此之外，不需要其它同步的保障，就可以使用 Relaxed ordering。程序计数器是一种典型的应用场景：
+
 ```
 #include <cassert>
 #include <vector>
@@ -1707,6 +1727,7 @@ int main()
 在 load() 之后的所有读写操作，不允许被移动到这个 load() 的前面。
 除此之外，还有另一种效果：假设 Thread-1 store() 的那个值，成功被 Thread-2 load() 到了，那么 Thread-1 在 store() 之前对内存的所有写入操作，此时对 Thread-2 来说，都是可见的。
 下面的例子阐述了这种模型的原理：
+
 ```
 #include <thread>
 #include <atomic>
@@ -1798,6 +1819,7 @@ java.lang.UnsatisfiedLinkError: Library foo not found
 * 库不是使用 NDK 构建的。这可能会导致 对设备上不存在的函数或库的依赖关系。
 
 其他类的 UnsatisfiedLinkError 失败消息如下所示：
+
 ```
 java.lang.UnsatisfiedLinkError: myfunc
         at Foo.myfunc(Native Method)
@@ -1818,6 +1840,7 @@ W/dalvikvm(  880): No implementation found for native LFoo;.myfunc ()V
 确保类名称字符串的格式正确无误。JNI 类 名称以软件包名称开头，并用正斜线分隔 例如 java/lang/String。如果您要查找数组类， 您需要以适当数量的方括号开头 还必须使用“L”封装类和“;”这样的一个一维数组， String 为 \[Ljava/lang/String;。 如果您要查找内部类，请使用“$”而不是“.”。一般来说， 对 .class 文件使用 javap 是查找 类的内部名称。
 如果要启用代码缩减，请确保 配置要保留的代码。正在配置 适当的保留规则非常重要，因为代码压缩器可能会从别处移除类、方法 或仅通过 JNI 使用的字段。
 如果类名称没有问题，则可能是因为您遇到了类加载器 问题。FindClass想要在 与代码关联的类加载器。它会检查调用堆栈， 如下所示：
+
 ```
     Foo.myfunc(Native Method)
     Foo.main(Foo.java:10)

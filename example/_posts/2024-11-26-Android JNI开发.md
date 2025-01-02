@@ -180,21 +180,32 @@ set_target_properties( # Specifies the target library.
 ```
 ## Android ABI
 不同的 Android 设备使用不同的 CPU，而不同的 CPU 支持不同的指令集。CPU 与指令集的每种组合都有专属的应用二进制接口 (ABI)。ABI 包含以下信息：
+
 * 可使用的 CPU 指令集（和扩展指令集）。
 * 运行时内存存储和加载的字节顺序。Android 始终是 little-endian。
 * 在应用和系统之间传递数据的规范（包括对齐限制），以及系统调用函数时如何使用堆栈和寄存器。
 * 可执行二进制文件（例如程序和共享库）的格式，以及它们支持的内容类型。Android 始终使用 ELF。如需了解详情，请参阅 ELF System V 应用二进制接口。
 * 如何重整 C++ 名称。如需了解详情，请参阅 Generic/Itanium C++ ABI。
-### armeabi-v7a
+
+**armeabi-v7a**
+
 此 ABI 适用于 32 位 ARM CPU。它包括 Thumb-2 和 Neon。
-### arm64-v8a
+
+**arm64-v8a**
+
 此 ABI 适用于 64 位 ARM CPU。
-### x86
+
+**x86**
+
 此 ABI 适用于支持通常称为“x86”“i386”或“IA-32”的指令集的 CPU。
-### x86_64
+
+**x86_64**
+
 此 ABI 适用于支持通常称为“x86-64”的指令集的 CPU。
+
 ### gradle配置
 默认情况下，Gradle（无论是通过 Android Studio 使用，还是从命令行使用）会针对所有非弃用 ABI 进行构建。要限制应用支持的 ABI 集，请使用 abiFilters。例如，要仅针对 64 位 ABI 进行构建，请在 build.gradle 中设置以下配置：
+
 ```
 android {
     defaultConfig {
@@ -970,7 +981,8 @@ void util_xxx()
     gJavaVM->DetachCurrentThread();
 }
 ```
-一些函数
+一些函数:
+
 |函数名|功能|
 |:------|:------|
 |FindClass|用于获取类|

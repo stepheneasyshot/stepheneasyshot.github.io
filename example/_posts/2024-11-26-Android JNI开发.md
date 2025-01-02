@@ -250,7 +250,9 @@ JNIEXPORT jstring JNICALL Java_HelloJNI_sayHello(JNIEnv *, jobject);
 事实上，旧版 Android 的 PackageManager 中存在导致安装和 使原生库更新不可靠。ReLinker 项目提供了解决此问题和其他原生库加载问题的解决方法。
 从静态类调用 System.loadLibrary（或 ReLinker.loadLibrary） 初始化函数。参数是“未修饰”库名称 因此，要加载 libfubar.so，您需要传入 "fubar"。
 如果您只有一个类具有原生方法，则调用 System.loadLibrary 位于该类的静态初始化程序中。否则，您应该从 Application 进行该调用，这样您就知道始终会加载该库，并且始终会提前加载。运行时可以通过两种方式找到您的原生方法。您可以请使用 RegisterNatives 注册它们；也可以让运行时动态查询它们和dlsym。
+
 **RegisterNatives 的优势在于，您可以提前还可以检查这些符号是否存在导出除 JNI_OnLoad 之外的任何内容。这样做的好处是让运行时因为它需要编写的代码略少一些。**
+
 如需使用 RegisterNatives，请执行以下操作：
 
 * 提供 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) 函数。
@@ -323,6 +325,7 @@ Java_com_stephen_jnitest_JniUtils_calChar(JNIEnv *env, jobject, jchar a) {
 ```
 ### 引用类型
 jni.h 中定义的非基本数据类型称为引用类型。
+
 | Java 类型|JNI 引用类型 | 类型描述|
 |:---------|:----------|:----------|
 |java.lang.Object|jobject|表示任何Java的对象|
@@ -380,7 +383,9 @@ JNIEXPORT jstring JNICALL Java_HelloJNI_sayHello__Ljava_lang_String_2(JNIEnv *en
 }
 ```
 #### 字符串的其他常用操作函数
+
 **GetStringUTFChars/ReleaseStringUTFChars**
+
 Java 默认使用 UTF-16 编码，而 C/C++ 默认使用 UTF-8 编码。GetStringUTFChars 可以把一个 jstring 指针（指向 JVM 内部的 UTF-16 字符序列）转换成一个 UTF-8 编码的 C 风格字符串。
 ```
 // 参数说明：
@@ -406,6 +411,7 @@ void ReleaseStringUTFChars(jstring string, const char* utf)//C++中的定义
 ReleaseStringUTFChars 函数用于通知虚拟机 jstring 在 jvm 中对应的内存已经不使用了，可以清除了。
 
 **GetStringChars/ReleaseStringChars**
+
 GetStringChars返回字符串 string 对应的 UTF-16 字符数组的指针。在内存不足时抛出 OutOfMemoryError 异常.
 ReleaseStringChars通知虚拟机平台释放 chars 所引用的相关资源，以免造成内存泄漏。参数chars 是一个指针，可通过 GetStringChars() 从 string 获得。
 ```
@@ -413,7 +419,9 @@ const jchar* (GetStringChars)(JNIEnv env, jstring string, jboolean* isCopy);
 
 void ReleaseStringChars (JNIEnv *env, jstring string, const jchar *chars);
 ```
+
 **NewStringUTF**
+
 利用C风格字符串创建一个新的 java.lang.String 字符串对象。这个新创建的字符串会自动转换成 Java 支持的 UTF-16 编码。在内存不足时抛出 OutOfMemoryError 异常。
 ```
 // 参数说明
@@ -424,26 +432,36 @@ jstring  (*NewStringUTF)(JNIEnv*, const char*);//C环境中定义
 jstring NewStringUTF(const char* bytes)//C++环境中的定义
 { return functions->NewStringUTF(this, bytes); }
 ```
+
 **NewString**
+
 利用 UTF-16 字符数组构造新的 java.lang.String 对象。在内存不足时抛出 OutOfMemoryError 异常。
 ```
 jstring (NewString)(JNIEnv env, const jchar* unicodeChars, jsize size);
 ```
+
 **GetStringUTFLength**
+
 返回字符串的 UTF-8 编码的长度，即 C 风格字符串的长度。
 ```
 jsize (GetStringUTFLength)(JNIEnv env, jstring string);
 ```
+
 **GetStringLength**
+
 返回字符串的 UTF-16 编码的长度，即 Java 字符串长度
 ```
 const jchar* (GetStringChars)(JNIEnv env, jstring string, jboolean* isCopy);
 ```
+
 **GetStringCritical/ReleaseStringCritical**
+
 此前提到的Get/ReleaseStringChars 和 Get/ReleaseStringUTFChars 这对函数返回的源字符串会后分配内存，如果有一个字符串内容相当大，有 1M 左右，而且只需要读取里面的内容打印出来，用这两对函数就有些不太合适了。
 此时用 Get/ReleaseStringCritical 可直接返回源字符串的指针应该是一个比较合适的方式。不过这对函数有一个很大的限制，在这两个函数之间的本地代码不能调用任何会让线程阻塞或等待 JVM 中其它线程的本地函数或 JNI 函数。因为通过 GetStringCritical 得到的是一个指向 JVM 内部字符串的直接指针，获取这个直接指针后会导致暂停 GC 线程，当 GC 被暂停后，如果其它线程触发 GC 继续运行的话，都会导致阻塞调用者。所以在Get/ReleaseStringCritical 这对函数中间的任何本地代码都不可以执行导致阻塞的调用或为新对象在 JVM 中分配内存，否则，JVM 有可能死锁。另外一定要记住检查是否因为内存溢出而导致它的返回值为 NULL，因为 JVM 在执行 GetStringCritical 这个函数时，仍有发生数据复制的可能性，尤其是当 JVM 内部存储的数组不连续时，为了返回一个指向连续内存空间的指针，JVM 必须复制所有数据。
 与 GetStringUTFChars 相同，GetStringCritical 也可能在内存不足时抛出 OutOfMemoryError 异常。
+
 **GetStringRegion/GetStringUTFRegion**
+
 分别表示获取 UTF-16 和 UTF-8 编码字符串指定范围内的内容。
 这对函数会把源字符串复制到一个预先分配的缓冲区内。
 ```
@@ -454,6 +472,7 @@ JNIEXPORT jstring JNICALL Java_HelloJNI_sayHello__Ljava_lang_String_2(JNIEnv *en
     env->GetStringUTFRegion(str,0,len,buff);
 }
 ```
+
 #### 小结
 * 对于小字符串来说，GetStringRegion 和 GetStringUTFRegion 这两对函数是最佳选择，因为缓冲区可以被编译器提前分配，而且永远不会产生内存溢出的异常。当你需要处理一个字符串的一部分时，使用这对函数也是不错。因为它们提供了一个开始索引和子字符串的长度值。另外，复制少量字符串的消耗也是非常小的。
 * 使用 GetStringCritical 和 ReleaseStringCritical 这对函数时，必须非常小心。一定要确保在持有一个由 GetStringCritical 获取到的指针时，本地代码不会在 JVM 内部分配新对象，或者做任何其它可能导致系统死锁的阻塞性调用。
@@ -499,7 +518,9 @@ JNIEXPORT jdoubleArray JNICALL Java_HelloJNI_sumAndAverage(JNIEnv *env, jobject 
 使用时需要特别注意item对象的创建与释放。
 JNI 中的数组分为基本类型数组和对象数组，它们的处理方式是不一样的，基本类型数组中的所有元素都是 JNI的基本数据类型，可以直接访问。而对象数组中的所有元素是一个类的实例或其它数组的引用，和字符串操作一样，不能直接访问 Java 传递给 JNI 层的数组，必须选择合适的 JNI 函数来访问和设置 Java 层的数组对象。
 ##### 引用数组
-**一维**
+
+**一维数组**
+
 ```
 JNIEXPORT jobjectArray JNICALL Java_com_xxx_jni_JNIArrayManager_operateStringArrray
   (JNIEnv * env, jobject object, jobjectArray objectArray_in)
@@ -533,7 +554,9 @@ JNIEXPORT jobjectArray JNICALL Java_com_xxx_jni_JNIArrayManager_operateStringArr
     return objectArray_out;
 }
 ```
+
 **二维数组**
+
 ```
 JNIEXPORT jobjectArray JNICALL Java_com_xxx_jni_JNIArrayManager_operateTwoIntDimArray(JNIEnv * env, jobject object, jobjectArray objectArray_in)
 {
@@ -582,17 +605,23 @@ JNIEXPORT jobjectArray JNICALL Java_com_xxx_jni_JNIArrayManager_operateTwoIntDim
     return intDimArrayOut;
 }
 ```
+
 **GetArrayLength**
+
 ```
 jsize (GetArrayLength)(JNIEnv env, jarray array);
 ```
 返回数组中的元素个数
+
 **NewObjectArray**
+
 ```
 jobjectArray NewObjectArray (JNIEnv *env, jsize length, jclass elementClass, jobject initialElement);
 ```
-构建 JNI 引用类型的数组，它将保存类 elementClass 中的对象。所有元素初始值均设为 initialElement，一般使用 NULL 就好。如果系统内存不足,则抛出 OutOfMemoryError 异常
+构建 JNI 引用类型的数组，它将保存类 elementClass 中的对象。所有元素初始值均设为 initialElement，一般使用 NULL 就好。如果系统内存不足，则抛出 OutOfMemoryError 异常。
+
 **GetObjectArrayElement和SetObjectArrayElement**
+
 ```
 jobject GetObjectArrayElement (JNIEnv *env, jobjectArray array, jsize index)
 ```
@@ -601,7 +630,9 @@ jobject GetObjectArrayElement (JNIEnv *env, jobjectArray array, jsize index)
 void SetObjectArrayElement (JNIEnv *env, jobjectArray array, jsize index, jobject value)
 ```
 设置 jobjectArray 数组中 index 下标对象的值。如果 index 不是数组中的有效下标，则会抛出 ArrayIndexOutOfBoundsException 异常。如果 value 的类不是数组元素类的子类，则抛出 ArrayStoreException 异常。
-**New<PrimitiveType>Array 函数集**
+
+**New\<PrimitiveType\>Array 函数集**
+
 ```
 NativeTypeArray New<PrimitiveType>Array (JNIEnv* env, jsize size)
 ```
@@ -618,7 +649,9 @@ NewLongArray()              jlongArray
 NewFloatArray()             jfloatArray
 NewDoubleArray()            jdoubleArray      
 ```
+
 **Get/ReleaseArrayElements函数集**
+
 ```
 NativeType* Get<PrimitiveType>ArrayElements(JNIEnv *env, NativeTypeArray array, jboolean *isCopy)
 ```
@@ -649,11 +682,14 @@ ReleaseLongArrayElements()          jlongArray             jlong
 ReleaseFloatArrayElements()         jfloatArray            jfloat
 ReleaseDoubleArrayElements()        jdoubleArray  
 ```
-**jdoubleGet/Set<PrimitiveType>ArrayRegion**
+
+**jdoubleGet/Set\<PrimitiveType\>ArrayRegion**
+
 ```
 void Set<PrimitiveType>ArrayRegion (JNIEnv *env, NativeTypeArray array, jsize start, jsize len, NativeType *buf);
 ```
 该函数用于将基本类型数组某一区域复制到 JNI 数组类型中。在实际使用过程中将 PrimitiveType 替换成某个实际的基本类型元素访问函数，然后再将 NativeType 替换成对应的 JNI Native Type 即可：
+
 ```
 函数名                              NativeTypeArray        NativeType
 SetBooleanArrayRegion()             jbooleanArray          jboolean
@@ -943,13 +979,13 @@ void util_xxx()
 |NewObject|构造新 Java 对象|
 |NewString|利用 Unicode 字符数组构造新的 java.lang.String 对象|
 |NewStringUTF|利用 UTF-8 字符数组构造新的 java.lang.String 对象|
-|New<Type>Array|创建类型为Type的数组对象|
-|Get<Type>Field|获取类型为Type的字段|
-|Set<Type>Field|设置类型为Type的字段的值|
-|GetStatic<Type>Field|获取类型为Type的static的字段|
-|SetStatic<Type>Field|设置类型为Type的static的字段的值|
-|Call<Type>Method|调用返回类型为Type的方法|
-|CallStatic<Type>Method|调用返回值类型为Type的static方法|
+|New\<Type\>Array|创建类型为Type的数组对象|
+|Get\<Type\>Field|获取类型为Type的字段|
+|Set\<Type\>Field|设置类型为Type的字段的值|
+|GetStatic\<Type\>Field|获取类型为Type的static的字段|
+|SetStatic\<Type\>Field|设置类型为Type的static的字段的值|
+|Call\<Type\>Method|调用返回类型为Type的方法|
+|CallStatic\<Type\>Method|调用返回值类型为Type的static方法|
 
 相关的函数不止上面的这些，这些函数的介绍和使用方法。我们可以在开发过程中参考官方文档：
 [Oracle官方JNI文档](https://docs.oracle.com/en/java/javase/11/docs/specs/jni/index.html)

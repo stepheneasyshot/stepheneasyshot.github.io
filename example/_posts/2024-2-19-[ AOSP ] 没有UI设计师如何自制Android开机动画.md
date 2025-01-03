@@ -3,12 +3,12 @@ layout: post
 description: > 
   本文介绍了在AOSP项目自定义时，没有UI设计师，开发设计自己的开机动画的一种方法流程
 image: 
-  path: /assets/img/blog/blogs_aosp.png
+  path: /assets/img/blog/blogs_bootanimation.png
   srcset: 
-    1920w: /assets/img/blog/blogs_aosp.png
-    960w:  /assets/img/blog/blogs_aosp.png
-    480w:  /assets/img/blog/blogs_aosp.png
-accent_image: /assets/img/blog/blogs_aosp.png
+    1920w: /assets/img/blog/blogs_bootanimation.png
+    960w:  /assets/img/blog/blogs_bootanimation.png
+    480w:  /assets/img/blog/blogs_bootanimation.png
+accent_image: /assets/img/blog/blogs_bootanimation.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
@@ -19,8 +19,6 @@ sitemap: false
 我们都知道，AOSP的默认开机动画是一个“ANDROID”的字样，配合一个渐变的底色动画。定制一个自己的开机动画，对于手机厂商来说，有利于宣传品牌，彰显企业文化。
 
 像国内广为人知的定制系统，比如MIUI，ColorOS，FlymeOS等，都是没有直接使用默认动画的，定制了一套他们自己厂商的开机动画。而考虑到大厂都是人力充足，设计师，动效师，应有尽有。
-
-![bootanimation](/assets/img/blog/blogs_bootanimation.png)
 
 那像我这自己在下面玩玩源码的，没有设计师帮忙，该怎么搞一套看得过去的定制化的开机动画呢？
 

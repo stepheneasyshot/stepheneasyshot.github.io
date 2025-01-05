@@ -47,7 +47,8 @@ Kanzi产品是行业领先的3D引擎和UI开发工具，支持高效率沉浸�
 对于Kanzi动效的集成使用方式，因为没有自己从头开始对接，我只按照顺序一笔带过，有不对的地方欢迎指正。首先我们集成kanzi运行所需的Runtime.aar，kanziJava支持库aar，资源文件，资源列表的txt等等，还需要在gradle里写明不可压缩的文件类型，以防止无法加载资源。
 
 在使用上，我们先在XML布局中声明，同时通过属性填入asstes里的资源名，和资源文件绑定：
-```
+
+```xml
  <com.rightware.kanzi.KanziTextureView
         android:id="@+id/tx_KanziSurfaceView"
         android:layout_width="@dimen/dp_2560"
@@ -61,7 +62,8 @@ Kanzi产品是行业领先的3D引擎和UI开发工具，支持高效率沉浸�
 ```
 
 在Java代码里我们需要设置通信的工具类，在里面添加监听器来接收和上行下行信号的交互：
-```
+
+```java
 // 数据接口定义
 public interface AndroidNotifyListener {
     void notifyDataChanged(String name, String value);
@@ -100,11 +102,13 @@ https://docs.unity.cn/cn/tuanjiemanual/Manual/hmi-android.html
 
 #### 集成步骤
 第一步，将Unity提供的aar放置于libs文件夹中，并在gradle里添加其编译引用。
-```
+
+```groovy
 implementation files('libs/UnityAnimation_0321V4.aar')
 ```
 第二步，gradle中配置Unity所需的NDK版本，配置abifilters，设置要将哪些架构的动态库打包到apk中，对于车机项目来说只需要固定的某一种架构即可。还有设置不压缩的文件类型，使Unity可以顺利找到资源使用。
-```
+
+```groovy
 ndkVersion "23.1.7779620"
 
 aaptOptions {
@@ -117,14 +121,20 @@ ndk{
 }
 ```
 注意，我们还需要在项目的string.xml资源文件中添加Unity所需的一条String资源，否则Unity侧会空指针。
+
+```xml
  <string name="game_view_content_description">Game view</string>
+```
+
 第三步，将要显示Unity动效的页面Activity改为继承自UnityPlayerActivity，Unity的核心显示控件，UnityPlayer，它的创建销毁，显示隐藏，由这个UnityPlayerActivity来统一管理，项目中集成这个Activity的子类再将mUnityPlayer通过addView添加到自己的根布局ViewGroup中当背景即可，而且可以在xml上面继续增加其他View控件。
 第四步，封装Unity通信工具类，Android给Unity发消息可以直接通过UnityPlayer的sendMessage静态方法，传入Unity通信协议中指定的类名。
-```
+
+```kotlin
  UnityPlayer.UnitySendMessage(OBJ_NAME, METHOD_NAME, communicateMessage)
 ```
 Unity使用C#开发，其给Android上层发消息则是通过反射回调信号类里的方法实现的，所以我们最好将信号管理类做成单例的，并给其Unity留下一个方法或者成员，可以拿到我们类的实例，顺利反射回调。我这里使用的是一个Kotlin类声明，并对外暴露一个公开的unityInstance成员。而这个方法onReceiveMsgFromUnity，即是Unity的反射调用，我们在其中进行信号的解析，并传到View中去，注意这个方法不是在主线程中反射的，所以后面需要优化一波。
-```
+
+```kotlin
 object UnityMessageHelper {
 
     val unityInstance = this
@@ -149,7 +159,8 @@ Unity方给的aar里的基类Activity适用与绝大多数的普通应用，但�
 这个时候我们用不上他们定义的UnityPlayerActivity，只能使用原生Raw的UnityPlayer，自己管理其创建，销毁，resume和pause。这里需要注意的是，UnityPlayer的创建需要传一个Context上下文，而应用里又没有Activity类型的Context，故只能使用非Activity类型的Context，在实践中发现，这个UnityPlayer的实例必须是我们的应用拿到可用的窗口句柄之后，才能被成功创建，否则就会报错。
 
 所以正确的创建与初始化顺序是先使用WindowManager添加一个xml布局inflate来的ViewGroup，在其onAttachToWindow的方法回调之后，再创建UnityPlayer的实例，并添加到这个ViewGroup的布局中去，调用其resume方法。
-```
+
+```kotlin
     public void initUnity() {
         if (mUnityPlayer == null) {
             LogUtils.i(TAG, "initUnity");
@@ -190,7 +201,8 @@ Unity Rendering as Service（简称URAS） 的渲染方案是团结引擎特有�
 
 #### 集成与使用方式
 我们只需要在gradle里引入这个客户端aar。在gradle sync之后，将远程的UnityView添加到自己的布局中去，配置好display参数(用来给服务端区分是哪个引擎的内容)，并指定服务端的包名。承载的View类型有SurfaceView和TextureView两种，而我的应用界面因为是一个悬浮窗口，设计有进出场的渐隐渐出动效，而SurfaceView不可以线性地设置alpha动画，所以选取TextureView来当作容器。
-```
+
+```xml
 <com.unity3d.renderservice.client.TuanjieView
         android:id="@+id/unityview"
         android:layout_width="match_parent"
@@ -200,7 +212,8 @@ Unity Rendering as Service（简称URAS） 的渲染方案是团结引擎特有�
         app:tuanjieViewType="TextureView" />
 ```
 剩余的代码逻辑仅仅是服务端Service的启动，添加服务连接的回调，消息回调。由于服务端为若干个Client的公共引擎，所以连resume和pause都不需要处理，因为这两个操作会对所有的客户端都生效。我们只需要确保启动服务，并使用正确的display即可，面板退到后台可以使用setVisbility来控制其显示隐藏。除此之外，我们的通信工具类，UnityMessageHelper还需要实现两个接口，一个服务连接状态接口，一个业务数据的消息回调接口，代码如下：
-```
+
+```kotlin
 object UnityMessageHelper : TuanjieRenderService.Callback, SendMessageCallback {
 
     fun initUnityService() {

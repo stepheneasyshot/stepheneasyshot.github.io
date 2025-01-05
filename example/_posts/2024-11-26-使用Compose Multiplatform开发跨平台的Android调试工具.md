@@ -35,6 +35,7 @@ sitemap: false
 由于这个软件面向不同岗位，不同操作系统，目标是一套代码适配Windows，Linux，MacOS，达到多端通用。而且目前没有交叉编译，只能在各自的系统上打包，windows打exe，ubuntu上打deb，macos上打dmg，所以我现在给使用不同系统的同事发布软件时，都是三端各打一遍。
 
 Windows端有配置是否显示在开始菜单，桌面快捷方式，uuid用于更新识别，自行选择安装目录。
+
 ```
 menu = true
 shortcut = true
@@ -63,7 +64,8 @@ Desktop跨平台的第一个难点就是不同平台的路径连接符不一致�
 而且Java给我们提供的System.getProperty可以用来区分平台类型。
 
 首先，定义一个枚举类来设定平台类型：
-```
+
+```kotlin
 enum class PlatformType {
     UNKNOWN,
     WINDOWS,
@@ -72,7 +74,8 @@ enum class PlatformType {
 }
 ```
 在应用初始化时，通过接口获取平台名称，解析出哪一个平台：
-```
+
+```kotlin
  /**
      * 获取当前平台类型
      */
@@ -89,7 +92,8 @@ enum class PlatformType {
 后面在涉及平台差分化的时候，可以使用此方法来获取，执行不同操作。
 
 比如路径拼接时的符号：
-```
+
+```kotlin
     // 路径分隔符
     val dp =
         when (getPlatformType()) {
@@ -98,7 +102,8 @@ enum class PlatformType {
         }
 ```
 打开不同平台上的文件管理器：
-```
+
+```kotlin
     fun openFolder(path: String) {
         when (getPlatformType()) {
             PlatformType.WINDOWS, PlatformType.UNKNOWN -> {
@@ -116,7 +121,8 @@ enum class PlatformType {
     }
 ```
 对于各个平台上执行终端命令，使用的两个方法是相同的，无需结果就直接exec()，需要执行结果就是用ProcessBuilder来执行，等待结果。
-```
+
+```kotlin
     /**
      * 执行终端命令
      */
@@ -150,7 +156,8 @@ enum class PlatformType {
 ```
 ## 窗口框架
 新项目的应用入口如下：
-```
+
+```kotlin
 fun main() = application {
 
     Window(
@@ -175,7 +182,8 @@ undecorated参数，这个可以配置软件界面是否选择系统默认的标
 有意思的一点是，上面这个参数如果设置true就是系统默认的标题栏，我们可以使用鼠标拖动标题栏来移动窗口。最开始设为false后，我发现自定义的标题栏无法使用鼠标拖动了，一度试了很多方案都不行，最后还是 GeminiAI 展示了一个Composable方法，居然直接套用即可，里面的区域就是支持拖动移动的。把标题栏的Composable方法放在这个WindowDraggableArea里面，就可以鼠标拖动标题栏来移动窗口了。
 
 源码的方法声明如下：
-```
+
+```kotlin
 @androidx.compose.runtime.Composable
 @androidx.compose.runtime.ComposableInferredTarget
 public fun androidx.compose.ui.window.WindowScope.WindowDraggableArea(
@@ -194,7 +202,8 @@ public fun androidx.compose.ui.window.WindowScope.WindowDraggableArea(
 ![device_info](/assets/img/blog/blogs_cmp_deviceinfo.png){:width="600" height="300" loading="lazy"}
 
 定义UiState
-```
+
+```kotlin
 data class DeviceState(
     val name: String? = null,
     val manufacturer: String? = null,
@@ -225,13 +234,15 @@ data class DeviceState(
 }
 ```
 定义好界面所需要展示的字段，再在StateHolder里维护一个StateFlow，同时对界面层暴露一个只读的字段，用于刷新界面数据。
-```
+
+```kotlin
  // 单个设备信息
     private val _deviceState = MutableStateFlow(DeviceState())
     val deviceStateStateFlow = _deviceState.asStateFlow()
 ```
 进来界面后，在协程中获取数据，界面拿到update后的数据之后自动更新信息：
-```
+
+```kotlin
    CoroutineScope(Dispatchers.IO).launch {
                 prepareEnv()
                 val deviceName = .....
@@ -266,7 +277,8 @@ data class DeviceState(
 最下面还有一些基础的音量加减，模拟输入法输入等。
 ### 轮询查询机制
 值得一提的是，我加入了循环获取连接设备数量和当前连接状态的机制，当电脑端的adb服务一初始化成功，我就开启一个死循环的协程，里面每2s会查询两个状态。
-```
+
+```kotlin
  private fun recycleCheckConnection() {
         CoroutineScope(Dispatchers.IO).launch {
             while (true) {
@@ -342,7 +354,8 @@ data class DeviceState(
 展示文件列表的就是@Composable LazyComuln方法。
 
 有意思的是，我在加入item的双击和单击的区分时，最初想给Modifier定义一个扩展方法，直接实现双击回调。但是发现必须经过clickable方法来实现，这样会把外部的单机的clickable给挤掉。所以双击判断还是写在了同一个clickable里面，通过时间间隔判断的工具类来区分，单击则选中对应的文件/文件夹，双击则进入文件夹。
-```
+
+```kotlin
 modifier = Modifier.clickable {
     // 点击则设置即将操作的path
     MainStateHolder.setSelectedFilePath(it.path)

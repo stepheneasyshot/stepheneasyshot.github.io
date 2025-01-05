@@ -75,7 +75,7 @@ Android应用里手动写一个简单的渐亮动画——>录屏——>MP4转PN
 
 方案定下来了，接下来随便新建一个demo项目。我找到一个免费字体Cooper Black，到应用xml里添加TextView控件，设置字体fontFamily:
 
-```
+```xml
  <TextView
         android:id="@+id/tv_animationtext"
         android:layout_width="wrap_content"
@@ -95,7 +95,7 @@ Android应用里手动写一个简单的渐亮动画——>录屏——>MP4转PN
 
 然后在Activity里准备写逻辑，顺手在工具类里写一个顶层扩展方法，给Activity设置强制全屏：
 
-```
+```kotlin
 fun AppCompatActivity.setFullScreenMode() {
     val layoutParams = window.attributes
     layoutParams.layoutInDisplayCutoutMode =
@@ -113,7 +113,7 @@ fun AppCompatActivity.setFullScreenMode() {
 
 动画编码为求简洁迅速，没有用传统的ValueAnimator，而是直接协程里使用repeat加delay，这种写法相当简单粗暴。
 
-```
+```kotlin
 val logoText = rootView.findViewById<TextView>(R.id.tv_animationtext)
 MainScope().launch {
      delay(2000L)

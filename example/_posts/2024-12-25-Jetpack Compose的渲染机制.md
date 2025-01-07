@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了性能测试和性能优化的方法论和实例
+  本文介绍了Jetpack Compose的渲染机制
 image: 
   path: /assets/img/blog/blogs_compose_cover.png
   srcset: 

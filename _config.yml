@@ -93,12 +93,12 @@ remote_theme: hydecorp/hydejack@v9.2.1
 
 # Sidebar image and theme color of the site.
 accent_image:          /assets/img/sidebar-bg.png
-accent_color:          rgb(110,219,140)
+accent_color:          rgb(49,137,208)
 
 # This is used for the `theme-color` meta tag,
 # which changes the background color of the browser UI in certain browsers.
 # Defaults to `accent_color`.
-theme_color:           rgb(110,219,140)
+theme_color:           rgb(152,135,125)
 
 # IMPORTANT:
 # As of Hydejack 9.2, Google Fonts are turned off by default due to a stronger focus on privacy.

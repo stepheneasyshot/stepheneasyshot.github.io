@@ -362,28 +362,6 @@ Activity还在后台，如果应用的所有 activity 仍驻留在内存中，�
 再次添加View时,它可能不会经历完整的布局和绘制流程,特别是如果它的尺寸和位置没有改变。系统可能会尝试优化性能,只进行必要的更新。
 如果View的状态(如可见性、尺寸、位置等)在移除和再次添加之间发生了变化,系统会相应地更新这些状态。
 
-#### 空调应用优化记录
-冷启动总耗时366ms，要求200ms。
-测试发现，冷启动从windowmanager的addView操作，到View准备完毕，出场动画开始执行，需要200ms（741-941）。
-而热启动走完这段流程只要10ms，所以最大耗时就在这里，目标是将冷启动这里的200ms（303-314），优化到100ms内。
-
-```
-2024-10-24 09:11:55.741  9177-9177  Hvac[4.1.20241211]        com...h.cockpit.airconditioner  I  HvacMainViewManager: openPanel ADD WINDOW
-2024-10-24 09:11:55.941  9177-9177  Hvac[4.1.20241211]        com...h.cockpit.airconditioner  I  HvacMainViewManager: onAnimationStart open
-2024-10-24 09:12:07.496  9177-9177  Hvac[4.1.20241211]        com...h.cockpit.airconditioner  I  HvacMainViewManager: closePanel REMOVE WINDOW
-2024-10-24 09:12:10.303  9177-9177  Hvac[4.1.20241211]        com...h.cockpit.airconditioner  I  HvacMainViewManager: openPanel ADD WINDOW
-2024-10-24 09:12:10.314  9177-9177  Hvac[4.1.20241211]        com...h.cockpit.airconditioner  I  HvacMainViewManager: onAnimationStart open
-```
-
-* 优化一：
-语音可见的注册监听器，每次都把ACViewAttachStateListener这个类的实例new出来添加进去，固定耗时20ms。改为开机注册一次，可见会根据view的attach状态自己执行逻辑。不必要每次添加view时new出来添加
-* 优化二：
-Unity的View，如果不加载，减少了50ms，这个可以使用占位图，初次显示时延后加载。此方案对体验有一些影响，是否导入待定
-* 优化三：
-空调自己的组件全部隐藏，可以优化80ms，看这里面是否有特比耗时的控件，重点排查三方和自定义组件。暂未发现耗时控件。
-
-最终采用了方案一二，提升了70ms，从点击入口到首帧显示出来，冷启动速度到了300以内。
-
 ### 启动时间指标
 Android 使用初步显示所用时间 (TTID) 和完全显示所用时间 (TTFD) 指标来优化冷应用启动和温应用启动。Android 运行时 (ART) 使用这些指标的数据来高效地预编译代码，以优化未来启动。
 更快的启动速度可以促进用户与应用的持续互动，从而减少过早退出、重启实例或前往其他应用的情况。

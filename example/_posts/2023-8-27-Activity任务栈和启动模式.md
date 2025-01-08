@@ -100,7 +100,7 @@ startActivity(intent);
 * FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS：这个标志会防止启动的 Activity 出现在“最近任务”（Recents）中。即使用户通过多任务按钮查看任务列表，该 Activity 也不会出现在列表中。
 
 ## Activity跳转
-生命周期流程，可以参考 [APP冷启动流程解析](./2024-9-21-APP冷启动流程解析.md){:.heading.flip-title} 
+生命周期流程，可以参考 [【APP冷启动流程解析】](./2024-9-21-APP冷启动流程解析.md){:.heading.flip-title} 
 
 AMS会判断拉起的Activity是否为当前Activity，如果不是，当前Activity会先进入到pause状态，执行onPause()，然后再去创建新的Activity，走目标Activity的onCreate()，onResume()生命周期。然后是当前Activity的onStop()生命周期。
 

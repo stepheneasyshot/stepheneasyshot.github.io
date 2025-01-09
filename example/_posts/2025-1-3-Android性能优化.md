@@ -431,12 +431,12 @@ perfetto -o /data/misc/perfetto-traces/trace_log -t 120s -b 100mb -s 150mb sched
 
 #### 优化手段
 1. 所有和界面无关的操作移到工作线程，主线程上刷新数据的逻辑可以移到协程中解决，采用非阻塞的挂起式数据流转方法。
-2. 简化View的层级结构，尽可能地减少嵌套
-3. 
-
+2. 简化View的层级结构，尽可能地减少嵌套减少View的层级。
 
 ## 内存泄漏
 ### 几种引用类型
+
+![referance_type](/assets/img/blog/blogs_jvm_referance_type.png){:loading="lazy"}
 
 * 强引用：Object a=new object(); 创建对象就是一种强引用。对于强引用的对象，就算是出现了OOM也不会对该对象进行回收。在Java中最常见的就是强引用，把一个对象赋给一个引用变量，这个引用变量就是一个强引用。当一个对象被强引用变量引用时，它处于可达状态，它是不可能被垃圾回收机制回收的，即使该对象以后永远都不会被用到JVM也不会回收。因此强引用是造成Java内存泄漏的主要原因之一。 对于一个普通的对象，如果没有其他的引用关系，只要超过了引用的作用域或者显式地将相应（强）引用赋值为null，一般认为就是可以被垃圾收集的了。
 * 软引用：SoftReference<Object> softReference=new SoftReference<>(o1);对于只有软引用的对象来说， 当系统内存充足时它不会被回收，当系统内存不足时它会被回收。软引用通常用在对内存敏感的程序中，比如高速缓存就有用到软引用，内存够用的时候就保留，不够用就回收！
@@ -467,6 +467,8 @@ public class Singleton {
 ```
 在这个单例中，保存了对 Context 的引用。如果传入的是 Activity 的上下文，当 Activity 销毁时，由于单例仍然持有其引用，导致 Activity 无法被回收，从而造成内存泄漏。
 
+解决方案就是尽量使用Application的Context。
+
 ### 二、非静态内部类引起的内存泄漏
 非静态内部类会隐式地持有外部类的引用。如果在外部类（如 Activity）的生命周期内，非静态内部类的实例一直存在，就可能导致外部类无法被回收。
 
@@ -491,6 +493,7 @@ public class MainActivity extends AppCompatActivity {
     }
 }
 ```
+
 当 MainActivity 销毁时，由于 MyClickListener 实例持有 MainActivity 的引用，导致 MainActivity 无法被回收。
 
 ### 三、Handler 引起的内存泄漏
@@ -516,6 +519,49 @@ public class MainActivity extends AppCompatActivity {
 ```
 当 MainActivity 销毁后，由于 Handler 中的延迟任务可能还未执行完毕，导致 MainActivity 无法被回收。
 
+解决方案：
+
+1. 在 Activity 销毁时，及时移除 Handler 中的所有消息。
+
+```
+@Override
+protected void onDestroy() {
+    super.onDestroy();
+    handler.removeCallbacksAndMessages(null);
+}
+```
+
+2. 将Handler改为静态内部类 + WeakReference 来避免内存泄漏。
+```
+public class MainActivity extends AppCompatActivity {
+    private static class MyHandler extends Handler {
+        private WeakReference<MainActivity> activityWeakReference;
+        public MyHandler(MainActivity activity) {
+            activityWeakReference = new WeakReference<>(activity);
+        }
+        @Override
+        public void handleMessage(Message msg) {
+            MainActivity activity = activityWeakReference.get();
+            if (activity != null) {
+                // 处理消息
+            }
+        }
+    }
+    private MyHandler handler = new MyHandler(this);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // 处理延迟任务
+            }
+        }, 5000);
+    }
+}
+```
+
 ### 四、资源未关闭引起的内存泄漏
 例如，对数据库、文件流、网络连接等资源未及时关闭，可能导致资源对象一直被持有，从而造成内存泄漏。
 
@@ -533,6 +579,19 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 如果在 Activity 销毁时没有关闭数据库连接，database 对象将一直存在，导致 MainActivity 无法被回收。
+
+解决方案：
+1. 在 Activity 销毁时，及时关闭数据库连接。
+
+```
+@Override
+protected void onDestroy() {
+    super.onDestroy();
+    if (database != null) {
+        database.close();
+    }
+}
+```
 
 ### 五、注册的监听器未注销引起的内存泄漏
 如果在 Activity 中注册了监听器，如广播接收器、系统服务的监听器等，在 Activity 销毁时没有注销这些监听器，就会导致 Activity 无法被回收。
@@ -563,6 +622,46 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 当 MainActivity 销毁时，由于没有注销广播接收器，导致 MainActivity 无法被回收。
+
+### 六、线程未停止引起的内存泄漏
+如果在 Activity 中启动了一个线程，该线程持有了 Activity 的引用，即使 Activity 已经被销毁，线程仍然在运行，就会导致 Activity 无法被回收。原理和解决方案和Handler导致的泄露基本相同。
+
+```
+public class MainActivity extends AppCompatActivity {
+    private Thread thread;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // 执行耗时操作
+            }
+        });
+        thread.start();
+    }
+}
+```
+
+### 七、集合类存储长生命周期的对象导致泄露
+集合类使用不当导致的内存泄漏，这里分两种情况来讨论：
+
+1）集合类添加对象后不移除的情况
+对于所有的集合类，如果存储了对象，如果该集合类实例的生命周期比里面存储的元素还长，那么该集合类将一直持有所存储的短生命周期对象的引用，那么就会产生内存泄漏，尤其是使用static修饰该集合类对象时，问题将更严重，我们知道static变量的生命周期和应用的生命周期是一致的，如果添加对象后不移除，那么其所存储的对象将一直无法被gc回收。解决办法就是根据实际使用情况，存储的对象使用完后将其remove掉，或者使用完集合类后清空集合，原理和操作都比较简单，这里就不举例了。
+
+2）根据hashCode的值来存储数据的集合类使用不当造成的内存泄漏
+以HashSet为例子，当一个对象被存储进HashSet集合中以后，就不能再修改该对象中参与计算hashCode的字段值了，否则，原本存储的对象将无法再找到，导致无法被单独删除，除非清空集合，这样内存泄漏就发生了。
+
+### 八、第三方库使用不当造成的内存泄漏
+使用第三方库的时候，务必要按照官方文档指定的步骤来做，否则使用不当也可能产生内存泄漏，比如：
+
+（1）EventBus，也是使用观察者模式实现的，同样注册和反注册要成对出现。
+
+（2）Rxjava中，上下文销毁时，Disposable没有调用dispose()方法。
+
+（3）Glide中，在子线程中大量使用Glide.with(applicationContext)，可能导致内存溢出
+
 
 ## 应用内存溢出 OOM
 内存溢出是指应用程序试图分配比系统可用内存更多的内存空间。在 Android 中，每个应用程序都有一个特定的内存限制，这个限制取决于设备的硬件和操作系统版本。当应用程序尝试分配的内存超过这个限制时，就会发生内存溢出错误。
@@ -602,3 +701,53 @@ public class MainActivity extends AppCompatActivity {
 
 总之，在 Android 开发中，要避免内存溢出问题，需要注意合理使用内存资源，优化代码结构和算法，及时清理不再需要的资源，并使用合适的工具进行内存分析和优化。
 
+## 内存抖动
+不再使用的内存被回收是好事，但也会产生一定的负面影响。
+
+在 Android Android 2.2及更低版本上，当发生垃圾回收时，应用的线程会停止，这会导致延迟，从而降低性能。
+
+在Android 2.3开始添加了并发垃圾回收功能，也就是有独立的GC线程来完成垃圾回收工作。
+
+但即便如此，系统执行GC的过程中，仍然会占用一定的cpu资源。频繁地分配和回收内存空间，可能会出现内存抖动现象。
+
+```
+内存抖动是指在短时间内内存空间大量地被分配和回收，内存占用率马上升高到较高水平，然后又马上回收到较低水平，然后再次上升到较高水平...这样循环往复的现象。体现在代码中，就是短时间内大量创建和销毁对象。内存抖动严重时会造成肉眼可见的卡顿，甚至造成内存溢出（内存回收不及时也会造成内存溢出），导致app崩溃。
+```
+
+那么，如何在代码层面避免内存抖动的发生呢？
+
+当调用Sytem.gc()时，程序只会显示地通知系统需要进行垃圾回收了，但系统并不一定会马上执行gc，系统可能只会在后续某个合适的时机再做gc操作。所以对于开发者来说，无法控制对象的回收，所以在做优化时可以从对象的创建上入手，这里提几点避免发生内存抖动的建议：
+
+* 尽量避免在较大次数的循环中创建对象，应该把对象创建移到循环体外。
+避免在绘制view时的onDraw方法中创建对象，实际上Android官方也是这样建议的。
+* 如果确实需要使用到大量某类对象，尽量做到复用，这一点可以考虑使用设计模式中的享元模式，建立对象池。
+
+举例：
+
+遍历一个String list，对每一个元素进行拼接，返回结果。
+
+```java
+public static String changeListToString(List<String> list) {
+        String result = "";
+        for (String str : list) {
+            result += (str + ";");
+        }
+        return result;
+    }
+```
+
+String的底层实现是数组，不能进行扩容，拼装字符串的时候会重新生成一个String对象，所以第4行代码执行一次就会生成一个新的String对象，这段代码执行完成后就会产生list.size()个对象。
+
+采用StringBuilder优化：
+
+```java
+public static String changeListToString(List<String> list) {
+        StringBuilder result = new StringBuilder();
+        for (String str : list) {
+            result.append(str).append(";");
+        }
+        return result.toString();
+    }
+```
+
+StringBuilder执行append方法时，会在原有实例基础上操作，不会生成新的对象，所以上述代码执行完成后就只会产生一个StringBuilder对象。

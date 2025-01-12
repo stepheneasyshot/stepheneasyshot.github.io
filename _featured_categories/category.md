@@ -7,7 +7,7 @@ description: >
 hide_description: true
 
 # The name of the tag, used in a post's front matter (e.g. tags: [<slug>]).
-slug: category
+slug: docs
 redirect_from:
   - /docs/
 ---

@@ -137,18 +137,23 @@ NavHost(navController = navController, graph = graph)
 使用时，更简化的写法可以直接将NavGraph作为参数传入NavHost中。
 
 ```kotlin
-val navController = rememberNavController()
-NavHost(navController = navController, startDestination = HomeData("initial data")){
-    composable<HomeData> { navBackStackEntry ->
-        val homeData = navBackStackEntry.toRoute<HomeData>()
-        HomePage(homeDate = homeData) {
-            navController.navigate(About)
+Column(modifier = Modifier.padding(paddingValues)) {
+    val navController = rememberNavController()
+    val graph = remember {
+        navController.createGraph(startDestination = HomeData("initial data")) {
+            composable<HomeData> { navBackStackEntry ->
+                val homeData = navBackStackEntry.toRoute<HomeData>()
+                HomePage(homeDate = homeData) {
+                    navController.navigate(About)
+                }
+            }
+            composable<About> {
+                AboutPage {
+                    navController.navigate(HomeData("about page to home page"))
+                }
+            }
         }
     }
-    composable<About> {
-        AboutPage {
-            navController.navigate(HomeData("about page to home page"))
-        }
-    }
+    NavHost(navController = navController, graph = graph)
 }
 ```

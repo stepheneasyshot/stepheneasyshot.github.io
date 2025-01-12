@@ -40,7 +40,7 @@ serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ```
 
-## 三大组件
+## Navigation三要素
 
 ### NavHost
 

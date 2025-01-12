@@ -3,14 +3,14 @@
 layout: list
 
 # The title of the tag's page.
-title: 博客目录
+title: 分类浏览
 
 # The name of the tag, used in a post's front matter (e.g. tags: [<slug>]).
-slug: example
+slug: category
 
 # (Optional) Write a short (~150 characters) description of this featured tag.
 description: >
-  这是我的博客目录，以时间线排好序了。
+  以领域分类浏览吧！
 
 # (Optional) You can disable grouping posts by date.
 # no_groups: true

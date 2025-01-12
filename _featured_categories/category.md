@@ -1,21 +1,23 @@
 ---
-# Featured tags need to have either the `list` or `grid` layout (PRO only).
-layout: list
-
-# The title of the tag's page.
-title: 分类浏览
-
-# The name of the tag, used in a post's front matter (e.g. tags: [<slug>]).
-slug: category
-
-# (Optional) Write a short (~150 characters) description of this featured tag.
+layout: category
+image: /assets/img/blog/hydejack-9.jpg
 description: >
-  以领域分类浏览吧！
-
-# (Optional) You can disable grouping posts by date.
-# no_groups: true
-
-# Exclude this example category from the sitemap.
-# DON'T USE THIS SETTING IN YOUR CATEGORIES!
-sitemap: false
+  A boutique Jekyll theme for hackers, nerds, and academics,
+  with a focus on personal sites that are meant to impress.
+hide_description: true
+redirect_from:
+  - /download/
 ---
+
+# Category
+
+<!--author-->
+
+## Android APP
+
+## Android Framework
+
+## Jetpack Compose
+
+## Compose Multiplatform
+

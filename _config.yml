@@ -52,7 +52,7 @@ menu:
   - title:             博客目录
     url:               /blogs/
   - title:             分类浏览
-    url:               /category/
+    url:               /docs/
   - title:             关于
     url:               /about/
 

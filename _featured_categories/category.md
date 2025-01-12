@@ -1,5 +1,5 @@
 ---
-layout: docs
+layout: list
 image: /assets/img/blog/hydejack-9.jpg
 description: >
   A boutique Jekyll theme for hackers, nerds, and academics,

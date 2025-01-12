@@ -51,7 +51,7 @@ author:
 menu:
   - title:             博客目录
     url:               /blogs/
-  - title:             经历介绍
+  - title:             分类浏览
     url:               /category/
   - title:             关于
     url:               /about/

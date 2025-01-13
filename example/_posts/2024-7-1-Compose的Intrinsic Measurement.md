@@ -74,7 +74,7 @@ Compose在所有组合项尺寸都明确的情况下，也是不需要进行特�
 
 ```kotlin
 @Composable
-fun MeasureTest() {
+fun IntrinsicTest() {
     Column(
         modifier = Modifier
             .wrapContentSize()
@@ -85,7 +85,7 @@ fun MeasureTest() {
 }
 ```
 
-![blogs_compose_max_height](/assets/img/blog/blogs_compose_max_height.png)
+![demo0](/assets/img/blog/blogs_compose_intrin_demo0_1.png){:width="300" height="700" loading="lazy"}
 
 这里和上面的View的例子是一样的，父组合项的size是wrap的，子组合项的size是对齐上一级的。
 
@@ -97,7 +97,7 @@ fun MeasureTest() {
 
 ```kotlin
 @Composable
-fun MeasureTest() {
+fun IntrinsicTest() {
     Column(
         modifier = Modifier
             .height(IntrinsicSize.Min)
@@ -110,7 +110,8 @@ fun MeasureTest() {
 
 结果：
 
-![blogs_intrin_height](/assets/img/blog/blogs_intrin_height.png)
+
+![demo0](/assets/img/blog/blogs_compose_intrin_demo0_2.png){:width="300" height="700" loading="lazy"}
 
 我将外部Column的高度参数设置为 ```IntrinsicSize.Min``` , Column 可组合项的 minIntrinsicHeight 将作为其子项的最大 minIntrinsicHeight。而Text 元素的 minIntrinsicHeight 为 文本的固有宽高。
 
@@ -211,7 +212,73 @@ fun TwoTextsPreview() {
 这时候的结果就是我们需要的了。
 
 ### 举例2 兄弟组合项对齐数据
+需求是在屏幕上显示左右两个栏目，两边的内容不一定一样多，但是背景色块需要一样高。
 
+![blogs_compose_intrinc_demo2](/assets/img/blog/blogs_compose_intrin_demo2_0.jpg)
 
-## 影响
+我们使用row来分栏，然后在每个column里填数据，不主动设置高度。
 
+```kotlin
+@Composable
+fun IntrinsicTest() {
+    val shortList = remember { shortList }
+    val longList = remember { longList }
+    Row {
+        Column(
+            modifier = Modifier
+                .weight(0.5f)
+                .background(Color.Red)
+        ) {
+            shortList.forEach { Text(text = it) }
+        }
+        Column(
+            modifier = Modifier
+                .weight(0.5f)
+                .background(Color.Blue)
+        ) {
+            longList.forEach { Text(text = it) }
+        }
+    }
+}
+```
+
+结果：
+
+![blogs_compose_intrinc_demo21](/assets/img/blog/blogs_compose_intrin_demo2_1.png){:width="300" height="700" loading="lazy"}
+
+我们发现两个Column的高度是不一致的，如果将两边的高度写死，那么在不同屏幕上的自适应会出问题。
+
+这时候我们使用 IntrinsicSize.Max 来解决这个问题。设置为max，父组合项的高度会取子项中最大的高度。然后让两个子项的高度直接fillMaxHeight。
+
+```kotlin
+@Composable
+fun IntrinsicTest() {
+    val shortList = remember { shortList }
+    val longList = remember { longList }
+    Row(modifier = Modifier.height(IntrinsicSize.Max)) {
+        Column(
+            modifier = Modifier
+                .weight(0.5f)
+                .fillMaxHeight(1f)
+                .background(Color.Red)
+        ) {
+            shortList.forEach { Text(text = it) }
+        }
+        Column(
+            modifier = Modifier
+                .weight(0.5f)
+                .fillMaxHeight(1f)
+
+                .background(Color.Blue)
+        ) {
+            longList.forEach { Text(text = it) }
+        }
+    }
+}
+```
+
+结果：
+
+![blogs_compose_intrinc_demo22](/assets/img/blog/blogs_compose_intrin_demo2_2.png){:width="300" height="700" loading="lazy"}
+
+可以看到两个column的高度是一样的了。

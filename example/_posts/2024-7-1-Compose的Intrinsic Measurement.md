@@ -113,14 +113,15 @@ fun IntrinsicTest() {
 
 ![demo0](/assets/img/blog/blogs_compose_intrin_demo0_2.png){:width="300" height="700" loading="lazy"}
 
-我将外部Column的高度参数设置为 ```IntrinsicSize.Min``` , Column 可组合项的 minIntrinsicHeight 将作为其子项的最大 minIntrinsicHeight。而Text 元素的 minIntrinsicHeight 为 文本的固有宽高。
+我将外部Column的高度参数设置为 ```IntrinsicSize.Min``` 就可以达到要求。
+
+height(IntrinsicSize.Min) 可将其子项的高度强行调整为最小固有高度。由于该修饰符具有递归性，因此它将查询 Column 及其子项 minIntrinsicHeight。 而Text 元素的 minIntrinsicHeight 为 文本的固有宽高。
 
 因此 Column 元素的 height 约束条件将和Text的最小占用的宽高一致。而Text设置fillMaxSize之后获取的高度，就会变成Text占用的最小高度了。
 
 如果将 Min 改成 Max 呢？
 
 那效果也是一致的，如果您查询具有无限 height 的 Text 的 minIntrinsicHeight，它将返回 Text 的 height，就好像该文本是在单行中绘制的一样。
-
 
 ## 实际使用场景
 ### 举例1 分割线自适应高度

@@ -15,7 +15,7 @@ sitemap: false
 # 四大组件之Activity
 
 ## 概念
-Activity是Android四大组件之一，主要用于显示用户界面，管理维护界面内的一系列控件和数据，并响应用户的屏幕操作事件。
+Activity是最常用的四大组件之一，主要用于显示用户界面，管理维护界面内的一系列控件和数据，并响应用户的屏幕操作事件。
 
 ## 创建
 新建项目时可以自动选择Activity模板。Android Studio会自动帮我们生成Activity的代码，我们只需要在Activity的子类中实现处理逻辑即可。

@@ -134,26 +134,24 @@ val graph = remember {
 NavHost(navController = navController, graph = graph)
 ```
 
-使用时，更简化的写法可以直接将NavGraph作为参数传入NavHost中。
+使用时，更简化的写法可以像下面这样。
+
+直接将NavGraph的第二个参数放在末尾，NavHost后面写成lambda的形式。
 
 ```kotlin
-Column(modifier = Modifier.padding(paddingValues)) {
-    val navController = rememberNavController()
-    val graph = remember {
-        navController.createGraph(startDestination = HomeData("initial data")) {
-            composable<HomeData> { navBackStackEntry ->
-                val homeData = navBackStackEntry.toRoute<HomeData>()
-                HomePage(homeDate = homeData) {
-                    navController.navigate(About)
-                }
-            }
-            composable<About> {
-                AboutPage {
-                    navController.navigate(HomeData("about page to home page"))
-                }
-            }
-        }
+NavHost(navController = navController, startDestination = ScreenTitle.Home.name) {
+    composable(route = ScreenTitle.Home.name) {
+        HomeScreen(
+            weatherScreenState,
+            onNavToAbout = { navController.navigate(ScreenTitle.About.name) },
+            onNavToAuthor = { navController.navigate(ScreenTitle.Author.name) })
     }
-    NavHost(navController = navController, graph = graph)
+    composable(route = ScreenTitle.About.name) {
+        AboutScreen(onBack = { navController.popBackStack() })
+    }
+    composable(route = ScreenTitle.Author.name) {
+        AuthorScreen(onBack = { navController.popBackStack() })
+    }
 }
+
 ```

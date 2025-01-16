@@ -96,6 +96,17 @@ https://docs.unity.cn/cn/tuanjiemanual/Manual/hmi-android.html
 而且，两方通信链路和Unity的集成方式还有关，像下面要谈到的第一种进程隔离方案，就是通过集成全量的Unity依赖包，利用aar内部JNI接口来通信的，而第二种Client/Server架构就是通过Android的AIDL接口来和单独的Unity服务端进程通信的。
 
 #### 进程隔离方案-UAAL(Render As Library)
+
+基于UAAL（Render As Library），支持把渲染服务嵌入原生安卓APP。
+
+* Tuanjie 引擎可作为 Render Service，嵌入原生 Android APP，为原生 Android APP 提供 3D 内容
+* 支持多个 view，支持非全屏渲染，每个 APP 仅需集成 View 组件，脱离 Activity
+* 支持加载多个 Tuanjie 实例
+
+Tuanjie Editor 打包出的 Android Studio 工程或 APK 包括 Client 和 Service 两部分。
+
+UAAL 方案的优势在于，Unity 渲染服务和原生 APP 之间的通信链路是独立的，原生 APP 可以通过 JNI 接口和 Unity 渲染服务进行通信，而 Unity 渲染服务也可以通过 JNI 接口和原生 APP 进行通信。
+
 这种方式集成的话，Unity会将渲染引擎，资源文件，和Android上层的通信代码都打包导出到一个aar中，其体积随动效的复杂程度而变化，同时会使集成方的apk包体积增加。而且项目里有多少方要使用Unity动效，就需要多少份的渲染引擎。这个方案由客户端来负责Unity控件的创建销毁，显示隐藏，一般适用一对一，通信链路简单的，即项目中可能只有一个模块需要使用Unity动效的情况。在多模块需要使用Unity的情况下，进程隔离的方案对性能的占用也比较高。
 
 上层使用到的控件——UnityPlayer，它是一个Unity自定义的FrameLayout，里面有他们自己实现的一系列添加view，显示，和渲染逻辑。资源文件均存在于Unity打的依赖包中，对外不开放。
@@ -189,7 +200,16 @@ Unity方给的aar里的基类Activity适用与绝大多数的普通应用，但�
     }
 ```
 注意，这样添加的UnityPlayer有一个无法解决的黑屏问题，因为Unity的渲染加载至少都需要4，5秒，期间我们只能在更上层的View里设置静态背景图覆盖上去，等Unity加载完毕，发送ready的回调之后，我们移除掉这个占位的静态图，展示Unity动效的界面。这也是进程隔离的方案的一个很棘手的问题。我的解决方案是在开机的时候往屏幕外添加一个View专门来初始化加载Unity，加载完毕后，再将UnityPlayer给从里面remove掉，重新添加到实际的要展示的窗口中去，这样打开界面的时候可以略去加载的耗时，稍微减少页面僵直的时间。
+
 #### 单进程-URAS(Render As Service)
+
+一个渲染服务 Service 支持多个 Client APP 运行，且每个 Client APP 相互独立、互不干扰、可自更新。
+
+* 仅需一个 Service，多个工程共用同一个 Service，每个工程均正常运行且互不干扰
+* 一个新 Client 集成到已运行 Service 中，新 Client 可正常运行和渲染，已运行的 Client 和 Service 均不受干扰。
+* 已运行的 Service 和 Client 中，关闭一个 Client，不影响其他 Client 和 Service 的正常运行
+* 每个 Client 可通过 OTA 单独更新，更新后可正常运行，且不影响其他 Client 和 Service
+
 Unity Rendering as Service（简称URAS） 的渲染方案是团结引擎特有的，无需在多个安卓应用中集成多个Unity 3D player，而是后台运行，前端应用可直接调用，节省系统资源，更适合多应用动效一镜到底的设计。
 
 #### 相较进程隔离方案的优势

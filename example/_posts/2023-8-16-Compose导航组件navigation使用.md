@@ -155,3 +155,22 @@ NavHost(navController = navController, startDestination = ScreenTitle.Home.name)
 }
 
 ```
+
+为了统一管理提高可扩展性，我们可以使用一个密封类来管理所有的页面的导航路由数据。
+
+```kotlin
+@Serializable
+sealed class Screen(val route: String) {
+    @Serializable
+    object MainPage : Screen("mainPage")
+
+    @Serializable
+    object ArticlePage : Screen("articlePage")
+
+    @Serializable
+    object PicturePage : Screen("picturePage")
+
+    @Serializable
+    object ElsePage : Screen("elsePage")
+}
+```

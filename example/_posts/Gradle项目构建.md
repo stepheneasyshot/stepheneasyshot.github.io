@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了Android的开机启动流程
+  本文介绍了Gradle项目构建的基础知识与常见报错解决方法
 image: 
   path: /assets/img/blog/blogs_gradle_cover.png
   srcset: 

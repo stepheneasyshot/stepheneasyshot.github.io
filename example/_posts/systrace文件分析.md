@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了Sys Trace文件的分析
+  本文介绍了systrace文件的分析
 image: 
   path: /assets/img/blog/blogs_trace_cover.png
   srcset: 

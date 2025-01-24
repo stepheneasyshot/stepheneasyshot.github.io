@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_bootanimation.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# [ AOSP ] 没有UI设计师如何自制Android开机动画
+# 【AOSP】没有UI设计师如何自制Android开机动画
 ## 背景
 学习C++之余，想把原生AOSP的开机动画给更新替换下，换换口味。
 

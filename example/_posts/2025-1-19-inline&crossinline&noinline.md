@@ -152,4 +152,87 @@ public fun maxOf(a: UInt, b: UInt): UInt {
 
 可以直接通过方便的顶层函数的方式，来使用工具类，不需要创建实例或者带外部类名。
 
+## noinline
+inline 是内联，而 noinline 就是不内联。不过它不是作用于函数的，而是作用于函数的参数：对于一个标记了 inline 的内联函数，你可以对它的任何一个或多个函数类型的参数添加 noinline 关键字。添加了之后，这个参数就不会参与内联。
+
+函数类型的参数，它本质上是个对象。我们可以把这个对象当做函数来调用，这也是最常见的用法。但同时我们也可以把它当做对象来用。比如把它当做返回值：
+
+```kotlin
+inline fun testInline(lambdaParams:()->Unit) {
+    lambdaParams()
+    return lambdaParams
+}
+```
+
+但当我们把函数进行内联的时候，它内部的这些参数就不再是对象了，因为他们会被编译器拿到调用处去展开。
+
+当一个函数被内联之后，它内部的那些函数类型的参数就不再是对象了，因为它们的壳被脱掉了。换句话说，对于编译之后的字节码来说，这个对象根本就不存在。一个不存在的对象，你怎么使用？
+
+所以当你要把一个这样的参数当做对象使用的时候，Android Studio 会报错，告诉你这没法编译
+
+noinline 就是用来局部地、指向性地关掉函数的内联优化的。既然是优化，为什么要关掉？因为这种优化会导致函数中的函数类型的参数无法被当做对象使用，也就是说，这种优化会对 Kotlin 的功能做出一定程度的收窄。而当你需要这个功能的时候，就要手动关闭优化了。这也是 inline 默认是关闭、需要手动开启的另一个原因：它会收窄 Kotlin 的功能。
+
 ## crossinline
+看这样一个情景：
+
+一个内联函数，它的参数是一个函数类型的参数。
+
+```kotlin
+inline fun lambdaReturnTest(insertAction: () -> Unit) {
+    insertAction()
+}
+```
+
+调用处加一个return：
+
+```kotlin
+override fun onCreate() {
+    super.onCreate()
+
+    Log.i("sdvgsrhbTAG", "before erftgyujhf")
+    lambdaReturnTest {
+        println("Hello World")
+        return
+    }
+    Log.i("sdvgsrhbTAG", "after erftgyujhf")
+}
+```
+
+这时候结束的不是这个lambdaReturnTest方法，而是onCreate方法。因为lambdaReturnTest方法被内联了，会直接铺平展开到调用处，连带里面的return。
+
+这样的话，我们每次在lambda里面使用return还需要确认这个函数是否是内联函数，才可以确认这个return结束的是哪一个函数。为此Kotlin规定 **不允许在lambda参数中使用return，除非这个使用lambda参数的函数是内联函数**。
+
+
+那这样的话规则就简单了：
+* Lambda 里的 return，结束的不是直接的外层函数，而是外层再外层的函数；
+* 但只有内联函数的 Lambda 参数可以使用 return。
+
+> 目前的Kotlin版本其实也可以在return后面使用\@来指明返回的哪一级的函数。
+
+### 双层嵌套的lambda场景
+
+```kotlin
+inline fun lambdaReturnTest(insertAction: () -> Unit) {
+    doubleLambda { insertAction() }
+}
+
+fun doubleLambda(insertAction: () -> Unit) {
+    insertAction()
+}
+```
+
+doubleLambda方法是一个普通函数，非内联函数，它的参数是一个函数类型的参数。
+
+如果像这样带两层lambda调用，那么其中使用return就又会无法判断结束的到底是哪一层函数。 **这里Kotlin是直接禁止了这种写法。** 
+
+如果确实要有这种间接调用需求，那么可以使用crossinline来解决。当你给一个需要被间接调用的参数加上 crossinline，就对它进行了局部加强内联，相当于insertAction还是会被展开铺平到调用处，解除了这个限制，从而就可以对它进行双层间接调用了。
+
+但是又会有return结束层级不确定性，所以Kotlin规定了使用了crossinline的函数，不能在lambda参数中使用return。
+
+只能二选一了。
+
+## 总结
+结论就是：
+* inline 可以让你用内联——也就是函数内容直插到调用处——的方式来优化代码结构，从而减少函数类型的对象的创建；
+* noinline 是局部关掉这个优化，来摆脱 inline 带来的「不能把函数类型的参数当对象使用」的限制；
+* crossinline 是局部加强这个优化，让内联函数里的函数类型的参数可以被当做对象使用。

@@ -13,3 +13,6 @@ excerpt_separator: <!--more-->
 sitemap: false
 ---
 # JVM泛型
+
+## Kotlin中的泛型
+打点：https://rengwuxian.com/kotlin-generics/

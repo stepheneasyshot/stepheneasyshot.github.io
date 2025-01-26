@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了JVM的并发原理
+  本文介绍了JVM并发与Kotlin协程原理
 image: 
   path: /assets/img/blog/blogs_multi_threading_cover.jpeg
   srcset: 

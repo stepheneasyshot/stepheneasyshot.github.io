@@ -271,7 +271,11 @@ docker pull ghcr.io/open-webui/open-webui:main
 docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
 ```
 
-启动成功后，打开浏览器，在地址栏输入 ```http://localhost:3000/``` 并打开，进行聊天测试。初次进入需要设置 **管理员账户** ，可以对模型的访问进行一系列的设置。
+启动成功后，也可以通过Docker Desktop来进行管理：
+
+![blogs_ollama_deepseek_docker](/assets/img/blog/blogs_ollama_deepseek_docker.png)
+
+打开浏览器，转到 ```http://localhost:3000/``` ，进行聊天测试。初次进入需要设置 **管理员账户** ，在后台就可以对模型的访问进行一系列的设置。
 
 ![blogs_deepseek_openweb_ui](/assets/img/blog/blogs_deepseek_openweb_ui.png)
 
@@ -280,19 +284,39 @@ docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-
 
 > cpolar官网地址: https://www.cpolar.com
 
-注册账号，登录后，选择免费套餐，下载安装cpolar。
+注册账号，登录后，选择免费套餐，下载 **cpolar** 安装包，下载完毕打开，一直点下一步即可。
 
-安装完毕，打开本地 ```9200``` 端口：
+安装完毕后，浏览器打开本地localhost的 ```9200``` 端口：
 
 ```
 http://localhost:9200
 ```
 
-使用自己刚刚注册的账号登录之后，在cpolar左侧导航栏中，点击 ```隧道管理``` ，然后点击 ```添加隧道``` ，选择 ```HTTP``` 协议，本地地址设置为3000
+使用自己刚刚注册的账号登录之后，在cpolar左侧导航栏中，点击 ```隧道管理``` ，然后点击 ```添加隧道``` ，选择 ```HTTP``` 协议，本地地址设置为 **OpenWebUI** 的 **3000** 端口
 
 ![blogs_cpolar_add_tunnel](/assets/img/blog/blogs_cpolar_add_tunnel.png)
 
-然后点击 ```创建``` ，等待cpolar分配一个域名，然后点击 ```状态``` ，里面有一个 ```在线隧道列表``` 将域名复制到浏览器中，打开即可。
+配置完成之后，点击 ```创建``` ，等待cpolar分配一个域名。
+
+然后点击 ```状态``` ，里面有一个 ```在线隧道列表``` 将显示的域名复制到浏览器中，打开即可。
+
+需要注意的是，刚才创建的是随机地址，24小时会发生变化。另外它的网址是由随机字符生成，不容易记忆。如果想把域名变成固定的二级子域名，并且不想每次都重新创建隧道来访问Open WebUI，我们可以选择创建一个固定的公网地址来解决这个问题。想要创建保留域名，需要开通Cpolar的会员，这个后面再看看。
 
 ### Open WebUI的用户配置
-首次打开后，没有注册的地方，需要使用oi的管理员账户开启允许注册，并将对应模型的可见性设置为public公开，即可使用。
+使用外部的公共链接，首次打开后，发现没有注册账号的地方，不想只能通过管理员账号来使用，
+
+探索之后发现，可以使用oi的管理员账户登录，在设置里面开启允许注册：
+
+![](/assets/img/blog/blogs_ollama_deepseek_io_manager2.png)
+
+或者在管理员后台，也可以像下面这样点加号手动创建几个新账号：
+
+![](/assets/img/blog/blogs_ollama_deepseek_io_manager.png)
+
+最后设置里将对应模型的可见性设置为public公开，非管理员用户即可使用：
+
+![](/assets/img/blog/blogs_ollama_deepseek_io_manager3.png)
+
+使用普通账号登录之后就像下面这样：
+
+![](/assets/img/blog/blogs_ollama_deepseek_user.png)

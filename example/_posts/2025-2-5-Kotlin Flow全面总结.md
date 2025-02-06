@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了车载Android里的常用的View控件交互总结
+  本文介绍了Kotlin异步工具Flow框架的使用总结
 image: 
   path: /assets/img/blog/blogs_flow_cover.png
   srcset: 

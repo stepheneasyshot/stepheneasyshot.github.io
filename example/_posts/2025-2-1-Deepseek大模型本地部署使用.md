@@ -3,14 +3,246 @@ layout: post
 description: > 
   本文记录了使用Ollama拉取deepseek，并使用docker运行包含网页的本地容器
 image: 
-  path: /assets/img/blog/blogs_ai_cover.png
+  path: /assets/img/blog/blogs_deepseek_cover.png
   srcset: 
-    1920w: /assets/img/blog/blogs_ai_cover.png
-    960w:  /assets/img/blog/blogs_ai_cover.png
-    480w:  /assets/img/blog/blogs_ai_cover.png
-accent_image: /assets/img/blog/blogs_ai_cover.png
+    1920w: /assets/img/blog/blogs_deepseek_cover.png
+    960w:  /assets/img/blog/blogs_deepseek_cover.png
+    480w:  /assets/img/blog/blogs_deepseek_cover.png
+accent_image: /assets/img/blog/blogs_deepseek_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
 # Deepseek大模型本地部署使用
 ## Ollama简介
+Ollama 是一个开源项目，是在本地机器上运行 LLM 的强大而友好的平台。它在 LLM 技术的复杂性与人们对可访问、可定制的人工智能体验的渴望之间架起了一座桥梁。
+
+Ollama 的核心功能是简化下载、安装和与各种 LLM 交互的过程，使用户能够探索这些 LLM 的功能，而无需大量的专业技术知识或依赖基于云的平台。
+
+* 本地执行： Ollama 支持大型语言模型的本地运行，为用户提供快速高效的人工智能处理能力。
+* 模型定制： 有了 Ollama，您可以自由定制和制作自己的模型，使其成为专业任务的理想选择。
+* 用户友好的界面： 该工具的设计确保了易用性，可实现快速、无障碍的设置。
+跨平台兼容性： 支持 macOS、Windows 和 Linux。
+
+借助Ollama在本地部署当今主流的开源大模型，包含llama3、gemma、qwen等（其支持的开源大模型可在library (ollama.com)中查看）
+
+## 安装Ollama
+在Windows和MAC平台上可以直接下载安装包进行安装，在Linux平台上可使用以下命令安装：
+
+```shell
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+完毕之后可以输入验证：
+
+```shell
+ollama -h
+```
+
+我是直接在Windows平台上安装的，安装过程比较简单，下载安装包，打开之后直接下一步即可。默认安装在C盘，且自动配置了环境变量，可以直接在cmd里使用 ```ollama``` 命令。Ollama默认安装路径为
+
+```
+C:\Users%username%\AppData\Local\Programs\Ollama
+```
+
+如果需要转移到其他盘，安装完毕之后，也可以直接把整个文件夹剪切到其他盘。然后找到ollama自己添加的 PATH 环境变量，将其改为新的地址。
+
+#### 大模型存储地址修改
+Ollama 默认下载的大模型存储位置也在C盘，我们需要让其下载到其他地址，也可以自己新建 ```OLLAMA_MODELS``` 环境变量，然后将其指向其他地址。
+
+拉取的时候就会自动存储在这个地址下。
+
+## Ollama命令行使用
+查看本地大模型列表：
+
+```
+C:\Users\stephen>ollama list
+NAME                     ID              SIZE      MODIFIED
+deepseek-coder-v2:16b    63fb193b3a9b    8.9 GB    32 hours ago
+deepseek-r1:14b          ea35dfe18182    9.0 GB    2 days ago
+```
+
+移除本地大模型：
+
+```
+ollama rm deepseek-r1:14b
+```
+
+创建自定义模型：
+
+```
+ollama create my-model -f my-model.modelfile
+```
+
+启动模型：
+
+```
+ollama run my-model
+```
+
+停止模型：
+
+```
+ollama stop my-model
+```
+
+更新模型
+
+```
+C:\Users\stephen>ollama pull deepseek-r1:14b
+pulling manifest
+pulling 6e9f90f02bb3... 100% ▕███████████████▏ 9.0 GB
+pulling 369ca498f347... 100% ▕███████████████▏  387 B
+pulling 6e4c38e1172f... 100% ▕███████████████▏ 1.1 KB
+pulling f4d24e9138dd... 100% ▕███████████████▏  148 B
+pulling 3c24b0c80794... 100% ▕███████████████▏  488 B
+verifying sha256 digest
+writing manifest
+success
+```
+
+显示模型信息：
+
+```
+C:\Users\stephen>ollama show deepseek-coder-v2:16b
+  Model
+    architecture        deepseek2
+    parameters          15.7B
+    context length      163840
+    embedding length    2048
+    quantization        Q4_0
+
+  Parameters
+    stop    "User:"
+    stop    "Assistant:"
+
+  License
+    DEEPSEEK LICENSE AGREEMENT
+    Version 1.0, 23 October 2023
+```
+
+## 拉取deepseek-r1
+拉取模型的过程极致的简单，只需要执行以下命令即可：
+
+```
+ollama run deepseek-r1:14b
+```
+
+末尾是指定的训练参数大小， ```deepseek``` 提供了7b,14b，32b等等选项。
+
+14b大小为9G，我体验的话下载应该是无限速，中途下载速度如果变慢了，可以```Ctrl C```掐断后，立即重新开始，就会重置下载速度，也不会断传。
+
+拉取完整性检验完毕之后，会直接打开deepseek的对话命令行，可以直接跟其进行交互。使用```Ctrl D```可以退出对话。
+
+```
+C:\Users\stephen>ollama run deepseek-r1:14b
+>>> 介绍一下你自己
+<think>
+
+</think>
+
+您好！我是由中国的深度求索（DeepSeek）公司开发的智能助手DeepSeek-R1。如您有任何任何问题，我会尽我所能为您提供帮助。
+```
+
+测试一个简单的Python编程需求：
+
+```
+>>> 使用python怎么执行本地命令行
+<think>
+嗯，用户问我“使用python怎么执行本地命令行”。这看起来是一个关于Python编程的问题，具体涉及到如何在Python中执行本地的
+命令行指令。
+
+首先，我需要理解用户的需求。他可能想要在自己的Python脚本中运行一些系统命令，比如ls、cd或者其他任何可以在终端中运行的
+命令。这可能是因为他在进行自动化任务，或者想让脚本执行一些依赖于系统命令的操作。
+
+接下来，我要考虑有哪些Python库可以用来执行命令行指令。我知道有几个常用的模块，比如os和subprocess。这两个模块都可以用
+来调用外部程序，并且能够获取它们的输出或错误信息。
+
+对于os模块来说，它有一个system()函数，可以直接运行命令，但返回的结果比较有限，主要是用于执行命令本身。而subprocess模
+块则更为强大，因为它不仅可以运行命令，还可以捕捉标准输出和错误输出，处理进程的终止等等。
+
+我需要决定推荐哪个库更好。考虑到功能性和灵活性，subprocess模块可能更适合大多数情况，尤其是当用户需要捕获命令的输出或
+者处理更复杂的任务时。然而，os.system()在简单的场景下使用起来更为简单直观。
+
+另外，我还需要考虑用户可能的使用场景。如果他只是想运行一个简单的命令，并不需要获取输出或错误信息，那么os.system()可
+能足够了。但如果他需要更多的控制和反馈，比如处理返回值或者错误情况，subprocess会是更好的选择。
+
+我应该提供两种方法的例子，让用户可以根据自己的需求来选择。这样既展示了基本的使用方法，也提供了更高级的功能实现。
+
+此外，我还应该强调最佳实践的重要性。例如，在执行外部命令时，使用shell=True可能会带来一定的安全风险，比如命令注射攻击
+。因此，如果可能的话，建议用户通过传递参数列表的方式调用命令，而不是直接拼接字符串。这样可以减少潜在的安全漏洞。
+
+最后，我要确保解释清晰易懂，避免过于技术化的术语，让用户能够轻松理解并应用这些方法到自己的项目中。
+</think>
+
+在 Python 中，如果你想执行本地的命令行指令（例如 ls, cd, echo 等），可以通过以下几种方式实现。以下是常用的方法
+：
+
+1. 使用 os.system()
+os 模块提供了一个简单的方法来执行系统命令。
+
+示例代码：
+import os
+
+# 执行 "dir" 命令（Windows）或 "ls" 命令（Linux/macOS）
+os.system("dir")  # Windows
+# 或者
+os.system("ls")   # Linux/macOS
+输出：
+这会直接在终端中执行命令，并输出结果到标准输出。
+
+2. 使用 subprocess 模块
+subprocess 是更强大和灵活的模块，推荐用于复杂的任务。它允许你捕捉输出、处理错误以及管理进程。
+
+示例代码（运行命令并获取输出）：
+import subprocess
+
+# 执行 "ls" 命令，并将结果存储在变量中
+result = subprocess.run("ls", capture_output=True, text=True)
+print(result.stdout)  # 输出命令的 stdout
+更复杂的用法：
+import subprocess
+
+# 使用 shell=True 可以执行更复杂的命令（不推荐用于外部输入，有安全风险）
+result = subprocess.run(
+    "echo Hello World",
+    shell=True,
+    capture_output=True,
+    text=True
+)
+print(result.stdout)  # 输出 "Hello World"
+3. 使用 os.popen()
+os.popen() 可以打开一个管道，方便地读取命令的输出。
+
+示例代码：
+import os
+
+# 执行命令并获取输出
+output = os.popen("ls").read()
+print(output)
+注意事项
+安全性：如果使用 subprocess.run() 的 shell=True，可能会带来安全风险（例如命令注入攻击）。因此，在处理用户输入时，尽量避免这种方式。
+平台兼容性：某些命令可能只在特定平台上可用。例如，ls 是 Unix 系统的命令，而 dir 是 Windows 的命令。
+总结
+如果需要简单的命令执行，可以使用 os.system()。
+如果需要更灵活和强大的功能（比如捕获输出、处理错误），推荐使用 subprocess 模块。
+希望这些方法能帮到你！
+```
+
+## 安装Open WebUI
+使用 Docker 来部署运行 Open WebUI 是一种简单而有效的方法，可以用一个交互友好的界面来使用Deepseek。
+
+```
+docker pull ghcr.io/open-webui/open-webui:main
+```
+
+下载完毕之后，在运行该项目前请确保部署在 Ollama 中的语言模型处于运行状态。
+
+然后在Docker中的Terminal终端中输入并执行以下命令：
+
+```
+docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
+```
+
+启动成功后，打开浏览器，在地址栏输入 ```http://localhost:3000/``` 并打开，进行聊天测试。
+
+![blogs_deepseek_openweb_ui](/assets/img/blog/blogs_deepseek_openweb_ui.png)

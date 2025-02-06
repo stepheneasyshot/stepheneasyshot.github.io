@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_deepseek_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Deepseek大模型本地部署使用
+# Deepseek本地部署加内网穿透使用
 ## Ollama简介
 Ollama 是一个开源项目，是在本地机器上运行 LLM 的强大而友好的平台。它在 LLM 技术的复杂性与人们对可访问、可定制的人工智能体验的渴望之间架起了一座桥梁。
 
@@ -229,6 +229,34 @@ print(output)
 ```
 
 ## 安装Open WebUI
+### 手动安装wsl
+我的电脑是win10企业版，没有微软商店，也不带wsl子系统，需要手动安装。可以直接参考微软的官方文档。
+
+首先启用两个功能，使用 **管理员权限** 打开power shell。
+
+1. 启用适用于 Linux 的 Windows 子系统:
+
+```
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+```
+
+2. 启用虚拟机平台:
+
+```
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+```
+
+然后重启电脑。
+
+[下载 Linux 内核更新包](https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi)
+
+安装完成后，将wsl2设为默认版本：
+
+```
+wsl --set-default-version 2
+```
+
+### 安装Docker
 使用 Docker 来部署运行 Open WebUI 是一种简单而有效的方法，可以用一个交互友好的界面来使用Deepseek。
 
 ```
@@ -243,6 +271,28 @@ docker pull ghcr.io/open-webui/open-webui:main
 docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main
 ```
 
-启动成功后，打开浏览器，在地址栏输入 ```http://localhost:3000/``` 并打开，进行聊天测试。
+启动成功后，打开浏览器，在地址栏输入 ```http://localhost:3000/``` 并打开，进行聊天测试。初次进入需要设置 **管理员账户** ，可以对模型的访问进行一系列的设置。
 
 ![blogs_deepseek_openweb_ui](/assets/img/blog/blogs_deepseek_openweb_ui.png)
+
+## 内网穿透出去
+如果想在公司内部小范围使用，或者不在电脑边，想使用手机访问deepseek，可以使用内网穿透工具，这里推荐使用 ```cpolar``` 。
+
+> cpolar官网地址: https://www.cpolar.com
+
+注册账号，登录后，选择免费套餐，下载安装cpolar。
+
+安装完毕，打开本地 ```9200``` 端口：
+
+```
+http://localhost:9200
+```
+
+使用自己刚刚注册的账号登录之后，在cpolar左侧导航栏中，点击 ```隧道管理``` ，然后点击 ```添加隧道``` ，选择 ```HTTP``` 协议，本地地址设置为3000
+
+![blogs_cpolar_add_tunnel](/assets/img/blog/blogs_cpolar_add_tunnel.png)
+
+然后点击 ```创建``` ，等待cpolar分配一个域名，然后点击 ```状态``` ，里面有一个 ```在线隧道列表``` 将域名复制到浏览器中，打开即可。
+
+### Open WebUI的用户配置
+首次打开后，没有注册的地方，需要使用oi的管理员账户开启允许注册，并将对应模型的可见性设置为public公开，即可使用。

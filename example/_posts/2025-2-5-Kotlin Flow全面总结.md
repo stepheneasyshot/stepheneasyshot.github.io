@@ -458,7 +458,7 @@ zip和flatMap函数有点类似，zip函数也是作用在两个flow上的。
 而flatMap是一个flow中的数据流向另外一个flow，是串行的关系。
 
 #### 元素按照少的那个flow来决定
-zip函数还有一个规则，就是 **只要其中一个flow中的数据全部处理结束就会终止运行，剩余未处理的数据将不会得到处理。**
+zip函数还有一个规则，就是 **只要其中一个flow中的数据对应的数量，全部处理结束就会终止运行，剩余未处理的数据将不会得到处理。**
 
 ```kotlin
 @OptIn(ExperimentalCoroutinesApi::class)

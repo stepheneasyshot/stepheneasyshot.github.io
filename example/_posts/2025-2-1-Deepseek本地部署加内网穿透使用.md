@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文记录了使用Ollama拉取deepseek，并使用docker运行包含网页的本地容器
+  本文记录了使用Ollama拉取deepseek，使用docker运行包含网页的本地容器进行交互，并使用内网穿透工具进行公网的访问，最后验证了使用Python调用deepseek能力的可行性。
 image: 
   path: /assets/img/blog/blogs_deepseek_cover.png
   srcset: 
@@ -320,3 +320,41 @@ http://localhost:9200
 配置完成测试，使用普通账号登录之后，可以正常使用模型了，就像下面这样：
 
 ![](/assets/img/blog/blogs_ollama_deepseek_user.png)
+
+## 使用Python调用Deepseek的能力
+对于程序开发来说，如果只是在用户层面使用UI交互，那局限性太大了，能不能使用AI的能力，来优化一些程序运行结果呢？
+
+最近做了一个翻译的小项目，将本地的中文的 ```strings.xml``` 翻译成英文的，输出到项目中集成，完成英文界面的显示需要。
+
+目前是用本地词条数据库加上百度，网易，阿里的翻译api来实现的，但是有一个问题，就是机器翻译的结果不是很准确，所以想能不能使用 ```Deepseek``` 来优化一下。
+
+ollama有官方的pythona库了，可以使用 chat 接口调用到本地部署的模型的能力。配置好model名称，直接输入 message 即可。
+
+使用样例：
+
+```python
+import re
+
+import ollama
+
+def translate_test():
+    res = ollama.chat(model='deepseek-r1:14b', stream=False,
+                      messages=[{'role': 'user',
+                                 'content': '假如你是一个汽车领域的翻译专家，帮我翻译下面的几个词条：驾驶模式，智能驾驶，座椅加热，语音助手'}])
+    match = re.search(r"content='(.*?)'", str(res), re.DOTALL)
+    if match:
+        content = match.group(1)
+        print(content)
+        return content
+    else:
+        return  "出错"
+
+translate_test()
+```
+
+结果打印：
+
+> think 嗯，用户让我帮忙翻译四个汽车相关的术语：驾驶模式、智能驾驶、座椅加热和语音助手。首先，我得确定这些术语在汽车领域里的常用英文翻译。\n\n“驾驶模式”通常指的是车辆的不同驾驶设置，比如经济模式、运动模式等，所以直接翻译应该是“Driving Mode”。听起来挺准确的，没什么问题。\n\n接下来是“智能驾驶”，这个可能有点歧义。智能驾驶可以指自动驾驶技术，也就是Autonomous Driving或者Self-Driving Car。不过有时候也叫Intelligent Driving，但更常用的是前两个词。考虑到用户可能是想传达自动驾驶的意思，我觉得用Autonomous Driving更合适。\n\n然后是“座椅加热”。这个翻译应该不难，Heated Seats很常见，很多汽车都有这个配置，所以直接使用即可。\n\n最后是“语音助手”，这在车里通常集成到系统中，比如Siri或者 Alexa。常用的是Voice Assistant，听起来没问题。\n\n再想想用户的需求，他们可能是在准备技术文档、产品说明书或者是车联网相关的材料。翻译准确很重要，尤其是在技术领域，术语的准确性能避免误解。所以我要确保每个词都是行业内的标准译法，这样用户在使用时不会有问题。\n\n另外，考虑到这些术语可能会用于不同地区或不同的应用环境，保持简洁和专业是关键。比如“智能驾驶”如果翻译成Intelligent Driving可能不够常用，Autonomous Driving更符合国际标准，尤其是在自动驾驶技术领域更为普遍接受。\n\n总结一下，每个词条的翻译都应该是准确且专业的，确保在汽车领域的上下文中适用。这样用户无论是用于内部文档还是对外宣传，都能传达正确的信息。\n  think
+\n\n当然！以下是这些术语的专业翻译：\n\n1. **驾驶模式** - Driving Mode  \n2. **智能驾驶** - Autonomous Driving (或 Self-Driving)  \n3. **座椅加热** - Heated Seats  \n4. **语音助手** - Voice Assistant
+
+翻译质量上比在线的机器翻译要好上不少，但是还需要将 AI 的回复进行二次处理，才能得到最终的结果。输出处理后的格式一旦对不上，程序的运行流程就会出错。目前仅仅是验证了一下可行性。

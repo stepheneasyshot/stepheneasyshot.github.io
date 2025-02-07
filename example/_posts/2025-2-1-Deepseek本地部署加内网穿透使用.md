@@ -328,33 +328,122 @@ http://localhost:9200
 
 目前是用本地词条数据库加上百度，网易，阿里的翻译api来实现的，但是有一个问题，就是机器翻译的结果不是很准确，所以想能不能使用 ```Deepseek``` 来优化一下。
 
-ollama有官方的pythona库了，可以使用 chat 接口调用到本地部署的模型的能力。配置好model名称，直接输入 message 即可。
+github发现 ```ollama``` 有官方的 ```Python``` 库了.
 
-使用样例：
+```
+https://github.com/ollama/ollama-python
+```
+
+导入之后，可以直接使用 ```chat``` 接口调用到本地部署的模型的能力。配置好model名称，再输入 ```message``` 即可。
+
+### 官方样例
 
 ```python
-import re
+from ollama import chat
+from ollama import ChatResponse
 
+response: ChatResponse = chat(model='llama3.2', messages=[
+  {
+    'role': 'user',
+    'content': 'Why is the sky blue?',
+  },
+])
+print(response['message']['content'])
+# or access fields directly from the response object
+print(response.message.content)
+```
+
+运行结果：
+
+> The sky appears blue because of a phenomenon called Rayleigh scattering. When sunlight reaches Earth's atmosphere, it is made up of many different colors, each with different wavelengths. The shorter wavelengths, such as blue and violet light, are scattered in all directions by the gases and small particles in the atmosphere. Since our eyes are more sensitive to blue than violet, we perceive the sky as blue. During sunrise or sunset, the sun is closer to the horizon, so the light has to pass through more atmosphere, scattering out the shorter wavelengths and allowing the longer red and orange wavelengths to dominate, creating the colorful skies during these times.
+
+
+### 本地翻译项目测试
+
+```python
 import ollama
+
 
 def translate_test():
     res = ollama.chat(model='deepseek-r1:14b', stream=False,
                       messages=[{'role': 'user',
                                  'content': '假如你是一个汽车领域的翻译专家，帮我翻译下面的几个词条：驾驶模式，智能驾驶，座椅加热，语音助手'}])
-    match = re.search(r"content='(.*?)'", str(res), re.DOTALL)
-    if match:
-        content = match.group(1)
-        print(content)
-        return content
-    else:
-        return  "出错"
+    print(res['message']['content'])
+
 
 translate_test()
 ```
 
 结果打印：
 
-> think 嗯，用户让我帮忙翻译四个汽车相关的术语：驾驶模式、智能驾驶、座椅加热和语音助手。首先，我得确定这些术语在汽车领域里的常用英文翻译。\n\n“驾驶模式”通常指的是车辆的不同驾驶设置，比如经济模式、运动模式等，所以直接翻译应该是“Driving Mode”。听起来挺准确的，没什么问题。\n\n接下来是“智能驾驶”，这个可能有点歧义。智能驾驶可以指自动驾驶技术，也就是Autonomous Driving或者Self-Driving Car。不过有时候也叫Intelligent Driving，但更常用的是前两个词。考虑到用户可能是想传达自动驾驶的意思，我觉得用Autonomous Driving更合适。\n\n然后是“座椅加热”。这个翻译应该不难，Heated Seats很常见，很多汽车都有这个配置，所以直接使用即可。\n\n最后是“语音助手”，这在车里通常集成到系统中，比如Siri或者 Alexa。常用的是Voice Assistant，听起来没问题。\n\n再想想用户的需求，他们可能是在准备技术文档、产品说明书或者是车联网相关的材料。翻译准确很重要，尤其是在技术领域，术语的准确性能避免误解。所以我要确保每个词都是行业内的标准译法，这样用户在使用时不会有问题。\n\n另外，考虑到这些术语可能会用于不同地区或不同的应用环境，保持简洁和专业是关键。比如“智能驾驶”如果翻译成Intelligent Driving可能不够常用，Autonomous Driving更符合国际标准，尤其是在自动驾驶技术领域更为普遍接受。\n\n总结一下，每个词条的翻译都应该是准确且专业的，确保在汽车领域的上下文中适用。这样用户无论是用于内部文档还是对外宣传，都能传达正确的信息。\n  think
-\n\n当然！以下是这些术语的专业翻译：\n\n1. **驾驶模式** - Driving Mode  \n2. **智能驾驶** - Autonomous Driving (或 Self-Driving)  \n3. **座椅加热** - Heated Seats  \n4. **语音助手** - Voice Assistant
+```
+当然可以！以下是这几个词条的翻译：
+1. 驾驶模式 - Driving Mode  
+2. 智能驾驶 - Intelligent Driving  
+3. 座椅加热 - Heated Seats  
+4. 语音助手 - Voice Assistant  
+这些翻译在汽车领域中是常见的表达方式，希望对你有帮助！
+```
 
-翻译质量上比在线的机器翻译要好上不少，但是还需要将 AI 的回复进行二次处理，才能得到最终的结果。输出处理后的格式一旦对不上，程序的运行流程就会出错。目前仅仅是验证了一下可行性。
+可以看到使用 deepseek 的翻译质量上比在线的机器翻译要好上不少。
+
+但是还需要将 AI 的回复进行二次处理，才能得到最终的结果，结合到程序流程中去。输出处理后的格式一旦对不上，程序的运行流程就会出错。目前仅仅是验证了一下可行性，还未正式使用。
+
+### 流式输出
+除了同步返回外，也支持流式输出：
+
+```python
+from ollama import chat
+
+stream = chat(
+    model='llama3.2',
+    messages=[{'role': 'user', 'content': 'Why is the sky blue?'}],
+    stream=True,
+)
+
+for chunk in stream:
+  print(chunk['message']['content'], end='', flush=True)
+```
+
+结果打印：
+
+```
+<think>
+
+</think>
+
+The sky appears blue due to a phenomenon known as Rayleigh scattering. When sunlight reaches Earth's atmosphere, it interacts with molecules and small particles in the air. Sunlight is composed of various colors, each corresponding to different wavelengths. Blue light has a shorter wavelength and is scattered more by these tiny particles, whereas other colors like red or orange are scattered less. As a result, blue light is dispersed across the sky, making it appear blue to our eyes. This scattering effect is named after Lord Rayleigh, who explained it in the 19th century.
+Process finished with exit code 0
+```
+
+### 异步请求
+最后介绍下ollama库的异步请求。
+
+AsyncClient 类用于发出异步请求。它可以配置与客户端类相同的字段。
+
+```python
+import asyncio
+from ollama import AsyncClient
+
+async def chat():
+  message = {'role': 'user', 'content': 'Why is the sky blue?'}
+  response = await AsyncClient().chat(model='llama3.2', messages=[message])
+
+asyncio.run(chat())
+```
+
+设置 stream=True 会修改函数，使其返回 Python 异步生成器：
+
+```python
+import asyncio
+from ollama import AsyncClient
+
+async def chat():
+  message = {'role': 'user', 'content': 'Why is the sky blue?'}
+  async for part in await AsyncClient().chat(model='llama3.2', messages=[message], stream=True):
+    print(part['message']['content'], end='', flush=True)
+
+asyncio.run(chat())
+```
+
+以上就是对 ```ollama-python``` 库的简要使用介绍。

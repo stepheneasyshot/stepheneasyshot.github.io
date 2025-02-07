@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_deepseek_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Deepseek本地部署加内网穿透使用
+# 【AI】Deepseek部署内网穿透与Python调用
 ## Ollama简介
 Ollama 是一个开源项目，是在本地机器上运行 LLM 的强大而友好的平台。它在 LLM 技术的复杂性与人们对可访问、可定制的人工智能体验的渴望之间架起了一座桥梁。
 

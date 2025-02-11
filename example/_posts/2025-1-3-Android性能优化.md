@@ -752,3 +752,46 @@ public static String changeListToString(List<String> list) {
 ```
 
 StringBuilder执行append方法时，会在原有实例基础上操作，不会生成新的对象，所以上述代码执行完成后就只会产生一个StringBuilder对象。
+
+## 掉帧优化
+Android 系统每隔16ms发出VSYNC信号，触发对UI进行渲染。如果UI渲染的时间超过16ms，就会导致掉帧，从而影响用户体验。
+
+doFrame源码：
+
+```java
+void doFrame(long frameTimeNanos, int frame) {
+    final long startNanos;
+    synchronized (mLock) {
+        long intendedFrameTimeNanos = frameTimeNanos;
+        startNanos = System.nanoTime();
+        final long jitterNanos = startNanos - frameTimeNanos;
+        if (jitterNanos >= mFrameIntervalNanos) {
+            final long skippedFrames = jitterNanos / mFrameIntervalNanos;
+            if (skippedFrames >= SKIPPED_FRAME_WARNING_LIMIT) {
+                Log.i(TAG, "Skipped " + skippedFrames + " frames!  "
+                        + "The application may be doing too much work on its main thread.");
+            }
+        }
+    }
+    ...
+    doCallbacks(Choreographer.CALLBACK_TRAVERSAL, frameTimeNanos);
+}
+```
+
+查找问题的经典log：
+
+```
+"Skipped xx frames! The application may be doing too much work on its main thread"
+```
+
+大概率是应用的主线程里面安排的任务太多，耗时过长，导致没有在vSYNC信号到来时进行渲染，从而导致掉帧。
+
+实际工作中，我的座椅面板，一个浮窗类的app在退场时也有这个日志打印，每次关闭浮窗时的掉帧都是50帧左右。
+
+分析执行的代码块后，发现pag动效的回收操作耗时过长。
+
+因为pagView的动画显示，需要用到系统的编解码器，座椅app界面内的动效数量又名列前茅，如果没有及时地释放，导致编解码器耗尽，其他媒体类应用打开后就可能会一片黑屏，无法正常播放视频。所以每次窗口remove之前，都会停止动效，回收资源，避免掉帧。
+
+将pagview改为了ImageView加帧动画的方案，在前台的资源占用略有增加，但是无需考虑动效资源释放问题。
+
+改帧动画方案的话，特别注意的是，帧动画不可以后台更新，如果数量过多，会在缓存里堆积大量的Drawable对象，严重的话甚至导致内存溢出。

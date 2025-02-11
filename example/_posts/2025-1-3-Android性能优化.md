@@ -665,7 +665,22 @@ public class MainActivity extends AppCompatActivity {
 
 （3）Glide中，在子线程中大量使用Glide.with(applicationContext)，可能导致内存溢出
 
+### 分析方法
+首先，遇到一个内存泄漏问题，如果是必现，我们可以直接根据必现流程，执行了哪些代码块，正向运行排查。如果是偶现的，需要先按照日志显示的流程，尝试去复现问题。
 
+其次，我们可以使用Android Studio的Memory Profiler来分析内存使用情况，查看内存使用的对象和引用关系，从而定位内存泄漏的原因。
+
+Profiler入口：
+
+![memory_profiler](/assets/img/blog/blogs_android_studio_profiler.png)
+
+Live Telemetry 可以实时查看应用的内存使用情况，包括内存分配、内存释放等信息。可以通过点击 Live Telemetry 按钮来打开 Live Telemetry 窗口。
+
+![memory_profiler_1](/assets/img/blog/blogs_android_live_telemetry.png)
+
+还可以直接在shell中使用top或者ps命令来查看应用的内存使用情况，边操作边观察，看看是哪里导致的内存泄漏，再去分析可能的原因来解决。
+
+![memory_top](/assets/img/blog/blogs_top_performance.png)
 ## 应用内存溢出 OOM
 内存溢出是指应用程序试图分配比系统可用内存更多的内存空间。在 Android 中，每个应用程序都有一个特定的内存限制，这个限制取决于设备的硬件和操作系统版本。当应用程序尝试分配的内存超过这个限制时，就会发生内存溢出错误。
 

@@ -247,9 +247,11 @@ fun IntrinsicTest() {
 
 ![blogs_compose_intrinc_demo21](/assets/img/blog/blogs_compose_intrin_demo2_1.png){:width="300" height="700" loading="lazy"}
 
-我们发现两个Column的高度是不一致的，如果将两边的高度写死，那么在不同屏幕上的自适应会出问题。
+我们发现两个Column的高度是不一致的。
 
-这时候我们使用 IntrinsicSize.Max 来解决这个问题。设置为max，父组合项的高度会取子项中最大的高度。然后让两个子项的高度直接fillMaxHeight。
+如果我为了使两侧高度显示一致，直接将两边的高度值写死，那么在不同屏幕上的自适应又会出问题。
+
+这时候我们使用 `IntrinsicSize.Max` 来解决这个问题。设置为max，父组合项的高度会取子项中最大的高度。然后让两个子项的高度直接 `fillMaxHeight` 。
 
 ```kotlin
 @Composable

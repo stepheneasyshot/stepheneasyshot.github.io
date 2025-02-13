@@ -50,18 +50,21 @@ upgradeUuid = "xxxx-xxxxxxx-xxxxx"
 1. 更详细的Gradle属性配置参考可以看官方github仓库的教程文档：
 [JetBrains官方配置文档](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/README.md) 
 2. 关于三个平台应用图标的设置，是参考C上一位大佬的，制作三端的图标文件，大家可以自行搜索配置
+
 目前还发现一个奇怪的bug，就是当我首次配置完，然后过一段时间想再换个应用图标的时候，打包后的安装包大小直接从80M到了2个G，不确定什么原因导致的。
+
 ## Multiplatform适配
-Desktop跨平台碰到的的第一个问题，就是不同平台的路径连接符不一致：
+开发Desktop跨平台碰到的的第一个问题，就是不同平台的路径连接符不一致：
 
-在Windows上是两个反斜杠  \\
+在Windows上是反斜杠  `\`
 
-在unix like的系统上是一个正斜杠  /
+在unix like的系统上是一个正斜杠  `/`
 
-可以使用 `File.separator` 来获取这个连接符拼到路径字符串里。
+经过探索，JVM系的应用其实可以使用 `File.separator` 来获取这个连接符拼到路径字符串里。
 
-而且Java给我们提供的 `System.getProperty` 可以用来区分平台类型。
+而且关于平台类型的区分，Java也给我们提供了一个 `System.getProperty` 接口。
 
+### 平台渠道管理
 首先，定义一个枚举类来设定平台类型：
 
 ```kotlin
@@ -75,75 +78,80 @@ enum class PlatformType {
 在应用初始化时，通过接口获取平台名称，解析出哪一个平台：
 
 ```kotlin
- /**
-     * 获取当前平台类型
-     */
-    private fun getPlatformType(): PlatformType {
-        val osName = System.getProperty("os.name").lowercase(Locale.getDefault())
-        return when {
-            osName.contains("win") -> PlatformType.WINDOWS
-            osName.contains("mac") -> PlatformType.MAC
-            osName.contains("nix") || osName.contains("nux") || osName.contains("aix") -> PlatformType.LINUX
-            else -> PlatformType.UNKNOWN
-        }
+/**
+ * 获取当前平台类型
+ */
+private fun getPlatformType(): PlatformType {
+    val osName = System.getProperty("os.name").lowercase(Locale.getDefault())
+    return when {
+        osName.contains("win") -> PlatformType.WINDOWS
+        osName.contains("mac") -> PlatformType.MAC
+        osName.contains("nix") || osName.contains("nux") || osName.contains("aix") -> PlatformType.LINUX
+        else -> PlatformType.UNKNOWN
     }
+}
 ```
+
 后面在涉及平台差分化的时候，可以使用此方法来获取，执行不同操作。
 
 比如打开不同平台上的文件管理器：
 
 ```kotlin
-    fun openFolder(path: String) {
-        when (getPlatformType()) {
-            PlatformType.WINDOWS, PlatformType.UNKNOWN -> {
-                executeTerminalCommand("explorer.exe $path")
-            }
+/**
+ * 打开一个文件夹
+ */
+fun openFolder(path: String) {
+    when (getPlatformType()) {
+        PlatformType.WINDOWS, PlatformType.UNKNOWN -> {
+            executeTerminalCommand("explorer.exe $path")
+        }
 
-            PlatformType.MAC -> {
-                executeTerminalCommand("open $path")
-            }
+        PlatformType.MAC -> {
+            executeTerminalCommand("open $path")
+        }
 
-            PlatformType.LINUX -> {
-                executeTerminalCommand("xdg-open $path")
-            }
+        PlatformType.LINUX -> {
+            executeTerminalCommand("xdg-open $path")
         }
     }
+}
 ```
 
 对于各个平台上执行终端命令，使用的两个方法是相同的，无需结果就直接exec()，需要执行结果就是用ProcessBuilder来执行，等待结果。
 
 ```kotlin
-    /**
-     * 执行终端命令
-     */
-    fun executeTerminalCommand(command: String) {
-        runCatching {
-            Runtime.getRuntime().exec(command)
-        }.onFailure { e ->
-            LogUtils.printLog("执行出错：${e.message}", LogUtils.LogLevel.ERROR)
-        }
+/**
+ * 执行终端命令
+ */
+fun executeTerminalCommand(command: String) {
+    runCatching {
+        Runtime.getRuntime().exec(command)
+    }.onFailure { e ->
+        LogUtils.printLog("执行出错：${e.message}", LogUtils.LogLevel.ERROR)
     }
+}
 
-    /**
-     * 执行命令，获取输出
-     */
-    suspend fun executeCommandWithResult(command: String) = withContext(Dispatchers.IO) {
-        val processBuilder = ProcessBuilder(*command.split(" ").toTypedArray())
-        val process = processBuilder.start()
+/**
+ * 执行命令，获取输出
+ */
+suspend fun executeCommandWithResult(command: String) = withContext(Dispatchers.IO) {
+    val processBuilder = ProcessBuilder(*command.split(" ").toTypedArray())
+    val process = processBuilder.start()
 
-        val reader = BufferedReader(InputStreamReader(process.inputStream))
-        val output = StringBuilder()
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
-            output.append(line).append("\n")
-        }
-        // 等待进程结束
-        process.waitFor()
-        // 关闭输入流
-        reader.close()
-        output.toString()
+    val reader = BufferedReader(InputStreamReader(process.inputStream))
+    val output = StringBuilder()
+    var line: String?
+    while (reader.readLine().also { line = it } != null) {
+        output.append(line).append("\n")
     }
+    // 等待进程结束
+    process.waitFor()
+    // 关闭输入流
+    reader.close()
+    output.toString()
+}
 ```
+
 ## 窗口框架
 新项目的应用入口如下：
 
@@ -163,15 +171,17 @@ fun main() = application {
     }
 }
 ```
-我们主要的内容区就在Window这个Composable方法里。
+我们主要的内容区就在Window这个 `Composable` 方法里。
 
-通过windowState，我们可以设置窗口初始大小，窗口最大最小化。
+通过 `windowState` ，我们可以设置窗口初始大小，窗口最大最小化。
 
-undecorated参数，这个可以配置软件界面是否选择系统默认的标题栏。我希望在三端上都使用我自定义的标题栏，所以设置false。
+`undecorated` 参数，这个可以配置软件界面是否选择系统默认的标题栏。由于我希望在三端上的设计语言都可以统一，都使用我自定义的标题栏，所以这里改为设置 **true** 。
 
-有意思的一点是，上面这个参数如果设置 true 就是系统默认的标题栏，我们可以使用鼠标拖动标题栏来移动窗口。在最开始将 `undecorated` 设为 false 后，我发现自定义的标题栏无法使用鼠标拖动了，一度试了很多方案都不行，最后还是咨询谷歌的 GeminiAI 展示了一个 `Composable` 方法，居然直接套用即可，里面的区域就是支持拖动移动的。把标题栏的Composable方法放在这个 `WindowDraggableArea` 可组合项里面，就可以鼠标拖动标题栏来移动窗口了。
+有意思的一点是，在最开始将 `undecorated` 设为 **true** 后，我发现用上的Compose自定义的标题栏后，无法使用鼠标拖动窗口了，一度试了很多方案都不行。
 
-WindowDraggableArea 源码方法签名如下：
+这里最后还是咨询谷歌的 `Gemini` ，它给我展示了一个 `WindowDraggableArea` 组件，居然直接套用即可完美解决，里面的区域就是支持拖动移动的。把标题栏的 Composable 方法放在这个 `WindowDraggableArea` 可组合项里面，就可以鼠标拖动标题栏来移动窗口了。
+
+`WindowDraggableArea` 源码方法签名如下：
 
 ```kotlin
 @androidx.compose.runtime.Composable
@@ -183,7 +193,7 @@ public fun androidx.compose.ui.window.WindowScope.WindowDraggableArea(
 }
 ```
 
-各个页面之间的导航切换，我是使用的官方扩展的跨平台版本的 `navigation` 库。定义导航图，然后使用 `navController` 来切换页面。
+关于各个页面之间的导航切换，我是使用的官方扩展的跨平台版本的 `navigation` 库。定义导航图，然后使用 `navController` 来切换页面。
 
 ```kotlin
 val navController = rememberNavController()
@@ -191,7 +201,8 @@ NavHost(navController = navController, startDestination = "device_info") {
     composable("device_info") {
         DeviceInfoScreen(navController = navController)
     } 
-    ~~~
+
+    ...
 }
 ```
 
@@ -200,15 +211,19 @@ NavHost(navController = navController, startDestination = "device_info") {
 ![splash](/assets/img/blog/blogs_debugmanager_splash_screen.png)
 
 ## 功能划分
-下面简单介绍下各个页面的调试功能，一般的开发流程里有产品设计，有交互设计，UI设计，给我传达需求，输出资源。
-1. 功能设计上，这个软件自己心血来潮要做，只能自己设计了，中间结合日常工作中的调试痛点，还参考了adb的命令介绍，选取了一些组合功能和单次功能，分类添加到了界面内。
-2. 在界面UI设计风格上，我是直接参考了每天打开的AndroidStudio里的主题插件，Atom One Dark的颜色风格。
+下面简单介绍下各个页面的调试功能有哪些。
+
+在公司，一般的开发流程里有产品设计，有交互设计，UI设计，给我传达需求，输出资源。
+
+1. 产品的功能设计上，这个软件自己心血来潮要做。我结合日常工作中的调试痛点，还参考了 adb 的命令介绍，选取了一些热门的组合功能和单次功能，分类添加到了界面内。
+2. 在界面UI设计风格上，我是直接参考了每天打开的 Android Studio 里的主题插件， **Atom One Dark** 的颜色风格。
+
 ### 设备信息展示
-首页当然是所连接设备的基本信息展示。
+一进入界面，首页当然是所连接设备的基本信息展示。
 
 ![device_info](/assets/img/blog/blogs_cmp_deviceinfo.png){:width="600" height="300" loading="lazy"}
 
-定义UiState
+大致的实现思路如下，关于界面状态，先定义 `UiState` ：
 
 ```kotlin
 data class DeviceState(
@@ -282,6 +297,7 @@ val deviceStateStateFlow = _deviceState.asStateFlow()
 录屏，截屏很实用，不用掏出手机到处找角度。我们提前设置好时长，通过自动执行多条指令，等操作完毕，可以直接将截屏录屏文件导出到电脑进行分享，也是我认为最好用的功能之一。
 
 最下面还有一些基础的音量加减，模拟输入法输入等。
+
 ### 轮询查询机制
 值得一提的是，我加入了循环获取连接设备数量和当前连接状态的机制，当电脑端的adb服务一初始化成功，就立即开启一个死循环的协程，每2s会查询一次当前设备的连接状态，设备数量。
 
@@ -328,10 +344,12 @@ val deviceStateStateFlow = _deviceState.asStateFlow()
         }
     }
 ```
+
 1. 当增减设备时，刷新设备列表，左上角展开后可以选择不同的设备进行调试。
 2. 当现在操作的设备断开连接时，会自动切换成其他设备，如果没有其他设备，就弹出警告弹窗，不允许继续操作页面了。
 
 这两个都是轮询的。所以在重新连接设备后，会将当前状态通过state发送到界面，警告弹窗会自动消失。
+
 ### 软件安装管理
 这个功能是耗时最长的板块之一，主要是Android系统里面每个包的信息如何展示，如何进一步对其进行替换，结合工作中积累的命令，在全网收集了很多指令，来实现软件包的管理功能。
 
@@ -353,6 +371,7 @@ APP列表加入了全部包扫描和三方包扫描，对于公司定制的包�
 ![app_manage](/assets/img/blog/blogs_cmp_appmanage_2.png){:width="600" height="300" loading="lazy"}
 
 对于选中的单个app，提供了打开应用界面，卸载，提取apk，对于系统应用，还可以push替换apk等操作。我们的测试同事在做非全量的发版验证时非常有用，不用再使用一条条繁琐的命令来替换apk升级了。
+
 ### 文件管理器
 由于我在Android端也没有写过文件管理器应用，所以在这个页面，有些操作也是一拍脑袋想出来的，可能不算规范的解法。仍然是MVI架构，界面去监听StateHolder里面的UiState的Flow，切换目录时重新获取列表数据，update到界面来刷新UI。
 
@@ -381,6 +400,7 @@ modifier = Modifier.clickable {
 android内的文件操作也是使用命令行的形式，cp mv rm等。
 
 还可以将文件pull到电脑端，将电脑端的文件推送到Android端等。
+
 ### 命令模式
 ![cmd](/assets/img/blog/blogs_cmp_cmdexecute.png){:width="600" height="300" loading="lazy"}
 
@@ -389,10 +409,12 @@ android内的文件操作也是使用命令行的形式，cp mv rm等。
 主要实现就是将输入框的内容，拼接后直接通过Runtime.getRuntime().exec(command)执行即可。
 
 除了最基础的adb命令透传，配合系统厂商Android端的可执行二进制程序，可以模拟车载信号的回调操作。还有语音部门的通过广播来调试的路径，整合到了DebugManager里面，一键发送广播，模拟可见扫描的点击。
+
 ### 关于页
 ![about](/assets/img/blog/blogs_cmp_about.png){:width="600" height="300" loading="lazy"}
 
 最后就是关于页了，显示软件版本，缓存文件目录等。通过PlatformAdapter工具类获取路径，执行打开界面即可。
+
 ## 开源计划
 这个软件最初是基于公司业务来设计开发的，有关于公司内部的信息需要抹除。
 等后续有时间我会将其功能进行略微删减，改成通用性质的Android调试工具之后，会开源到Github。对CMP跨平台感兴趣的朋友，可以加关注稍作等待，后面一起进行技术交流。

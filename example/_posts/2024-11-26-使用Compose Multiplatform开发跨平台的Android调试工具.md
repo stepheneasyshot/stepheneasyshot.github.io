@@ -49,9 +49,55 @@ upgradeUuid = "xxxx-xxxxxxx-xxxxx"
 ```
 1. 更详细的Gradle属性配置参考可以看官方github仓库的教程文档：
 [JetBrains官方配置文档](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/README.md) 
-2. 关于三个平台应用图标的设置，是参考C上一位大佬的，制作三端的图标文件，大家可以自行搜索配置
 
-目前还发现一个奇怪的bug，就是当我首次配置完，然后过一段时间想再换个应用图标的时候，打包后的安装包大小直接从80M到了2个G，不确定什么原因导致的。
+### 图标配置
+关于三个平台应用图标的设置，我们需要手动制作三端的图标文件。
+
+* Linux使用的是png格式。可以作为源文件，来制作Windows和MacOS的图标。
+
+* Windows端的图标为ico格式。可以通过这个在线网站来生成：
+
+```
+https://www.butterpig.top/icopro/
+```
+
+* MacOS端的图标为icns格式。
+
+Mac图标的生成方式较复杂，需要使用苹果电脑才能生成。
+
+首先我们切到png格式的图片所在的目录：
+
+1. 创建输出文件夹
+
+```
+mkdir MyIcon.iconset
+```
+
+2. 生成图标
+
+```
+# Generate the required icon sizes
+sips -z 16 16     original.png --out MyIcon.iconset/icon_16x16.png
+sips -z 32 32     original.png --out MyIcon.iconset/icon_16x16@2x.png
+sips -z 32 32     original.png --out MyIcon.iconset/icon_32x32.png
+sips -z 64 64     original.png --out MyIcon.iconset/icon_32x32@2x.png
+sips -z 128 128   original.png --out MyIcon.iconset/icon_128x128.png
+sips -z 256 256   original.png --out MyIcon.iconset/icon_128x128@2x.png
+sips -z 256 256   original.png --out MyIcon.iconset/icon_256x256.png
+sips -z 512 512   original.png --out MyIcon.iconset/icon_256x256@2x.png
+sips -z 512 512   original.png --out MyIcon.iconset/icon_512x512.png
+sips -z 1024 1024 original.png --out MyIcon.iconset/icon_512x512@2x.png
+```
+
+3. 合成不同尺寸的图标
+
+```
+iconutil -c icns MyIcon.iconset
+```
+
+之后就可以看到一个后缀为icns的文件了，将其复制到项目中，设置为应用图标。
+
+目前还发现一个奇怪的bug，就是有的图片配置完，打包exe出来是正常大小。有的图片生成完毕之后，打包后的安装包大小直接从80M到了2个G，不确定什么原因导致的。还在排查和寻求官方的帮助。
 
 ## Multiplatform适配
 开发Desktop跨平台碰到的的第一个问题，就是不同平台的路径连接符不一致：

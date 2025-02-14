@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_compose_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# inline&crossinline&noinline
+# Kotlin的inline&crossinline&noinline关键字
 ## JVM常量编译时优化
 Kotlin中，使用了 ```const val``` 关键字修饰的变量，在编译时会被视为常量，并且在编译时进行了优化。直接将其值复制到调用处，而不是像普通变量一样在运行时进行变量访问。这可以提高代码的执行效率，因为避免了变量调用的开销。
 

@@ -25,10 +25,11 @@ sitemap: false
 ## 架构设计
 我没有开发Desktop端的经验，不知道最优的架构设计是什么样的。使用CMP的话Google推崇的MVI模式依然可以通用，所以最初制定的技术路线就是使用响应式的架构。
 
-由于功能单一，几乎所有操作都是执行一些命令行，获取反馈结果，所以没有抽象的很厉害，数据层直接使用单例类，使用adb工具获取数据透传到StateHolder。StateHolder为界面的状态State管理层，在Composable方法初入时，触发StateHolder的数据获取逻辑，数据拿取到之后，更新State状态，通过界面监听的stateflow通知composable方法刷新UI。
+由于功能单一，几乎所有操作都是执行一些命令行，获取反馈结果，所以没有抽象的很厉害，数据层直接使用单例类，使用adb工具获取数据透传到StateHolder。StateHolder为界面的状态State管理层，在Composable方法初入时，触发StateHolder的数据获取逻辑，数据拿取到之后，更新State状态，通过界面收集监听的stateflow通知composable方法刷新UI。
+
 ![Google_mvi](/assets/img/blog/blogs_mvi.png){:width="400" height="300" loading="lazy"}
 
-事件从上到下，数据状态从下到上，确保唯一可信数据流。
+即用户事件从上到下，数据状态从下到上，确保唯一可信数据流。
 ## gradle配置
 这一步决定DebugManager项目面向的各个平台的配置，软件版本，安装包。
 
@@ -36,8 +37,10 @@ sitemap: false
 
 Windows端有配置是否显示在开始菜单，桌面快捷方式，uuid用于更新识别，自行选择安装目录。
 
-```
+```kotlin
+// 开始菜单
 menu = true
+// 桌面快捷方式
 shortcut = true
 // 可自行选择安装目录
 dirChooser = true
@@ -45,9 +48,11 @@ dirChooser = true
 perUserInstall = true
 // 设置图标
 iconFile.set(project.file("launcher/icon.ico"))
+// uuid用于更新识别
 upgradeUuid = "xxxx-xxxxxxx-xxxxx"
 ```
-1. 更详细的Gradle属性配置参考可以看官方github仓库的教程文档：
+
+更详细的Gradle属性配置参考可以看官方github仓库的教程文档：
 [JetBrains官方配置文档](https://github.com/JetBrains/compose-multiplatform/blob/master/tutorials/README.md) 
 
 ### 图标配置
@@ -63,20 +68,14 @@ https://www.butterpig.top/icopro/
 
 * MacOS端的图标为icns格式。
 
-Mac图标的生成方式较复杂，需要使用苹果电脑才能生成。
+注意 Mac 端的图标需要使用苹果电脑才能生成。
 
-首先我们切到png格式的图片所在的目录：
+首先我们切到png格式的图片所在的目录，执行下面三组命令即可生成Mac端的图标文件了：
 
-1. 创建输出文件夹
-
-```
+> 创建输出文件夹
 mkdir MyIcon.iconset
-```
 
-2. 生成图标
-
-```
-# Generate the required icon sizes
+> 生成图标
 sips -z 16 16     original.png --out MyIcon.iconset/icon_16x16.png
 sips -z 32 32     original.png --out MyIcon.iconset/icon_16x16@2x.png
 sips -z 32 32     original.png --out MyIcon.iconset/icon_32x32.png
@@ -87,15 +86,12 @@ sips -z 256 256   original.png --out MyIcon.iconset/icon_256x256.png
 sips -z 512 512   original.png --out MyIcon.iconset/icon_256x256@2x.png
 sips -z 512 512   original.png --out MyIcon.iconset/icon_512x512.png
 sips -z 1024 1024 original.png --out MyIcon.iconset/icon_512x512@2x.png
-```
 
-3. 合成不同尺寸的图标
-
-```
+> 合成不同尺寸的图标
 iconutil -c icns MyIcon.iconset
-```
 
-之后就可以看到一个后缀为icns的文件了，将其复制到项目中，设置为应用图标。
+
+之后就可以看到一个后缀为icns的文件了，将其复制到项目中，gradle脚本里配置为应用图标。
 
 #### 图标配置过程中的bug
 目前还发现一个奇怪的bug，就是有的png图标经过转换，配置到项目中，打包exe出来是正常大小，大概90M。

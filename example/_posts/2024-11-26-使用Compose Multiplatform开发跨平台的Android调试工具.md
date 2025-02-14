@@ -97,7 +97,50 @@ iconutil -c icns MyIcon.iconset
 
 之后就可以看到一个后缀为icns的文件了，将其复制到项目中，设置为应用图标。
 
-目前还发现一个奇怪的bug，就是有的图片配置完，打包exe出来是正常大小。有的图片生成完毕之后，打包后的安装包大小直接从80M到了2个G，不确定什么原因导致的。还在排查和寻求官方的帮助。
+#### 图标配置过程中的bug
+目前还发现一个奇怪的bug，就是有的png图标经过转换，配置到项目中，打包exe出来是正常大小，大概90M。
+
+有的图片生成完毕之后，Windows平台打包后的 EXE 安装包大小直接暴涨到了2个G，甚至3个G，目前不确定什么原因导致的。还在排查和寻求官方的帮助。
+
+**解决**
+
+经过几轮尝试排查，问题应该出在那个windows平台的转换网站上:
+
+```
+https://www.butterpig.top/icopro/
+```
+
+通过 IDE 打开生成的ico文件，发现其实际的文件类型是JPEG，并不是显示的ico文件。
+
+“假icon！！”
+
+![blogs_cmp_wrong_ico_file](/assets/img/blog/blogs_cmp_wrong_ico_file.png){:width="500" height="400" loading="lazy"}
+
+目前怀疑图标类型错误，导致安装包暴涨。会产生这个现象的原因，可能是CMP所使用的Windows打包器的一个bug或者说一个规则吧。
+
+使用Python的Pillow库来转换，发现生成的图标文件显示的是我需要的ICO类型了。
+
+转换脚本很简单，如下：
+
+```python
+from PIL import Image
+
+def png_to_ico(png_path, ico_path):
+    # 打开PNG图像
+    image = Image.open(png_path)
+
+    # 将图像转换为ICO格式
+    image.save(ico_path, format='ICO', sizes=[(image.width, image.height)])
+
+# 调用函数并传入PNG图像路径和ICO文件路径
+png_to_ico('C:\\Users\\stephen\\Desktop\\logo.png', 'output.ico')
+```
+
+转换后的图标文件：
+
+![blogs_cmp_right_ico_file](/assets/img/blog/blogs_cmp_right_ico_file.png){:width="500" height="400" loading="lazy"}
+
+将这个 ico 文件配置到项目之后，打包的大小已经恢复正常的90余M。
 
 ## Multiplatform适配
 开发Desktop跨平台碰到的的第一个问题，就是不同平台的路径连接符不一致：

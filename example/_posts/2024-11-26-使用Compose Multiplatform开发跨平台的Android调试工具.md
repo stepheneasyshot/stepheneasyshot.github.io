@@ -149,6 +149,62 @@ png_to_ico('C:\\Users\\stephen\\Desktop\\logo.png', 'output.ico')
 
 而且关于平台类型的区分，Java也给我们提供了一个 `System.getProperty` 接口。
 
+### 单例模式
+在Windows平台上，多次通过入口来运行exe文件，会产生多个进程，对于本软件是没有必要的，甚至有可能导致bug。
+
+所以需要像任务管理器那样，不管有多少次的打开动作，始终只有一个进程一个界面。
+
+这里通过文件锁的方式来实现。
+
+刚开启进程就创建一个文件，并将其锁定。在JVM关闭的时候，释放并删除这个文件。这样如果软件已经有一个进程在运行了，再次打开时尝试去获取这个文件的独占锁，如果获取不到，就说明已经有一个实例在运行，直接退出后打开的这个进程。
+
+```kotlin
+class SingleInstanceApp {
+
+    private var lock: FileLock? = null
+    private var channel: FileChannel? = null
+
+    fun initCheckFileLock(lockFilePath: String) {
+        LogUtils.printLog("initCheckFileLock")
+        val file = File(lockFilePath)
+        channel = RandomAccessFile(file, "rw").getChannel()
+        lock = channel?.tryLock()
+        if (lock == null) {
+            LogUtils.printLog("Another instance is already running.", LogUtils.LogLevel.ERROR)
+            exitProcess(1)
+        }
+        // 添加JVM关闭时的钩子，释放锁
+        Runtime.getRuntime().addShutdownHook(Thread(Runnable {
+            runCatching {
+                lock?.let {
+                    it.release()
+                    channel?.close()
+                    file.delete()
+                }
+            }.onFailure { e ->
+                e.printStackTrace()
+            }
+        }))
+    }
+}
+```
+
+通过依赖注入到平台化的管理类中去，init方法中，当配置文件夹一创建完毕，就进行获取锁的操作。
+
+```kotlin
+class PlatformAdapter(private val singleInstanceApp: SingleInstanceApp) {
+
+    init {
+        println("PlatformAdapter init")
+    }
+
+    fun init() {
+        createInitTempFile()
+        singleInstanceApp.initCheckFileLock(lockFilePath)
+    }
+}
+```
+
 ### 平台渠道管理
 首先，定义一个枚举类来设定平台类型：
 
@@ -256,6 +312,7 @@ fun main() = application {
     }
 }
 ```
+
 我们主要的内容区就在Window这个 `Composable` 方法里。
 
 通过 `windowState` ，我们可以设置窗口初始大小，窗口最大最小化。
@@ -506,3 +563,113 @@ android内的文件操作也是使用命令行的形式，cp mv rm等。
 
 12月25日已完成剥离修改开源：
 [DebugManager开源地址](https://github.com/stepheneasyshot/DebugManager) 
+
+## Material Design主题切换
+目前进一步导入了两套主题方案，深色和浅色。
+
+将最高级的 `Composable` 可组合项使用 `MaterialTheme` 包裹起来，初始化获取theme的值。主题值的下发设置在了 **关于页面** ，操作后的存储使用跨平台版本的 `DataStore` 来做键值对存储。
+
+并通过StateHolder管理器来维护这个主题状态。在切换之后，最顶级的 Composable 组合项可以立即作出反应，切换色值资源。
+
+```kotlin
+ MaterialTheme(
+            colors = when (themeState.value) {
+                ThemeState.DARK -> DarkColorScheme
+                ThemeState.LIGHT -> LightColorScheme
+                else -> if (isSystemInDarkTheme()) DarkColorScheme else LightColorScheme
+            }
+        ) {
+            SplashScreen {
+                XXXXXXXXXXX
+            }
+        }
+```
+
+MainStateHolder.kt
+
+```kotlin
+// 主题
+    private val _themeState = MutableStateFlow(ThemeState.DEFAULT)
+    val themeStateStateFlow = _themeState.asStateFlow()
+    private val themePreferencesKey = stringPreferencesKey("ThemeState")
+
+    /**
+     * 下发主题切换，存储在dataStore中
+     */
+    fun setThemeState(themeState: Int) {
+        CoroutineScope(Dispatchers.IO).launch {
+            dataStoreHelper.dataStore.edit {
+                it[themePreferencesKey] = themeState.toString()
+            }
+        }
+        _themeState.update {
+            themeState
+        }
+    }
+
+    /**
+     * 获取本地存储的主题
+     */
+    fun getThemeState() {
+        CoroutineScope(Dispatchers.IO).launch {
+            dataStoreHelper.dataStore.data.collect {
+                val themeState = it[themePreferencesKey]?.toInt() ?: ThemeState.DARK
+                LogUtils.printLog("getThemeState-> themeState:$themeState", LogUtils.LogLevel.INFO)
+                _themeState.update {
+                    themeState
+                }
+            }
+        }
+    }
+```
+
+DataStoreHelper.kt
+
+```kotlin
+class DataStoreHelper {
+
+    lateinit var dataStore: DataStore<Preferences>
+
+    fun init(path: String) {
+        dataStore = createDataStore(path)
+    }
+
+    private fun createDataStore(path: String): DataStore<Preferences> {
+        return PreferenceDataStoreFactory.createWithPath(
+            corruptionHandler = null,
+            migrations = emptyList(),
+            produceFile = { path.toPath() }
+        )
+    }
+}
+```
+
+Main.kt
+
+```kotlin
+    val themeState = mainStateHolder.themeStateStateFlow.collectAsState()
+
+    LaunchedEffect(Unit) {
+        // 获取存储的主题设置
+        mainStateHolder.getThemeState()
+    }
+```
+
+### 运行截图记录
+#### 开屏动画
+
+![splash](/assets/img/blog/blogs_dark_splash.png)
+
+![splash](/assets/img/blog/blogs_light_splash.png)
+
+#### 设备信息
+
+![device](/assets/img/blog/blogs_dark_deviceinfo.png)
+
+![device](/assets/img/blog/blogs_light_deviceinfo.png)
+
+#### 关于页
+
+![about](/assets/img/blog/blogs_dark_about.png)
+
+![about](/assets/img/blog/blogs_light_about.png)

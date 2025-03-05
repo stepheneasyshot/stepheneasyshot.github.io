@@ -768,6 +768,8 @@ public static String changeListToString(List<String> list) {
 
 StringBuilder执行append方法时，会在原有实例基础上操作，不会生成新的对象，所以上述代码执行完成后就只会产生一个StringBuilder对象。
 
+> 字符串的加号“+” 方法， 虽然现在编译器对其做了优化，使用StringBuilder的append方法进行追加，但是在循环场景，每循环一次都会创建一个StringBuilder对象，且都会调用toString方法转换成字符串，所以开销很大。
+
 ## 掉帧优化
 Android 系统每隔16ms发出VSYNC信号，触发对UI进行渲染。如果UI渲染的时间超过16ms，就会导致掉帧，从而影响用户体验。
 

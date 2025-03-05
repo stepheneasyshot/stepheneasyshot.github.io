@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了Kotlin协程的取消机制和异常处理方案
+  本文介绍了CMP开发过程中，TextField可组合项对Enter按键监听不符合预期的问题
 image: 
   path: /assets/img/blog/blogs_cmp_debugmanager_splash.png
   srcset: 

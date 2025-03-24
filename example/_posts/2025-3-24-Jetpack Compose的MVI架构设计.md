@@ -89,9 +89,9 @@ View中的页面布局，外面使用的是一个个的Layout，像LinearLayout�
 
 例如在LinearLayout中直接设置weight属性来实现分比例布局，在ConstraintLayout里，通过设置startToStart属性来进行相对约束布局设置。
 
-在Compoe中，最常用的布局组件一般有Column，Row，Box几种，最近也增加了ConstraintLayout的Compose版本，个人感觉写法较繁琐，设计上反而类似OOP模式了。
+在Compoe中，最常用的布局组件一般有Column，Row，Box几种，最近也增加了ConstraintLayout的Compose版本。
 
-Column行布局，其内部的组件会沿着竖直方从上至下排列。Row则为水平方向从左至右排列。Box为原位置上，一层一层地叠加排列。
+Column行布局，其内部的组件会沿着竖直方从上至下排列。Row则为水平方向从左至右排列。Box则是在原位置上，一层一层地叠加排列。
 
 例如，我要显示一个简单的列表：
 
@@ -110,7 +110,9 @@ fun ComposeDemo(){
 }
 ```
 
-Compose可以完美地使用Kotlin语音来编写，布局中可以使用很多方便的api，这里就用到了repeat循环设置。我们可推算出 Text() 这个可组合函数，会被调用了8次，就会在屏幕上显示8个文本，这在相对静态的View架构中是难以想象的。要显示一个列表视图，即使使用简化后的第三方库，比如像 `BaseRecyclerViewAdapterHelper` ，也至少需要创建一个 `list_item` 的xml布局，一个适配器 `Adapter` 类，有时候还需要写一个 `ViewHolder` 类。
+Compose可以完美地使用Kotlin语音来编写，布局中可以无缝使用很多方便的api，这里就用到了repeat循环函数。我们可推算出 `Text()` 这个可组合函数，会被调用了8次，就会在屏幕上显示8个文本。
+
+这在相对静态的View架构中是难以想象的。要显示一个列表视图，即使使用简化后的第三方库，比如像 `BaseRecyclerViewAdapterHelper` ，也至少需要创建一个 `list_item` 的xml布局，一个适配器 `Adapter` 类，有时候还需要写一个 `ViewHolder` 类。
 
 使用Compose的列表预览效果如下：
 
@@ -119,20 +121,18 @@ Compose可以完美地使用Kotlin语音来编写，布局中可以使用很多�
 ## 视图结构
 ### View视图结构
 
-![](/assets/img/blog/blogs_view_window_frame.png){width:="300px" height="400px" loading="lazy"}
+![](/assets/img/blog/blogs_view_window_frame.png){:width="300" height="400" loading="lazy"}
 
 经典框架不做多余赘述。
 
 ### Compose视图结构
-Composable可组合项在Android平台的实现，还是依托ViewGroup来显示的。
+Composable可组合项在Android平台的实现，是利用 `ViewGroup` 来显示的，并且最终也是使用到Android的原生控件来显示内容。
 
 通过打印堆栈可以看出，在页面布局的创建阶段，使用到了AndroidComposeView这个类。
 
 ![](/assets/img/blog/blogs_compose_window_frame.png)
 
-ComposeView其实就是一个ViewGroup，它继承自AbstractComposeView，负责对Android平台的Activity的窗口进行适配。
-
-取消掉了TitleView和ContentView，取而代之的就是AndroidComposeView这个ViewGroup，Composable可组合项的内容就在这里面来渲染显示。
+ComposeView其实就是一个ViewGroup，它继承自AbstractComposeView，负责对Android平台的Activity的窗口进行适配。取而代之的是AndroidComposeView这个ViewGroup，Composable可组合项的内容就在这里面来渲染显示。
 
 同View架构类似，Compose也是通过一个树形结构SlotTable来管理内部节点LayoutNode的。
 
@@ -372,4 +372,156 @@ Intent：表示用户的操作或事件。它是View和Model之间的桥梁，�
 
 核心思想是保证唯一可信的单向数据流来更新UI，用户事件自上而下，数据自下而上。
 
-## Multiplatform跨平台展望
+### 举例
+以网络请求一张图片为例，最简单的状态表达，可以设置一个加载态，一个成功后的展示态，一个失败提示。
+
+首先定义状态数据传输的数据类：
+
+```kotlin
+data class ImageState(
+    val loading: Boolean = false,
+    val imageUrl: String? = null,
+    val error: String? = null  
+)
+```
+
+在数据层设置网络接口，发起网络请求，网络框架选用 `Jetbrains` 的 `Ktor` 。
+
+```kotlin
+class KtorClient {
+
+    companion object {
+        const val TAG = "KtorClient"
+    }
+
+    private val client = HttpClient(CIO) {
+        install(Logging) {
+            level = LogLevel.ALL
+        }
+        install(ContentNegotiation) {
+            json(Json {
+                prettyPrint = true
+                isLenient = true
+            })
+        }
+    }
+
+    suspend fun getOneCatImage() = withContext(Dispatchers.IO) {
+        client.get("https://api.thecatapi.com/v1/images/search").body<List<PicKtorItem>>()
+    }
+}
+```
+
+在ViewModel层，注入 `KtorClient` ，维护页面加载状态，发起网络请求，获取数据，然后更新状态。
+
+```kotlin
+class MainViewModel(private val ktorClient: KtorClient) : ViewModel() {
+
+    private val _imageState = MutableStateFlow(ImageState())
+    val imageState: StateFlow<ImageState> = _imageState.asStateFlow()
+
+    fun loadCatPicture() {
+        viewModelScope.launch {
+            _imageState.value = _imageState.value.copy(loading = true) 
+            try {
+                val catPictures = ktorClient.getOneCatImage()
+                if (catPictures.isNotEmpty()) {
+                    _imageState.value = _imageState.value.copy(
+                        loading = false,
+                        imageUrl = catPictures[0].url
+                    ) 
+                } 
+            } catch (e: Exception) {
+                _imageState.value = _imageState.value.copy(
+                    loading = false,
+                    error = e.message
+                ) 
+            }
+        } 
+    }
+}
+```
+
+在Activity里，对viewmodel维护的状态的消费与界面展示：
+
+```kotlin
+class ComposeTestActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            NetDataDemoTheme {
+                val mainStateHolder: MainStateHolder by viewModel()
+                val imageState = mainStateHolder.imageStateFlow.collectAsState()
+
+                LaunchedEffect(Unit) {
+                    mainStateHolder.loadCatPicture()
+                }
+                
+                ImageTest(
+                    loading = imageState.value.loading,
+                    imageUrl = imageState.value.imageUrl,
+                    error = imageState.value.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ImageTest(loading: Boolean, imageUrl: String?, error: String?) {
+    Column {
+        Text(text = "loading: $loading, imageUrl: $imageUrl, error: $error")
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = "cat pic",
+            modifier = Modifier
+                .fillMaxWidth(1f)
+                .weight(1f)
+        )
+    }
+}
+```
+
+运行效果：
+![](/assets/img/blog/blogs_compose_toturial_cat_pic.png){:width="400" height="800" loading="lazy"}
+
+可以看到各项数据被成功取到并展示，进一步设计界面还可以根据loading, imageUrl, error的不同状态，展示不同的界面。比如loading时加入加载态蒙层，失败后加入toast提示。
+
+### 链路传递原理
+#### 数据类data class
+在Kotlin中，数据类（data class）自动为我们提供了一个copy方法。这个方法的主要作用是 **创建一个当前对象的副本** ，并且可以 **选择性地修改** 其中的某些属性。
+
+在上面的例子中，ImageState是一个数据类，使用copy方法可以方便地更新_imageState的状态，而不需要手动创建一个新的ImageState对象并复制所有的属性。
+
+#### MutableStateFlow
+在Kotlin中，StateFlow 是一种响应式数据流，它会保存一个当前值，并且可以在这个值发生变化时通知所有的订阅者。MutableStateFlow 则是可以支持允许你通过 value 属性来修改这个当前值，从而触发更新通知。
+
+在上面的示例中，_imageState 是一个 MutableStateFlow 类型的变量，它被初始化为 ImageState() 的一个实例。这意味着 _imageState 会持有一个 ImageState 类型的对象，并且可以在这个对象的状态发生变化时通知所有订阅者。
+
+在Java语境中，StateFlow的作用甚至用法，都和LiveData几乎完全一致。
+
+#### asStateFlow
+上面已经维护了一个MutableStateFlow的变量，为了防止使用方更改，需要将其转换成一个只读类型的StateFlow。所以下面紧随其后定义了一个 `imageStateFlow` ，使用 `asStateFlow()` 方法将其转换成一个只读的StateFlow。
+
+#### collectAsState
+以上在ViewModel里的两个步骤，在View框架的也是可以通用的。使用collect收集Flow数据再操作View更新属性显示界面。例如：
+
+```kotlin
+mainStateHolder.imageStateFlow.collect {
+    if(it.error!=null){
+        Toast.makeText(thisComposeTestActivity, it.error, Toast.LENGTH_SHORT).show()
+    }
+}
+```
+
+在Jetpack Compose中，对这个Flow使用 `collectAsState()` ，它主要用于将一个 Flow 类型的数据流转换为一个可观察的 State 对象。
+
+在上面获取图片url的示例中，collectAsState 函数的作用是将 MainStateHolder 类中的 imageStateFlow 这个 Flow 类型的数据流转换为一个 State 对象，这个 State 对象可以在Compose的UI中使用，并且当 imageStateFlow 中的数据发生变化时，Compose会自动重新组合UI以反映这些变化。
+
+具体来说，collectAsState 函数做了以下几件事情：
+* 订阅数据流：它会订阅 imageStateFlow 这个 Flow，开始接收其中的数据更新。
+* 保存最新状态：每当 imageStateFlow 发出一个新的值时，collectAsState 会将这个新值保存到一个 State 对象中。
+* 触发UI更新：由于Compose是响应式的，当 State 对象的值发生变化时，Compose会自动重新组合依赖于这个 State 对象的UI组件，从而实现UI的自动更新。
+
+以上就是简要的关于Jetpack Compose的MVI架构的分享，实际使用中，最好配合依赖注入，模块化等方案进一步解耦，使代码架构更清晰易于维护。

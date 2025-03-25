@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了JVM虚拟机，Dalvik虚拟机还有ART虚拟机三者之间不同特点的对比
+  本文抽离自内部的一次课题分享，普及Android平台新的声明式开发框架，以让感兴趣的同事参与我的CMP跨平台调试工具DebugManager的共建。
 image: 
   path: /assets/img/blog/blogs_compose.png
   srcset: 

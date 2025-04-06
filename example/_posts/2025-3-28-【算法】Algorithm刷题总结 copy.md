@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_cpp.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Algorithm刷题总结
+# 【算法】Algorithm刷题总结
 ## 背景
 近期决定补齐一下算法方面的知识，因为是非计算机科班出身，没有系统学过 `C++数据结构和算法` 这门课，在算法方面的知识很薄弱，想要从应用层往下深入就很困难。
 

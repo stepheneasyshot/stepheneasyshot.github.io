@@ -3,12 +3,12 @@ layout: post
 description: > 
   本文介绍了近期在leetcode的一些刷题过程的记录与总结，主要为C++语音来实现。
 image: 
-  path: /assets/img/blog/blogs_cover_tts.png
+  path: /assets/img/blog/blogs_cpp.png
   srcset: 
-    1920w: /assets/img/blog/blogs_cover_tts.png
-    960w:  /assets/img/blog/blogs_cover_tts.png
-    480w:  /assets/img/blog/blogs_cover_tts.png
-accent_image: /assets/img/blog/blogs_cover_tts.png
+    1920w: /assets/img/blog/blogs_cpp.png
+    960w:  /assets/img/blog/blogs_cpp.png
+    480w:  /assets/img/blog/blogs_cpp.png
+accent_image: /assets/img/blog/blogs_cpp.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---

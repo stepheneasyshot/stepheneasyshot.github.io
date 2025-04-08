@@ -155,7 +155,6 @@ result = "-->----->";
 reverse "----->-->" we can get "<--<-----"
 reverse "<--" we can get "--><-----"
 reverse "<-----" we can get "-->----->"
-this visualization help me figure it out :)
 ```
 
 解决方案，直接对数组遍历翻转三次

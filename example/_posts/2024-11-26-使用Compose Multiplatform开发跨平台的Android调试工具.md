@@ -62,9 +62,11 @@ upgradeUuid = "xxxx-xxxxxxx-xxxxx"
 
 * Windows端的图标为ico格式。可以通过这个在线网站来生成：
 
-```
-https://www.butterpig.top/icopro/
-```
+[ICON图标在线制作](https://www.butterpig.top/icopro/)
+
+图片切圆角，可以使用这个网站：
+
+[在线对图片进行透明圆角处理](https://www.pcccp.cn/yj/)
 
 * MacOS端的图标为icns格式。
 
@@ -75,7 +77,9 @@ https://www.butterpig.top/icopro/
 > 创建输出文件夹
 mkdir MyIcon.iconset
 
-> 生成图标
+> 输入这些命令来生成图标
+
+```
 sips -z 16 16     original.png --out MyIcon.iconset/icon_16x16.png
 sips -z 32 32     original.png --out MyIcon.iconset/icon_16x16@2x.png
 sips -z 32 32     original.png --out MyIcon.iconset/icon_32x32.png
@@ -86,6 +90,7 @@ sips -z 256 256   original.png --out MyIcon.iconset/icon_256x256.png
 sips -z 512 512   original.png --out MyIcon.iconset/icon_256x256@2x.png
 sips -z 512 512   original.png --out MyIcon.iconset/icon_512x512.png
 sips -z 1024 1024 original.png --out MyIcon.iconset/icon_512x512@2x.png
+```
 
 > 合成不同尺寸的图标
 iconutil -c icns MyIcon.iconset

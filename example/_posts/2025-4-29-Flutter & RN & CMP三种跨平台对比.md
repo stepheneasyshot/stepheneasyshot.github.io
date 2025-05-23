@@ -351,3 +351,93 @@ JetBrains 开发了一个名为 **Skiko** 的 Kotlin Multiplatform 库。Skiko �
 6.  Skia 根据目标平台的特性，利用 GPU (通过 OpenGL/Direct3D/Vulkan/Metal 等) 或 CPU 进行像素渲染，最终将 UI 呈现在屏幕上。
 
 这种方法使得 Compose Multiplatform 能够提供一致的 UI 外观和行为，无论应用程序运行在哪个平台上，同时也能利用平台原生的图形性能。
+
+## 性能
+在比较 Flutter、React Native 和 Compose Multiplatform (CMP) 的性能时，需要考虑它们各自的架构和设计哲学，因为这直接影响了它们的运行时性能。以下是这三者在性能方面的对比：
+
+### 1. Flutter
+
+**架构核心:** Flutter 使用 **Dart 语言**，并拥有自己的渲染引擎，该引擎直接通过 **Skia** 图形库（在最新版本中，桌面和移动端已逐步转向 **Impeller** 渲染引擎）绘制 UI。这意味着 Flutter 不依赖于平台原生的 UI 组件。Dart 代码在发布时会被编译为**原生机器码 (ahead-of-time, AOT)**。
+
+**性能特点:**
+
+* **接近原生性能:** 由于直接编译为机器码并使用自己的渲染引擎，Flutter 在 UI 渲染和动画方面通常能达到与原生应用非常接近的性能。它能够以 60 FPS (甚至 120 FPS) 的流畅度运行复杂动画和高负载 UI。
+* **无桥接开销:** Flutter 消除了 JavaScript 桥接的开销，因为 Dart 代码直接与底层平台通信，避免了在 JavaScript 和原生代码之间进行序列化和反序列化的性能瓶颈。
+* **启动时间:** 相对于原生应用，Flutter 应用的启动时间可能会略长，因为它需要初始化 Flutter 引擎。然而，Google 正在不断优化这方面。
+* **内存占用:** 在某些基准测试中，Flutter 应用的内存占用可能略高于原生应用，因为它捆绑了自己的引擎和渲染器。
+* **包大小:** Flutter 应用的包大小通常比原生应用大，因为它包含了 Flutter 引擎和 Dart 运行时。
+
+**总结:** Flutter 在 UI 渲染和动画流畅度方面表现出色，适合需要复杂、高度定制 UI 和高性能动画的应用。
+
+### 2. React Native
+
+**架构核心:** React Native 使用 **JavaScript/TypeScript**。它不直接绘制 UI，而是通过一个 **JavaScript 桥接 (Bridge)** 与平台原生的 UI 组件进行通信。当 JavaScript 端更新状态时，通过桥接将指令发送到原生 UI 线程，由原生组件进行渲染。
+
+**性能特点:**
+
+* **有桥接开销:** 传统的 React Native 架构中，JavaScript 线程和原生 UI 线程之间的通信需要通过桥接，这会引入一定的序列化和反序列化开销，尤其是在频繁更新 UI 或进行大量数据传输时，可能导致性能瓶颈和 UI 卡顿。
+* **原生组件渲染:** 优势在于使用原生 UI 组件，能够提供原生的外观和感觉，但在需要高度定制的 UI 或跨平台像素级一致性时，可能需要额外的努力。
+* **新架构 (Fabric & TurboModules):** React Native 正在积极推广其“新架构”，其中包含 **Fabric 渲染系统**和 **TurboModules**。
+    * **Fabric:** 旨在解决旧桥接的性能问题，通过 C++ 层实现 JavaScript 和原生之间的同步通信，减少了桥接开销，提高了 UI 响应速度和动画流畅度。它也支持并发渲染。
+    * **TurboModules:** 允许原生模块按需加载，从而改善了应用启动时间。
+    * **JSI (JavaScript Interface):** 替换了旧的桥接，允许 JavaScript 直接调用 C++ 代码，从而实现更高效的通信。
+* **启动时间:** 相对于原生应用，React Native 应用的启动时间可能较长，尤其是在加载 JavaScript 包时。新架构旨在改善这一点。
+* **内存占用:** 内存占用通常介于原生和 Flutter 之间，因为需要 JavaScript 运行时和原生组件。
+
+**总结:** React Native 在性能方面受 JavaScript 桥接的限制，但在新架构（Fabric、TurboModules、JSI）的推动下，其性能正在显著提升，尤其是在复杂 UI 和动画方面。对于需要快速开发、且对绝对原生性能要求不那么极致的应用，React Native 仍是一个强有力的选择。
+
+### 3. Compose Multiplatform (CMP)
+
+**架构核心:** Compose Multiplatform 基于 **Kotlin Multiplatform (KMP)** 技术，使用 **Kotlin** 语言。它在 Android 上复用 Google 的 Jetpack Compose，而在其他平台（iOS、桌面、Web）上，通过 **Skiko** (Skia 的 Kotlin 包装器) 直接调用 **Skia** 图形库进行 UI 绘制，与 Flutter 的像素渲染方式类似。Kotlin 代码会编译为原生二进制文件。
+
+**性能特点:**
+
+* **接近原生性能:**
+    * **Android:** 直接使用 Jetpack Compose，其性能与原生 Android UI 相当，并受益于 Android 系统内置的 Skia 库。
+    * **iOS/桌面:** 通过 Skiko/Skia 直接绘制 UI，避免了桥接开销，因此在 UI 渲染和动画方面能达到接近原生应用的性能。
+    * **AOT 编译:** Kotlin 代码可以编译为原生机器码（AOT 编译），进一步提升了运行时性能。
+* **启动时间:** 在 Android 上，与 Jetpack Compose 应用类似，启动时间通常良好。在 iOS 上，由于需要捆绑 Skia 库（不像 Android 可以依赖系统内置），可能会增加一点启动时间，但总体上仍然表现优秀。
+* **内存占用:** 通常表现良好，与原生应用或 Jetpack Compose 应用类似。
+* **包大小:** 在 Android 上，CMP 应用的包大小与 Jetpack Compose 应用类似。在 iOS 和桌面端，由于需要捆绑 Skia 库，包大小会比原生应用略大，但通常比 Flutter 应用小。
+
+**总结:** Compose Multiplatform 在性能上非常具有竞争力。它在 Android 上直接受益于 Jetpack Compose 的原生整合，而在其他平台则通过 Skia 提供了高性能的像素渲染。对于追求原生性能和统一代码库的 Kotlin 开发者来说，CMP 是一个非常吸引人的选择。
+
+
+## 适用场景
+**对极致性能要求高、或拥有复杂定制 UI 的应用:** **Flutter** 和 **Compose Multiplatform** 通常是更好的选择。它们通过直接绘制像素来绕过原生组件的限制，提供高度优化的渲染管道。
+
+**对开发速度和 Web 开发者友好度有高要求、或希望逐步迁移现有原生应用:** **React Native** (尤其是新架构下) 仍是强有力的竞争者。其庞大的社区和成熟的生态系统也是巨大优势。
+
+**对于 Kotlin 开发者、希望最大化代码共享并获得接近原生性能，同时能够方便地与现有原生代码互操作的项目:** **Compose Multiplatform** 提供了非常吸引人的平衡点。
+
+最终的选择取决于你的 **项目需求、团队技术栈、以及对性能、开发速度和原生体验** 的优先级。随着这三个框架的不断发展和优化，它们之间的 **性能差距也在逐渐缩小** 。
+
+## 外部讨论
+在热门论坛Reddit上，某篇帖子如下：
+Compose Multiplatform 与 Flutter
+
+> 您好，我正在决定将我的事业重心放在这两者之间：
+Dart（Flutter）VS Kotlin（KMP 和 CMP）
+因为我也想做独立移动应用程序，但同时也想担任移动工程师一职。
+我的工作地点在美国，所以这里的 Flutter 职位比较少。
+我知道 CMP 在 iOS 上还不稳定，但它是未来的趋势吗？
+我喜欢在 Ktor 的后端也可以使用 Kotlin。
+但 Flutter 有生态系统和热重载功能，所以我很纠结到底要继续使用哪一种......
+
+网友1：
+> 您正在询问 kotlin Reddit，所以这里会有一些偏见。
+但抛开这些不谈，学习 KMP 比学习 Flutter 更接近学习原生 Android。这就是关键优势。安卓开发者可以轻松地将他们的知识迁移到 Kotlin Multiplatform，Compose 与他们在安卓中使用的完全相同，因此可以相互映射 与 KMP 相比，Flutter 有 2-3 年的先发优势，而且拥有更成熟的生态系统。但是，您将在 Android 和 iOS SDK 的基础上学习 Flutter SDK，而原生开发人员的知识迁移学习曲线更大。
+
+网友2：
+> 使用 Compose 的 Kotlin 多平台令人惊叹。不过我不确定是否有适合它的工作，如果你正在考虑的话。这是更新颖的技术。但通过它，会有 Android 的机会。
+
+网友3：
+> 我使用过 jetpack compose 和 flutter，flutter 非常缺乏优秀的库，而且创建一个小部件需要大量的模板，令人厌恶。
+你最好还是学习这两个平台的真正原生程序，我发现 Flutter 从未真正解决开发 iOS 应用程序的痛苦。
+从安全角度来看，Flutter 也有点弱，因为你无法真正控制许多东西与操作系统的交互方式（如安全存储）或字符串的永久性，而且大多数代码扫描程序都不包括 dart 或 pub 包。
+你也得不到一个合适的集成开发环境，flutter 支持是在 android studio 上附加的。
+试着在 flutter 中做一个懒列表，然后再在 jetpack compose 中做，这就是它们生态系统的完美体现。
+
+就我个人的情况，专业为Android开发，对于Kotlin和Jetpack Compose的写法，架构设计，已经是比较熟悉了，如果有做跨平台的需求，在业务不是太复杂的情况下，使用CMP几乎是最佳选择。所以这个跨平台的能力对于熟悉这两个技术的Android开发可以说是买一送一，拿起电脑，稍微看看文档就可以写功能。
+
+国内已经有Bilibili，快手在使用KMP来重构自己的产品，腾讯甚至基于CMP自己改了一套Kuikly，所以站在发展的角度看，我认为CMP日后的成熟度和公司接受度，说不定可以超过Flutter。

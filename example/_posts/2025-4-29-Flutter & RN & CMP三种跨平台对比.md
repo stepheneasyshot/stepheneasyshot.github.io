@@ -246,18 +246,108 @@ JSI还屏蔽了不同浏览器引擎之间的差异，允许前端使用不同�
 1. Fabric 执行操作并显示 UI
 
 没有了 Bridge 提升了性能,可以用同步的方式进行操作, 启动时间也快, App 也将更小。
-
-
 ### Compose Multiplatform
+#### KMP
 首先应该了解Kotlin Multiplatform.
+
+Kotlin 在 Android 世界中广受欢迎，但它并非专为 Android 设计的技术。
+
+Kotlin 的初衷是创建一种通用语言，能够与其他编程语言兼容 ，从而用于构建不同平台（而非仅限于 Android）的应用程序。
+
+所以，Kotlin 从设计上来说就是一门多平台语言。
 
 Kotlin Multiplatform是一种跨平台开发技术，它允许开发者使用Kotlin语言编写代码，并在多个平台上运行，包括iOS、Android、Web、桌面等。不同的平台可以共享相同的代码库，从而减少了开发成本和维护成本。
 
-![](/assets/img/blog/blogs_kmp_process.webp){:width ="300" height="250" loading="lazy"}
+![](/assets/img/blog/blogs_kmp_process.webp){:width ="360" height="250" loading="lazy"}
 
 Kotlin 编译器在Android和IOS上生成对应平台特有文件的流程，它包含以下两部分：
 * 前端- 它将 Kotlin 代码转换为 IR（中间表示）。该 IR 能够通过下文所述的后端转换为机器可执行的原生代码。
 * 后端- 它将 IR 转换为机器可执行的原生代码。这得益于 JetBrains 构建的 Kotlin/Native 基础架构。对于 Android，它将 IR 转换为 Java 字节码；对于 iOS，它将 IR 转换为 iOS 原生机器可执行代码。
 
-后续参考文档：
-https://www.thedroidsonroids.com/blog/what-is-kotlin-multiplatform
+#### 支持转译成哪些语言？
+Kotlin 编译器将源代码作为输入，并生成一组特定于平台的二进制文件。在编译多平台项目时，它可以从同一份代码生成多个二进制文件。例如，编译器可以.class从同一个 Kotlin 文件生成 JVM 文件和原生可执行文件。
+
+目前，其中三种语言的支持最为成熟， JetBrains 正在不断努力扩展支持范围。
+
+* Java：这就是 Kotlin 在Android设备上运行的方式，转为class文件，在JVM平台上运行，但我们也可以在桌面或服务器应用程序中使用它。
+* JavaScript ：对js语言的支持，使我们能够在Web应用程序中使用 Kotlin ，包括前端和后端应用程序。
+* C / Objective-C：这样，我们就可以访问所有基于Linux的平台和 Apple 操作系统，例如iOS设备、iPadOS、macOS、tvOS和watchOS 。而且由于 Objective-C 可以与 Swift 兼容，因此我们也可以在Swift项目中使用 Kotlin 。
+
+并非所有 Kotlin 代码都能编译到所有平台。Kotlin 编译器会阻止您在通用代码中使用特定于平台的函数或类，因为这些代码无法编译到其他平台。
+
+例如，您无法使用java.io.File公共代码中的依赖项。它是 JDK 的一部分，而公共代码也会编译为本机代码，而 JDK 类在本机代码中不可用。
+
+![](/assets/img/blog/blogs_kmp_build_targets.svg)
+
+Kotlin的业务逻辑代码向目标平台的代码转换，是在编译器中进行的。所以在应用程序上架之前，用于分发的软件包里面，实际上和目标平台的Native应用程序没有任何区别。
+
+#### KMP开发模式
+如果某些功能无法在通用代码中实现，可以使用KMP独特的 **expect / actual** 声明机制，在commonMain中声明需要实现的功能，在原生平台的代码中使用系统特有的实现。
+
+如果我们想使用某些系统 API 或原生工具，我们也可以直接到原生文件夹中写native平台代码。这种高度灵活性使得 KMP 的风险比其他解决方案更低。
+
+Kotlin官方文档推荐的几种usecases
+
+![](/assets/img/blog/blogs_kmp_usecases.png)
+
+比较流行KMP应用模式一般是将网络请求，数据库存储等使用KMP改写，在UI逻辑上仍然使用之前的代码来实现，这样可以减少重复代码的编写，提高开发效率。有最大限度保留旧的用户交互逻辑和功能。
+#### Skia引擎
+**Skia**是一个用C++编写的开源高性能二维图形库。它本质上是一个图形引擎，为在各种硬件和软件平台上绘制文本、几何图形（形状）和图像提供了通用的 API。
+
+Skia 库的主要特点有：
+* 二维图形：专门绘制二维图形。
+* 跨平台：Skia 可在各种操作系统上无缝运行，包括 Windows、macOS、iOS、Android、Linux（Ubuntu、Debian、openSUSE、Fedora），甚至网络浏览器（通过 WebAssembly）。
+* 开源：由谷歌赞助和管理，Skia 采用 BSD 自由软件许可证，允许任何人使用和贡献。
+* 核心图形引擎：它是许多流行产品的基本图形引擎，包括
+    * 谷歌浏览器和 ChromeOS
+    * 安卓系统
+    * Flutter（谷歌用于构建本地应用程序的用户界面工具包）
+    * 火狐浏览器
+    * LibreOffice（从 7.0 版开始）
+    * 以及其他各种应用程序和框架。
+
+Skia 的**核心优势**在于它能在各种硬件上高效地渲染这些图形。它通过支持各种后端渲染技术来实现这一目标：
+* GPU 加速：** 对于现代设备，Skia 可以利用图形处理器（GPU）进行硬件加速渲染。为此，Skia 可将其内部绘图命令转换为对 GPU 应用程序接口的调用，例如：
+    * OpenGL ES / OpenGL：** 一种广泛应用于 2D 和 3D 图形的 API。
+    * AGLE：** 兼容性层，可将 OpenGL ES 调用转换为特定供应商的本地 API（如 Windows 上的 Direct3D 或 macOS 上的 Metal），以获得一致的性能。
+    * Vulkan：** 一种现代高性能图形和计算 API。
+    * Metal：** 苹果用于 iOS 和 macOS 的底层图形 API。
+* CPU 软件光栅化：** 在 GPU 加速不可用或不可取的情况下（如某些服务器或特定的渲染需求），Skia 可以退回到 CPU 上的软件渲染。这包括直接在 CPU 上将矢量图形光栅化为像素。
+ * PDF/SVG 输出：** Skia 还可以渲染成 PDF 或 SVG 等格式，这些格式基于矢量，可按比例缩放而不会降低质量。
+
+#### CMP的绘制
+这是 Skia 发挥关键作用的地方。Compose Multiplatform **不会直接使用每个平台原生的 UI 组件（例如 Android 上的 View 或 iOS 上的 UIKit 控件）来绘制**。相反，它采取了**像素渲染 (pixel-painting)** 的方式，这与 Flutter 的工作方式类似。
+
+JetBrains 开发了一个名为 **Skiko** 的 Kotlin Multiplatform 库。Skiko 是 Skia 的 Kotlin 包装器，它提供了 Kotlin API 来与底层的 Skia 图形库进行交互。
+
+在绘制阶段，Compose Multiplatform 会将布局阶段计算出的 UI 元素的形状、颜色、文本、图片等信息，转化为一系列 **Skia 绘制命令**。这些命令包括：
+* 绘制矩形、圆形、线条、路径等几何图形。
+* 绘制文本（包括字体、大小、颜色等）。
+* 绘制图片。
+* 应用变换（平移、旋转、缩放）和滤镜效果。
+
+无论是在桌面、iOS 还是 Web 上，Compose Multiplatform 都会将这些 Skia 绘制命令传递给 Skia 库。Skia 再根据目标平台的不同，选择最合适的底层图形 API 进行渲染：
+    
+**桌面 (Windows, macOS, Linux):**， Skia 可以直接利用 OpenGL、Direct3D 或 Vulkan (如果可用) 等 GPU API 进行硬件加速渲染。
+
+**iOS:** ，Compose Multiplatform 在 iOS 上也使用 Skia 进行画布渲染。这意味着它不会使用 iOS 原生的 UIKit 视图，而是直接通过 Skia 绘制到屏幕上。Skia 会利用 Metal (Apple 的图形 API) 或 OpenGL ES (较旧的 API) 进行渲染。
+
+**Android:** ，Jetpack Compose (Compose Multiplatform 的 Android 部分) 本身就使用 Skia 作为其底层的渲染引擎。所以，这部分是无缝衔接的。
+
+**Web:** ，在 Web 平台上，Compose Multiplatform 通常会利用 WebAssembly 和 HTML Canvas 元素。Skia 编译为 WebAssembly 并在 Canvas 上绘制像素。
+
+**CMP特有性能优化:**
+* **增量渲染:** Compose 只有在 UI 状态发生变化时才会重新执行受影响的 Composable 函数，并只更新屏幕上发生变化的部分。
+* **GPU 加速:** 通过 Skia 及其对底层图形 API 的支持，Compose Multiplatform 能够充分利用 GPU 进行硬件加速渲染，从而实现流畅的动画和高性能的 UI。
+* **缓存:** Skia 会在内部进行各种优化，例如图形指令的缓存，以减少重复计算。
+
+**总结来说，Compose Multiplatform 绘制组件的流程是：**
+
+1.  开发者通过 Kotlin 的 Composable 函数声明 UI。
+2.  Compose 运行时构建 UI 元素的组合树。
+3.  Compose 进行测量和布局，确定每个元素的尺寸和位置。
+4.  将 UI 元素转换为 Skia 绘制命令。
+5.  通过 Skiko 库，这些 Skia 绘制命令被传递给底层的 Skia 图形库。
+6.  Skia 根据目标平台的特性，利用 GPU (通过 OpenGL/Direct3D/Vulkan/Metal 等) 或 CPU 进行像素渲染，最终将 UI 呈现在屏幕上。
+
+这种方法使得 Compose Multiplatform 能够提供一致的 UI 外观和行为，无论应用程序运行在哪个平台上，同时也能利用平台原生的图形性能。

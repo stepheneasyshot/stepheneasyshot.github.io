@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_cover_multiplatform.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Flutter & RN & CMP三种跨平台对比
+# Flutter & RN & CMP三种跨平台方案对比
 ## 历史背景
 ### Flutter
 Flutter的历史最早可以追溯到2014年10月，其前身是Google内部孵化的Sky项目。其是一款跨平台移动应用开发框架，它允许开发者使用单一代码库同时构建iOS和Android应用。Flutter采用了Dart编程语言，这是一种面向对象的、类型安全的编程语言，与JavaScript非常相似。Flutter的主要优势在于其快速的开发速度和流畅的用户体验。

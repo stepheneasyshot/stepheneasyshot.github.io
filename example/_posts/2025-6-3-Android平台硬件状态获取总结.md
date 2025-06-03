@@ -295,7 +295,7 @@ try {
 } catch (e: java.lang.Exception) {
     suCmdExecute = false
 } finally {
-    process?.destroy()
+    suprocess?.destroy()
 }
 ```
 

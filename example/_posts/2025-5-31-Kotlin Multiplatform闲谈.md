@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了java线程池相关知识
+  本文介绍了Kotlin Multiplatform框架过去现在和未来的一些讨论主题。
 image: 
   path: /assets/img/blog/blogs_kmp_cover.png
   srcset: 

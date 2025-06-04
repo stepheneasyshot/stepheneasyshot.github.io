@@ -197,7 +197,7 @@ Lottie 动画的优势
 
 ```gradle
 dependencies {
-implementation 'com.airbnb.android:lottie:6.0.0' // 替换为最新版本
+    implementation 'com.airbnb.android:lottie:6.0.0' // 替换为最新版本
 }
 ```
 **放置 JSON 文件** 
@@ -240,7 +240,6 @@ animationView.setProgress(0.5f); // 设置播放进度
 ```
 
 Lottie 是现代移动和 Web 应用中实现高质量动画的强大工具，极大地简化了设计师和开发者之间的协作流程，并提供了出色的性能和灵活性。
-
 ### PAG动画
 **PAG动画** 是由腾讯开发的一种高效的动画渲染解决方案，全称为 **Portable Animated Graphics**。它主要用于在移动端、Web 和桌面应用中实现高性能的矢量动画播放，广泛应用于社交、广告、游戏和短视频等领域。
 
@@ -262,16 +261,20 @@ tencent-libpag = { module = "com.tencent.tav:libpag", version.ref = "tencentLibp
 ```
 
 **放置源文件**
+
 将设计师所提供的 `.pag动画` 文件导入到项目中，一般放置于assets文件夹。
 
 **xml布局添加承载的pagView**
+
 ```xml
 <com.tencent.libpag.PAGView
     android:id="@+id/pagView"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
 ```
+
 **代码中加载动画**
+
 ```kotlin
 // 调用
 playPAGView(pagView, "anim_file.pag")
@@ -350,4 +353,4 @@ GPU 绘制：
 ### kanzi && Unity 3D
 这两个动画比较详细的介绍，此前已经有一篇记录。
 
-[【Android集成Unity的两种方式】](/example/_posts/2024-12-31-Android集成Unity的两种方式.md)
+[【Android集成Unity的两种方式】](./2024-12-31-Android集成Unity的两种方式.md)

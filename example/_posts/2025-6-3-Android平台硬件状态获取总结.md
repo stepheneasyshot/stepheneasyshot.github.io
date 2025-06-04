@@ -225,6 +225,24 @@ private fun checkCPUArchitecture() =
      "cpu架构：${Build.SUPPORTED_ABIS[0]}"
 ```
 
+## CPU最大频率
+
+```kotlin
+fun getCpuFreq(): String? {
+    try {
+        val reader =
+            BufferedReader(FileReader("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq"))
+        val freq = reader.readLine()
+        reader.close()
+        // 将频率从 kHz 转换为 MHz
+        return "${(freq.toLong() / 1000)} MHz"
+    } catch (e: IOException) {
+        e.printStackTrace()
+    }
+    return null
+}
+```
+
 ## CPU硬件信息
 ```kotlin
 infoText.text = checkCPUHardware()

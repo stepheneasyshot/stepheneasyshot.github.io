@@ -205,10 +205,7 @@ class MyViewModel : ViewModel() {
 ```
 
 这个例子清晰地展示了 Retrofit 的威力：定义接口、创建实例、然后直接调用方法。所有复杂的网络细节都被完美地隐藏了起来。
-
 ## 小结
-
 **Retrofit 不是一个网络请求库，而是一个网络请求的“封装”或“适配”库。** 它站在巨人 OkHttp 的肩膀上，通过注解和动态代理技术，将开发者从繁琐的网络请求实现中解放出来，让我们能够用更符合直觉、更健壮、更易于维护的方式与 REST API 进行交互。
 
 在今天的 Android 开发中，Retrofit + OkHttp + Kotlin Coroutines + Moshi/Gson 的组合已经成为应用架构网络层的“黄金标准”，是每个 Android 开发者都应该熟练掌握的技能。
-

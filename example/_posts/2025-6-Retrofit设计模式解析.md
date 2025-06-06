@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了流行框架okhttp的设计理念和实现原理
+  本文介绍了流行框架retrofit的设计理念和实现原理
 image: 
   path: /assets/img/blog/blogs_retrofit_library.png
   srcset: 

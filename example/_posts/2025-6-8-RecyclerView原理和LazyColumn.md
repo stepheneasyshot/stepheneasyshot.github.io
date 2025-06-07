@@ -184,7 +184,7 @@ RecyclerView 提供了更精细的数据更新通知方法，如 notifyItemInser
 
 3.  **智能回收与重用 (Smart Recycling and Recomposition)**:
     * 虽然 Compose 不像 `RecyclerView` 那样有显式的 `ViewHolder` 概念，但 `LazyColumn` 内部也实现了高效的回收机制。
-    * 当一个 `item` 滚出屏幕时，其对应的 Composable 及其子 Composable 的实例并不会立即被销毁，而是会被**缓存**起来。
+    * 在 `LazyColumn` 组件中，能够被“复用”的主要概念是 Composable 函数的 UI 结构和底层布局对象 (layout objects)，而不是像传统 RecyclerView 那样对 View 实例进行回收和重用。
     * 当另一个 `item` 需要进入屏幕时，如果缓存中存在一个相同**类型**的 Composable 实例，并且这个实例可以被重用，`LazyColumn` 会尝试重用它。
     * **重用的核心在于 Recomposition (重组)**：
         * 如果被重用的 Composable 实例接收到的数据（或状态）与上次相同，那么 Composable 可能会跳过执行（可跳过 Composable 的优化）。

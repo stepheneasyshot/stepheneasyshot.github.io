@@ -42,17 +42,18 @@ Retrofit 底层默认且推荐使用 OkHttp 来执行实际的网络请求。因
 ## Retrofit 的核心组件
 下面这几个组件是掌握 Retrofit 的关键。
 ### **API 接口 (The API Interface)**
-这是你定义所有网络请求的地方。你在这里使用注解来描述每个请求。
-    * **常用注解**：
-        * **请求方法**: `@GET`, `@POST`, `@PUT`, `@DELETE`, `@HEAD`, `@PATCH`。
-        * **URL 处理**:
-            * `@Path`: 替换 URL 中的路径段，如 `/users/{id}` 中的 `id`。
-            * `@Query`: 添加查询参数，如 `/users?sort=desc` 中的 `sort`。
-            * `@Url`: 当需要动态指定完整 URL 时使用。
-        * **请求体**:
-            * `@Body`: 指定一个对象作为请求体，通常用于 `POST` 或 `PUT`，会被 Converter 序列化。
-            * `@Field`: 用于表单提交 (`application/x-www-form-urlencoded`)，需要与 `@FormUrlEncoded` 配合使用。
-        * **请求头**: `@Header`, `@Headers`。
+定义一个 `interface` 接口类，在接口里定义网络请求方法，然后使用注解来描述每个请求方法。
+
+**常用注解**：
+* **请求方法**: `@GET`, `@POST`, `@PUT`, `@DELETE`, `@HEAD`, `@PATCH`。
+* **URL 处理**:
+    * `@Path`: 替换 URL 中的路径段，如 `/users/{id}` 中的 `id`。
+    * `@Query`: 添加查询参数，如 `/users?sort=desc` 中的 `sort`。
+    * `@Url`: 当需要动态指定完整 URL 时使用。
+* **请求体**:
+    * `@Body`: 指定一个对象作为请求体，通常用于 `POST` 或 `PUT`，会被 Converter 序列化。
+    * `@Field`: 用于表单提交 (`application/x-www-form-urlencoded`)，需要与 `@FormUrlEncoded` 配合使用。
+* **请求头**: `@Header`, `@Headers`。
 
 ```kotlin
 // api declaration GithubApiService.kt
@@ -71,15 +72,6 @@ interface GithubApiService {
 * `addCallAdapterFactory()`: 添加调用适配器工厂，用于支持不同的异步库。
 * `client()`: 传入一个自定义的 `OkHttpClient` 实例。
 
-### **转换器 (Converter)**
-负责将 Java 对象（POJO）与网络请求的 Body（如 JSON, XML）进行相互转换。
-    * **请求时**：将 `@Body` 注解的对象序列化成网络请求体。
-    * **响应时**：将网络响应体反序列化成接口方法定义的返回类型对象。
-    * **常用转换器**：
-        * `converter-gson`: 使用 Google 的 Gson 库。
-        * `converter-moshi`: 使用 Square 的 Moshi 库，性能更高，对 Kotlin 更友好。
-        * `converter-jackson`: 使用流行的 Jackson 库。
-
 ```kotlin
 // create retrofit instance
 val retrofit = Retrofit.Builder()
@@ -91,6 +83,16 @@ val retrofit = Retrofit.Builder()
 // create api service instance
 val githubApiService = retrofit.create(GithubApiService::class.java)
 ```
+
+### **转换器 (Converter)**
+负责将 Java 对象（POJO）与网络请求的 Body（如 JSON, XML）进行相互转换。
+    * **请求时**：将 `@Body` 注解的对象序列化成网络请求体。
+    * **响应时**：将网络响应体反序列化成接口方法定义的返回类型对象。
+    * **常用转换器**：
+        * `converter-gson`: 使用 Google 的 Gson 库。
+        * `converter-moshi`: 使用 Square 的 Moshi 库，性能更高，对 Kotlin 更友好。
+        * `converter-jackson`: 使用流行的 Jackson 库。
+
 ###  **调用适配器 (Call Adapter)**
 这个配置决定了你接口方法的返回类型。默认情况下，方法返回 `Call<T>` 类型，通过添加适配器，你可以让方法直接返回其他类型，从而与现代异步编程范式结合。
 

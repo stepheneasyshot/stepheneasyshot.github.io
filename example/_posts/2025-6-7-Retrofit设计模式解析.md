@@ -102,8 +102,7 @@ val githubApiService = retrofit.create(GithubApiService::class.java)
 * 使用 RxJava：`fun getUser(): Single<User>`
 
 ## 一个完整的 Kotlin + 协程示例
-
-让我们看一个具体的例子，从 GitHub API 获取一个用户的信息。
+下面这个具体的例子，从 GitHub API 获取一个用户的信息。
 
 **第 1 步：添加依赖 (build.gradle.kts)**
 ```kotlin
@@ -144,6 +143,7 @@ interface GithubApiService {
 
 **第 4 步：创建 Retrofit 实例**
 通常我们会把它放在一个单例或者依赖注入的模块中。
+
 ```kotlin
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -179,6 +179,7 @@ object RetrofitClient {
 
 **第 5 步：发起网络请求**
 在 ViewModel 或者其他有协程作用域的地方调用。
+
 ```kotlin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

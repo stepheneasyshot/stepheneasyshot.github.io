@@ -80,7 +80,84 @@ LeakCanary 会调用 `Debug.dumpHprofData(filePath)` 方法将当前 Java 堆的
 
 开发者可以通过这个界面快速定位问题，并进行修复。
 
-## 优点
+## Demo实现
+按照如上的设计理念，我们也可以自己尝试实现一个简单的Activity泄露检测工具。以下是一个简单的例子：
+
+```kotlin
+object LeakActivityTest {
+
+    private val weakReferenceMap = mutableMapOf<String, WeakReference<Activity>>()
+
+    private val supervisedCoroutine =
+        CoroutineScope(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
+            infoLog("CoroutineExceptionHandler: ${throwable.message}")
+        })
+
+    private lateinit var loopCheckJob: Job
+
+    private val activityLifecycleCallbacks = object : ActivityLifecycleCallbacks {
+        override fun onActivityCreated(p0: Activity, p1: Bundle?) {
+        }
+
+        override fun onActivityStarted(p0: Activity) {
+        }
+
+        override fun onActivityResumed(p0: Activity) {
+        }
+
+        override fun onActivityPaused(p0: Activity) {
+        }
+
+        override fun onActivityStopped(p0: Activity) {
+        }
+
+        override fun onActivitySaveInstanceState(p0: Activity, p1: Bundle) {
+        }
+
+        override fun onActivityDestroyed(p0: Activity) {
+            infoLog("==========>onActivityDestroyed<==========")
+            infoLog("activity: ${p0::class.java.simpleName}")
+            weakReferenceMap[p0::class.java.simpleName] = WeakReference(p0)
+            System.gc()
+        }
+
+    }
+
+    /**
+     * 注册 ActivityLifecycleCallbacks
+     */
+    fun registerActivityLifecycleCallbacks(application: Application) {
+        application.registerActivityLifecycleCallbacks(activityLifecycleCallbacks)
+    }
+
+    /**
+     * 循环检查弱引用是否被回收
+     */
+    fun startLoopCheckLeak() {
+        loopCheckJob = supervisedCoroutine.launch {
+            while (true) {
+                Thread.sleep(1000)
+                // print size
+                infoLog("weakReferenceMap size: ${weakReferenceMap.size}")
+                weakReferenceMap.forEach {
+                    if (it.value.get() == null) {
+                        infoLog("activity: ${it.key} has been destroyed")
+                    } else {
+                        infoLog("activity: ${it.key} is still alive")
+                    }
+                }
+            }
+        }
+    }
+
+    fun release() {
+        loopCheckJob.cancel()
+    }
+}
+```
+
+
+## LeakCanary 的优点
 LeakCanary 是一款非常优秀的内存泄漏检测工具。
 
 具体来具有以下优点：
@@ -89,7 +166,7 @@ LeakCanary 是一款非常优秀的内存泄漏检测工具。
 * 轻量级：对应用性能影响较小，不会显著增加应用的体积或运行时开销。
 * 开源免费：由 Square 公司维护，代码开源，社区活跃，易于集成和定制。
 
-## 局限性
+## LeakCanary 的局限性
 尽管 LeakCanary 是一款非常优秀的内存泄漏检测工具，但它也有一些局限性：
 * 仅针对 Activity 和 Fragment：默认情况下，LeakCanary 主要检测 Activity 和 Fragment 的泄漏，其他对象（如自定义 View、Service 等）需要手动扩展。
 * Heap Dump 分析耗时：生成和分析 Heap Dump 可能会消耗一定的时间和内存资源，尤其是在内存较大的应用中。

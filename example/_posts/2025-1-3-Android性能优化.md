@@ -26,8 +26,10 @@ sitemap: false
     * `SoftReference<Object> softReference=new SoftReference<>(o1);`
     * 对于只有软引用的对象来说，**当系统内存充足时它不会被回收，当系统内存不足时它会被回收** 。软引用通常用在对内存敏感的程序中，比如高速缓存就有用到软引用，内存够用的时候就保留，不够用就回收！
 * 弱引用：
+    * `WeakReference<Object> weakReference=new WeakReference<>(o1);`
     * 对于只有弱引用的对象来说，只要垃圾回收机制一运行，不管JVM的内存空间是否足够，都会回收该对象占用的内存。需要使用WeakReference来实现。
 * 虚引用：
+    * `PhantomReference<Object> phantomReference=new PhantomReference<>(o1,referenceQueue);`
     * 虚引用是所有引用类型中最弱的一个。一个对象是否有虚引用的存在，完全不会对其生存时间构成影响，也无法通过虚引用来取得一个对象实例。**为一个对象设置虚引用关联的唯一目的只是为了能在这个对象被收集器回收时收到一个系统通知**。（虚引用必须和引用队列 （ReferenceQueue）联合使用 ）。
 
 ### 内存泄漏

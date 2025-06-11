@@ -81,7 +81,7 @@ LeakCanary 会调用 `Debug.dumpHprofData(filePath)` 方法将当前 Java 堆的
 开发者可以通过这个界面快速定位问题，并进行修复。
 
 ## Demo实现
-按照如上的设计理念，我们也可以自己尝试实现一个简单的Activity泄露检测工具。以下是一个简单的例子：
+按照如上的设计理念，我们也可以自己尝试实现一个简单的Activity泄露检测工具。以下是一个简单的例子，实现了生命周期监听，循环检查走了 `onDestroy` 回调的 Activity 是否被及时回收。
 
 ```kotlin
 object LeakActivityTest {
@@ -155,7 +155,6 @@ object LeakActivityTest {
     }
 }
 ```
-
 
 ## LeakCanary 的优点
 LeakCanary 是一款非常优秀的内存泄漏检测工具。

@@ -212,3 +212,69 @@ class MyViewModel : ViewModel() {
 **Retrofit 不是一个网络请求库，而是一个网络请求的“封装”或“适配”库。** 它站在巨人 OkHttp 的肩膀上，通过注解和动态代理技术，将开发者从繁琐的网络请求实现中解放出来，让我们能够用更符合直觉、更健壮、更易于维护的方式与 REST API 进行交互。
 
 在今天的 Android 开发中，Retrofit + OkHttp + Kotlin Coroutines + Moshi/Gson 的组合已经成为应用架构网络层的“黄金标准”，是每个 Android 开发者都应该熟练掌握的技能。
+
+## Ktor
+Ktor 是一个由 JetBrains 开发的，用于在 Kotlin 中构建连接应用的异步框架。它旨在提供一个轻量级、灵活且高度可扩展的网络应用框架，既可以用于构建服务器端应用（如 RESTful API、微服务、Web 网站），也可以用于构建多平台 HTTP 客户端应用。
+
+![](/assets/img/blog/blogs_ktor_cover.png)
+
+## Android平台上的基础使用
+首先添加gradle依赖：
+```groovy
+implementation "io.ktor:ktor-client-core:$ktor_version"
+implementation "io.ktor:ktor-client-android:$ktor_version"
+```
+
+之后就可以使用HttpClient定制化，例如添加日志、内容协商、序列化等功能。然后就可以使用HttpClient发送请求了。
+
+```kotlin
+class KtorClient {
+
+    companion object {
+        const val TAG = "KtorClient"
+    }
+
+    private val client = HttpClient(CIO) {
+        install(Logging) {
+            level = LogLevel.ALL
+        }
+        install(ContentNegotiation) {
+            json(Json {
+                prettyPrint = true
+                isLenient = true
+            })
+        }
+    }
+
+    suspend fun getGithubRepos(userName: String) = withContext(Dispatchers.IO) {
+        client.get("https://api.github.com/users/${userName}/repos")
+            .body<List<GithubRepoItem>>()
+    }
+
+    fun release() {
+        client.close()
+    }
+}
+```
+
+> CIO 是 Ktor 自己的纯 Kotlin 实现的 I/O 引擎。它的设计目标是轻量级、无额外依赖、并完全基于 Kotlin 协程构建。这意味着它能最大程度地利用 Kotlin 协程的异步特性，提供高效且非阻塞的 I/O 操作。它直接利用 Kotlin 协程的调度和挂起机制来处理网络事件。它的内部实现尽可能地避免了阻塞操作，并且通过协程调度来管理并发连接。
+
+## 设计理念
+### 纯 Kotlin 和协程优先（Kotlin and Coroutines First）
+Ktor 完全基于 Kotlin 语言构建，充分利用 Kotlin 的语言特性，例如 DSL（领域特定语言）、扩展函数、协程等。
+
+Ktor 的异步编程模型是基于 Kotlin 协程实现的。这意味着开发者可以使用看似 **同步的命令式代码来编写异步逻辑** ，极大地简化了并发编程的复杂性，避免了回调地狱，并提高了代码的可读性和可维护性。每个请求都会在 Ktor 中启动一个新的协程来处理，从而实现高效的并发。
+### 轻量级和非侵入式（Lightweight and Unopinionated）
+Ktor 不强加固定的项目结构或技术栈。它允许开发者根据自己的需求选择日志、模板引擎、消息队列、持久化、序列化、依赖注入等各种技术。
+
+它提供了一个松散耦合的架构，你可以只使用你需要的功能，而不是一个庞大的全功能框架。这种灵活性使得 Ktor 非常适合构建微服务或需要高度定制化的应用。
+
+Ktor 的 API 大多是函数调用和 Lambda 表达式，结合 Kotlin 的 DSL 能力，使代码看起来声明式且简洁。
+### 高度可扩展性（Highly Extensible via Plugins/Features）
+Ktor 采用 “插件” 机制来实现其核心功能和可扩展性。诸如内容协商、身份验证、日志、会话管理、压缩等功能都是通过安装插件来实现的。
+
+这种统一的拦截机制允许在请求/响应处理管道的不同阶段插入自定义逻辑。开发者可以轻松地编写自己的插件来扩展 Ktor 的功能，或者集成第三方库。
+### 多平台支持（Multiplatform Support）
+Ktor 不仅仅局限于 JVM。Ktor Client 模块支持 Kotlin Multiplatform Mobile (KMM)，允许在 Android、iOS、桌面以及服务器端共享网络逻辑。这使得 Ktor 成为构建跨平台应用的理想选择。
+### 类型安全路由（Type-Safe Routing）
+Ktor 提供了类型安全的路由机制，允许通过类而不是字符串来定义 API 结构和路由参数。这在编译时就可以验证路由参数和路径，减少了常见的运行时错误，并使得重构更加安全和可管理。

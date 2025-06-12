@@ -14,13 +14,11 @@ sitemap: false
 ---
 # HarmonyOS鸿蒙系统应用层扫盲
 ## JS & TS & ArkTS
-在HarmonyOS中，应用开发使用的是ArkTS语言，它是基于TypeScript的扩展，旨在为开发者提供更高效、更安全的开发体验。
+在HarmonyOS中，应用开发使用的是ArkTS语言。了解到它是基于 `TypeScript` 的扩展，旨在为开发者提供更高效、更安全的开发体验。
 
-TS又是什么东西呢，对没有做过前端的开发来说，这几个语言的概念和特性都会有点疑惑。
+TypeScript 又是什么东西呢，对没有做过前端的开发来说，这几个语言的概念和特性都会有点疑惑。
 ### JavaScript (JS)
-JavaScript是一种脚本语言，最初用于网页交互，现广泛用于前端、后端（Node.js）、移动端（React Native）等，现在已成为Web开发的主要语言。
-
-它是由网景公司（Netscape）在1995年开发的，最初被称为LiveScript，但后来改名为JavaScript。
+JavaScript是一种脚本语言，最初用于网页交互，现广泛用于前端、后端（Node.js）、移动端（React Native）等，现在已成为Web开发的主要语言。它是由网景公司（Netscape）在1995年开发的，最初被称为LiveScript，但后来改名为JavaScript。
 
 JavaScript具有以下特点：
 * 动态类型：变量类型在运行时确定，无需显式声明。
@@ -83,20 +81,25 @@ struct MyComponent {
 ```
 
 适用于HarmonyOS应用开发，特别是需要高性能、分布式能力的场景，如智能穿戴设备、智能车等。
-
 ## 应用运行环境
 ### Android
-在Android平台上，每个应用程序都运行在一个独立的进程中，由Android Runtime（ART）虚拟机提供执行环境。ART是基于寄存器架构的高级虚拟机，其设计继承自Dalvik虚拟机但进行了全面重构，采用AOT（Ahead-Of-Time）编译技术将DEX字节码预先编译为本地机器码，相比传统的JIT（Just-In-Time）编译方式显著提升了执行效率。这个类JVM环境通过优化过的指令集执行编译后的代码，同时保持与Java SE标准库的部分兼容性（通过Android SDK提供的精简实现）。
+在Android平台上，每个应用程序都运行在一个独立的进程中，由Android Runtime（ART）虚拟机提供执行环境。
 
-在系统架构层面，ART虚拟机通过Binder IPC机制与Android系统服务进行进程间通信。Binder作为基于Linux内核的高效通信框架，采用内存映射和引用计数技术实现跨进程方法调用（RPC），其传输性能比传统IPC方式提升5-10倍。系统服务如ActivityManagerService通过Binder向应用进程发送生命周期控制指令，而应用则通过代理接口（如IActivityManager.Stub）回调系统服务，形成完整的进程间协作机制。
+ART是基于寄存器架构的高级虚拟机，其设计继承自Dalvik虚拟机但进行了全面重构，采用AOT 预先编译技术将DEX字节码预先编译为本地机器码。
+
+这是一个 **类JVM环境** ，通过优化过的指令集执行编译后的代码，同时保持与Java SE标准库的部分兼容性（通过Android SDK提供的精简实现）。
+
+在系统架构层面，应用进程通过 **Binder** 这个 IPC 机制与Android系统服务进行进程间通信。Binder作为基于Linux内核的高效通信框架，采用内存映射和引用计数技术实现跨进程方法调用（RPC），其传输性能比传统IPC方式提升5-10倍。
+
+例如 **AMS(ActivityManagerService)** 通过Binder向应用进程发送生命周期控制指令，而应用则通过代理接口（如IActivityManager.Stub）回调系统服务，形成完整的进程间协作机制。
 
 应用运行时，ART虚拟机通过以下核心机制实现资源管理：
-* 内存管理采用分代垃圾回收（Generational GC）策略，配合Android特有的Low Memory Killer机制
-* UI线程使用消息队列（MessageQueue）和Looper实现事件驱动模型
-* 图形渲染通过RenderThread与SurfaceFlinger服务协同，采用VSync信号同步的帧调度机制
-* 资源加载通过Resources类实现多维度（dpi/语言/方向等）资源匹配系统
+* 内存管理采用**分代垃圾回收**（Generational GC）策略，配合Android特有的 **Low Memory Kill** 机制
+* UI线程使用**消息队列**（MessageQueue）和**Looper**实现事件驱动模型
+* 图形渲染通过 **RenderThread** 与 **SurfaceFlinger** 服务协同，采用 VSync 信号同步的帧调度机制
+* 资源加载通过 **Resources** 类实现多维度（dpi/语言/方向等）资源匹配系统
 
-这种架构设计使得Android应用在受限的移动设备环境下，仍能实现高效的进程隔离、资源调度和用户体验保障。最新的ART改进（如从Android 12引入的压缩引用指针技术）进一步将内存占用降低20%，体现了持续优化的技术演进路径。
+这种架构设计使得Android应用在性能受限的移动设备环境下，仍能实现高效的**进程隔离、资源调度和用户体验保障**。最新的ART改进（如从Android 12引入的压缩引用指针技术）进一步将内存占用降低20%，体现了持续优化的技术演进路径。
 ### IOS
 在iOS平台上，每个应用程序都运行在一个独立的沙盒环境中，由Objective-C/Swift运行时（Runtime）提供核心执行能力，并基于Mach-O可执行格式直接在ARM架构上运行原生代码。不同于Android的虚拟机机制，iOS采用AOT（Ahead-Of-Time）全量编译，通过LLVM编译器链将代码预先优化为机器指令，结合苹果自研的A系列芯片的定制指令集（如Apple Silicon的AMX矩阵加速指令），实现接近裸金属的执行效率。
 #### **系统架构与进程通信**
@@ -157,4 +160,3 @@ Flutter引擎深度优化，渲染管线绕过Skia直接调用OpenHarmony图形�
 跨设备弹性部署，应用可动态迁移运行位置（如手机游戏无缝切换到平板继续运行）。
 
 HarmonyOS通过异构硬件融合和全栈性能优化，在IoT场景下实现资源占用仅为Android的1/4（128MB内存即可运行）。随着OpenHarmony 4.0发布，其异构计算调度器和量子化安全框架进一步强化了多端协同能力，体现了“一次开发，多端部署”的架构先进性。
-

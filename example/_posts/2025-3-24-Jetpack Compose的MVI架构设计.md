@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文抽离自内部的一次课题分享，普及Android平台新的声明式开发框架，以让感兴趣的同事参与我的CMP跨平台调试工具DebugManager的共建。
+  本文抽离自内部的一次课题分享，普及Android平台新的声明式开发框架。
 image: 
   path: /assets/img/blog/blogs_compose.png
   srcset: 

@@ -191,18 +191,8 @@ Android消息机制流程图：
 **Looper.prepareMainLooper()**
 
 这个静态方法是主线程 Looper 初始化的关键。它会检查当前线程是否已经有 Looper（避免重复创建）。
-* 如果当前线程没有 Looper，则​创建一个新的 MessageQueue​。
-​* 再​创建一个 Looper 对象​​，并将 MessageQueue 关联到 Looper 上。
+* 如果当前线程没有 Looper，则先​创建一个新的 MessageQueue​。再​创建一个 Looper 对象​​，并将 MessageQueue 关联到 Looper 上。
 * 将 Looper 存储到当前线程的 ThreadLocal 中（确保每个线程有自己的 Looper）。
-
-**Looper.loop()**
-
-在 ActivityThread 的 main() 方法的最后，会调用 `Looper.loop()`。这个方法会使当前线程（主线程）进入一个 无限循环。在这个循环中，Looper 会不断地从其关联的 MessageQueue 中取出消息并分发给相应的 Handler 进行处理。如果消息队列为空，Looper 线程会进入休眠状态（这正得益于底层 epoll 和 eventfd 的机制），直到有新消息到来。
-
-这个循环就是安卓 UI 线程保持“存活”和响应用户事件的基础。
-因此，当你直接在主线程创建 new Handler() 时，它会自动获取当前线程（主线程）的 Looper，因为 Looper.prepareMainLooper() 和 Looper.loop() 已经在应用启动时由系统完成了。
-
-在 Native 层的循环器和消息队列分别对应 android::Looper 类和 android::MessageQueue 类。
 
 当我们通过 Java 层的 `Looper.prepare()` 或 `Looper.prepareMainLooper()` 方法初始化 Looper 时，它会触发 Native 层的对应操作。简而言之，这个初始化过程主要涉及以下几个关键步骤：
 
@@ -283,7 +273,20 @@ sp<Looper> Looper::create(sp<MessageQueue> messageQueue) {
 
 Looper 的构造函数中会调用 `epoll_create1()` 创建一个 epoll 实例，然后再调用 epoll_ctl() 给 epoll 实例添加一个唤醒事件文件描述符，把唤醒事件的文件描述符和监控请求的文件描述符添加到 epoll 的兴趣列表中。到这里消息机制的初始化就完成了。
 ### 消息轮询机制建立
-以Java 层的 `Looper.loop()` 为入口，这个消息循环的建立，就是 `android::Looper` 利用 `epoll` 高效地等待并处理事件的过程。
+在 `ActivityThread` 的 `main()` 方法的最后，会调用 `Looper.loop()`。这个方法会使当前线程（主线程）进入一个无限循环。
+
+这个循环中会调用 **MessageQueue 的 next()** 方法获取下一条消息，获取到消息后，loop() 方法就会调用 Message 的 target 的 dispatchMessage() 方法，target 其实就是发送 Message 的 Handler 。最后就会调用 Message 的 recycleUnchecked() 方法回收处理完的消息。
+
+如果消息队列为空，Looper 线程会进入休眠状态（这正得益于底层 epoll 和 eventfd 的机制），直到有新消息到来。
+
+这个循环就是安卓 UI 线程保持“存活”和响应用户事件的基础。
+因此，当你直接在主线程创建 new Handler() 时，它会自动获取当前线程（主线程）的 Looper，因为 `Looper.prepareMainLooper()` 和 `Looper.loop()` 已经在应用启动时由系统完成了。
+
+在 MessageQueue 的 next() 方法中，首先会调用 `nativePollOnce()` JNI方法，检查队列中是否有新的消息要处理，如果没有，那么当前线程就会在执行到 Native 层的 epoll_wait() 时阻塞。如果有消息，而且**消息是同步屏障**，那就会找出或等待需要优先执行的异步消息。调用完 nativePollOnce() 后，如果没有同步屏障，或者取到到了异步或非异步消息，就会判断消息是否到了要执行的时间，是的话则返回消息给 Looper 处理，不是的话就重新计算消息的执行时间（when）。在把消息返回给 Looper 后，下一次执行 nativePollOnce() 的 timeout 参数的值是默认的 0 ，所以进入 next() 方法时，如果没有消息要处理，next() 方法中还可以执行 IdleHandler。在处理完消息后，next() 方法最后会遍历 IdleHandler 数组，逐个调用 IdleHandler 的 queueIdle() 方法。
+
+> IdleHandler 可以用来做一些在主线程空闲的时候才做的事情，通过 Looper.myQueue().addIdleHandler() 就能添加一个 IdleHandler 到 MessageQueue 中。
+
+以Java 层的 `Looper.loop()` 和 `MessageQueue` 的 `next()` 方法为入口，这个消息循环的建立，就是 `android::Looper` 利用 `epoll` 高效地等待并处理事件的过程。
 
 在 Native 层，消息循环的建立主要围绕着 `android::Looper` 类的 `loop()` 方法和其内部调用的 `pollOnce()` 方法展开。
 #### 1\. `Looper::loop()` - 消息循环的入口
@@ -403,26 +406,56 @@ int Looper::pollOnce(int timeoutMillis) {
 * 如果检测到 `LOOPER_ID_WAKE` 事件（即 `mWakeEventFd` 被写入），它知道 Looper 被唤醒了，通常意味着有新的消息需要处理。它会读取 `eventfd` 的值来清除信号。
 * 最后，`pollOnce()` 调用 `mMessageQueue->dispatchMessages()`，真正地从消息队列中取出消息，并通过 `Handler.dispatchMessage()` 分发给相应的 Handler 进行处理。
 
-通过这种方式，Android 的 Handler 消息机制在 Native 层构建了一个高效的事件循环：**利用 `epoll` 集中监听各种 I/O 事件，并用 `eventfd` 作为轻量级的内部唤醒信号**，确保了在没有任务时线程可以休眠，而在有任务时能够被迅速、精确地唤醒，从而实现安卓系统流畅且低功耗的响应。
+通过这种方式，在 Native 层构建了一个高效的事件循环。 **利用 `epoll` 集中监听各种 I/O 事件，并用 `eventfd` 作为轻量级的内部唤醒信号**，确保了在没有任务时线程可以休眠，而在有任务时能够被迅速、精确地唤醒，从而实现安卓系统流畅且低功耗的响应。
 
 ### 消息发送
+#### 插入：Message对象
+Message 的实现。Message 中的 what 是消息的标识符。而 arg1、arg2、obj 和 data 分别是可以放在消息中的整型数据、Object 类型数据和 Bundle 类型数据。when 则是消息的发送时间。
+
+sPool 是全局消息池，最多能存放 50 条消息，一般建议用 Message 的 obtain() 方法复用消息池中的消息，而不是自己创建一个新消息。如果在创建完消息后，消息没有被使用，想回收消息占用的内存，可以调用 recycle() 方法回收消息占用的资源。如果消息在 Looper 的 loop() 方法中处理了的话，Looper 就会调用 recycleUnchecked() 方法回收 Message 。
+
+#### 消息发送
+当我们用 Handler 的 **sendMessage() 、 sendEmptyMessage() 和 post()** 等方法发送消息时，首先会创建或者复用一个 `Message` 对象。这个 Message 对象包含了消息类型、数据以及目标 Handler 等信息。 
+
+这几个发送消息的方法最终都会走到 Handler 的 enqueueMessage() 方法。Handler 的 enqueueMessage() 又会调用 `MessageQueue` 的 `enqueueMessage()` 方法。
+
+enqueueMessage() 首先会判断，当**没有更多消息、消息不是延时消息、消息的发送时间早于上一条消息**这三个条件其中一个成立时，就会把当前消息作为链表的头节点，然后如果 IdleHandler 都执行完的话，就会调用 nativeWake() JNI 方法唤醒消息轮询线程。
+
+如果上述三个条件**都不成立**，就会遍历消息链表，当遍历到最后一个节点，或者发现了一条早于当前消息的发送时间的消息，就会结束遍历，然后把遍历结束的最后一个节点插入到链表中。如果在遍历链表的过程中发现了一条异步消息，就不会再调用 nativeWake() JNI 方法唤醒消息轮询线程。
+
+这一步可以确定**当前发送的消息应该放到消息链表的哪个位置**。
 
 ### 消息处理
+#### **从 MessageQueue 中取出消息**
 
+一旦 pollOnce() 被唤醒并返回，Native Looper 会调用 Native MessageQueue 的相应方法（例如 next()）。MessageQueue 会：
 
+* 加锁保护： 同样，在访问消息队列时会进行加锁操作（例如 pthread_mutex_lock），确保线程安全。
+* 遍历链表： 从内部的链表结构中取出最需要处理的那个消息（即 when 值最小且已到期的消息）。
+* 移除消息： 将取出的消息从队列中移除。
+* 解锁： 释放锁。
 
+#### **将 Native 消息转回 Java Message**
+Native Looper 取出 Native Message 对象后，需要将其封装回 Java 层的 Message 对象，以便 Java 层的 Handler 能够理解和处理。这通常通过 JNI 调用来实现，将 Native Message 的数据（如 what, arg1, arg2, obj 指针等）填充到 Java Message 对象中。
 
+#### **派发消息到 Java 层**
+一旦 Java Message 对象准备好，Native 层会再次通过 JNI 调用 Java Message 对象的 target (也就是 Handler) 的 dispatchMessage() 方法。
 
+```cpp
+// 简化示意，非完整代码
+// 在 Native Looper 的 C++ 代码中，执行类似以下的操作
+// jniEnv->CallVoidMethod(javaMessageObj, dispatchMessageMethodID);
+```
 
+#### **dispatchMessage**
+最后，消息回到了 Java 层，由目标 Handler 的 `dispatchMessage()` 方法接收。dispatchMessage() 方法会根据消息的 callback (通过 post() 方法发送的 Runnable) 或 what 值，最终调用 handleMessage() 方法来处理具体的业务逻辑。
 
+此前在 Handler 的 enqueueMessage() 方法中，会设置 Message 的 target 为当前 Handler 对象。
 
-
-
-
-
-
-
-
+Handler 的 dispatchMessage 方法的优先级顺序：
+* 如果 Message.callback（即 post(Runnable) 的 Runnable）不为空，执行 callback.run()。
+* 如果 Handler.mCallback（Handler 的构造函数传入的 Callback 对象）不为空，调用 mCallback.handleMessage(msg)。
+* 否则调用 Handler.handleMessage(msg)。
 
 ## 经典问题点
 ### postDelay消息是如何实现的？
@@ -469,16 +502,3 @@ int Looper::pollOnce(int timeoutMillis) {
     * **唤醒与消息处理**:
         * **时间到期**: 当 Looper 休眠的时间达到 `nextPollTimeoutMillis` 后，它会自动被系统唤醒。唤醒后，它会再次调用 `MessageQueue.next()`，此时原先的延时消息应该已经到期，于是被取出并分发处理。
         * **新消息提前唤醒**: 如果在 Looper 休眠期间，有新的消息入队，并且这个新消息的 `when` 值比当前队列头部消息的 `when` 值更早（即新消息需要更早处理），或者 Looper 根本就没有休眠，那么 `MessageQueue` 会通过向管道写入数据的方式，立即 **唤醒** 正在休眠的 Looper 线程。Looper 线程被唤醒后，会重新计算下一次休眠时间，或者直接处理更早到期的消息。
-
----
-
-#### 总结
-
-`postDelayed` 延时消息的底层实现可以归纳为以下几点：
-
-1.  **绝对时间戳**：消息携带一个 `when` 属性，表示其到期处理的绝对时间。
-2.  **有序消息队列**：`MessageQueue` 内部维护一个按 `when` 值排序的队列，确保到期时间最早的消息总在队首。
-3.  **Looper 的智能休眠**：`Looper` 会根据队首消息的到期时间来计算休眠时长，并通过 Native 层的 `epoll_wait` 或管道机制进入高效的阻塞状态。
-4.  **及时唤醒机制**：无论是时间到期，还是有更早到期的新消息入队，Looper 都能被及时唤醒以处理相应的任务。
-
-这种设计使得 Android 的延时消息机制既高效又准确，能够确保消息在指定时间后才被处理，同时避免了不必要的 CPU 消耗。

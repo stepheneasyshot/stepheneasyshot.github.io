@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文针对鸿蒙系统的基础特性，应用层开发所需基础知识，进行一个简单的调研，对比一下和其他平台的差异。
+  本文介绍了Thread.sleep()和协程delay的区别，以及在哪些场景下使用。
 image: 
   path: /assets/img/blog/blogs_jvm_thread_cover.png
   srcset: 

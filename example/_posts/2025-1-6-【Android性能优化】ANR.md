@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了Android应用性能优化的方法论和实例
+  本文介绍了Android平台ANR的产生原因和处理方法。
 image: 
   path: /assets/img/blog/blogs_anr_cover.png
   srcset: 

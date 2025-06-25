@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文针对鸿蒙系统的基础特性，应用层开发所需基础知识，进行一个简单的调研，对比一下和其他平台的差异。
+  本文介绍了Fragment组件的进阶知识，包括Fragment的生命周期、Fragment间的通信方式等。
 image: 
   path: /assets/img/blog/blogs_android_common_cover.png
   srcset: 

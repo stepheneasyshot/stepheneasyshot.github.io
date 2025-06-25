@@ -13,13 +13,7 @@ excerpt_separator: <!--more-->
 sitemap: false
 ---
 # Fragment组件进阶
------
-
-## 深入理解 Android Fragment
-
-作为一名 Android 开发者，你肯定对 **Fragment** 不陌生。它是 Android UI 开发中一个非常重要的组件，用于构建模块化、可复用且灵活的用户界面。
-
-### 什么是 Fragment？
+`Fragment` 是 Android UI 开发中一个非常重要的组件，用于构建模块化、可复用且灵活的用户界面。
 
 **Fragment** 可以被视为一个**Activity 的一部分或行为**。它拥有自己的生命周期、布局和输入事件，但它必须托管在一个 `Activity` 中。一个 `Activity` 可以包含一个或多个 `Fragment`，也可以在不同的 `Activity` 中复用同一个 `Fragment`。
 
@@ -168,6 +162,8 @@ class MainActivity : AppCompatActivity() {
     }
 }
 ```
+
+> 初始化添加时最好是先行检查一下 `savedInstanceState` 是否为 `null`，避免重复添加 Fragment。如果是系统的配置变更，如语言和主题，我们知道Activity会自动重建，而FagmentManager 会在 Activity 重建时，自动恢复那些在 Activity 被销毁前已经存在的 Fragment 实例。如果此时又调用了 `fragmentTransaction.add()` 方法添加 Fragment，就会导致重复添加，引发异常，界面内容可能会重叠显示多个fragment。
 
 对应的 `activity_main.xml` 布局需要一个用于容纳 Fragment 的容器：
 

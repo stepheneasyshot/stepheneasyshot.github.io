@@ -67,7 +67,7 @@ Android 的生命周期函数（如 onCreate()、onResume()、onPause()、onDest
 
 常见的可能导致ANR的操作：
 
-#### 1\. `onCreate()` 中进行耗时操作
+##### 1\. `onCreate()` 中进行耗时操作
 
   * **场景：** 在 `onCreate()` 中加载大量数据、进行复杂的数据库查询、或执行网络请求。
   * **ANR 原因：** 应用启动时，`onCreate()` 需要快速完成，才能显示第一个界面。如果耗时过长，用户将看到黑屏或卡顿，并最终收到 ANR 提示。
@@ -78,7 +78,7 @@ Android 的生命周期函数（如 onCreate()、onResume()、onPause()、onDest
           * **Android Architecture Components (如 Room, ViewModel)：** 配合 `LiveData` 或 `Flow`，在 `ViewModel` 中处理数据逻辑，然后在 UI 线程观察数据变化。
       * **UI 初始化：** 仅在 `onCreate()` 中进行必要的 UI 视图膨胀和组件绑定。
 
-#### 2\. `onResume()` 中进行耗时操作
+##### 2\. `onResume()` 中进行耗时操作
 
   * **场景：** 在 `onResume()` 中刷新大量数据、注册耗时监听器。
   * **ANR 原因：** 当 Activity 从后台回到前台，或从部分遮盖状态恢复时，会调用 `onResume()`。如果这里有耗时操作，用户会感到界面卡顿，无法立即与应用交互。
@@ -86,7 +86,7 @@ Android 的生命周期函数（如 onCreate()、onResume()、onPause()、onDest
       * 同 `onCreate()`，将耗时操作放到**后台线程**。
       * 考虑使用 **懒加载 (Lazy Loading)** 或**按需加载**策略，只加载屏幕可见部分的数据。
 
-#### 3\. `onPause()` / `onStop()` 中进行耗时操作
+##### 3\. `onPause()` / `onStop()` 中进行耗时操作
 
   * **场景：** 在 `onPause()` 或 `onStop()` 中保存大量数据到磁盘、执行复杂的数据库事务。
   * **ANR 原因：** 当用户离开当前 Activity (例如，按下 Home 键、切换到其他应用、或者启动新的 Activity) 时，系统会调用 `onPause()` 和 `onStop()`。这些方法需要迅速完成，以便系统能够释放资源或切换到其他应用。如果耗时过长，系统可能认为当前应用卡死，导致 ANR。
@@ -96,7 +96,7 @@ Android 的生命周期函数（如 onCreate()、onResume()、onPause()、onDest
       * **复杂的保存逻辑：** 考虑使用 `WorkManager` 来调度后台任务进行数据同步或上传。
       * **注意：** 尽管 `onPause()` 和 `onStop()` 应该快速完成，但它们是保存用户状态的关键时机。务必确保重要数据的保存，即使将其推迟到后台线程，也要确保任务的可靠性。
 
-#### 4\. `onDestroy()` 中进行耗时操作
+##### 4\. `onDestroy()` 中进行耗时操作
 
   * **场景：** 在 `onDestroy()` 中释放大量资源、关闭文件句柄、清理缓存等。
   * **ANR 原因：** 当 Activity 被销毁时调用。虽然此时应用可能即将退出，但如果 `onDestroy()` 阻塞，也可能导致系统资源长时间不释放，甚至在特定情况下触发 ANR。
@@ -104,7 +104,7 @@ Android 的生命周期函数（如 onCreate()、onResume()、onPause()、onDest
       * **资源释放：** 大多数资源释放（如 `MediaPlayer.release()`、大图片 Bitmap 释放）可以放在主线程，但如果涉及到大量文件 I/O 或网络断开连接的阻塞，**仍应考虑放在后台线程**。
       * **清理工作：** 确保清理工作简洁高效。
 
-# 广播接收器超时
+## 广播接收器超时
 接收到广播之后，如果在一定时间内没有执行完onReceive，也会被判定为ANR。
 
 ![](/assets/img/blog/blogs_anr_broadcastreceiver.png)
@@ -119,7 +119,7 @@ goAsync方法就是将 PendingResult设置为 null，也就不会马上结束掉
 所以广播接收器ANR的情况就是onReceive方法超时，或者goAsync方法调用完之后，超时时间内没有调用finish。
 
 ## Service执行超时
-onCreate，onStart，onBind等生命周期在20s内没有处理完成发生ANR。
+**onCreate()，onStartCommand()，onBind()**等生命周期在20s内没有处理完成，就会发生ANR。
 
 ## ANR日志分析
 原生位置：/data/anr/anr_2024-08-19-17-16-58-475，定制化的系统对日志输出有优化则为其自定的位置。

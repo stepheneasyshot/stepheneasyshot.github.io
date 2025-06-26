@@ -16,53 +16,36 @@ sitemap: false
 `Fragment` 是 Android UI 开发中一个非常重要的组件，用于构建模块化、可复用且灵活的用户界面。
 
 **Fragment** 可以被视为一个**Activity 的一部分或行为**。它拥有自己的生命周期、布局和输入事件，但它必须托管在一个 `Activity` 中。一个 `Activity` 可以包含一个或多个 `Fragment`，也可以在不同的 `Activity` 中复用同一个 `Fragment`。
-
------
-
 ### Fragment 的主要作用
-
-1.  **模块化 UI：** 允许你将一个复杂的用户界面分解成独立的、可管理的模块。
+1.  **模块化 UI：** 可以将一个复杂的用户界面分解成独立的、可管理的模块。
 2.  **UI 可复用性：** 可以在不同的 Activity 或同一 Activity 的不同配置（如横竖屏）中复用 Fragment。
 3.  **适应不同屏幕尺寸：** 尤其在平板电脑等大屏幕设备上，可以同时显示多个 Fragment，例如列表-详情布局（List-Detail Flow）。
 4.  **简化 Activity 代码：** 将 UI 逻辑和行为从 Activity 中分离出来，使 Activity 变得更轻量和专注于协调。
 5.  **支持回退栈：** 可以像 Activity 一样管理 Fragment 的回退栈，实现前进和后退导航。
 
------
-
-### Fragment 的生命周期
-
-Fragment 的生命周期与它所依附的 Activity 的生命周期紧密相关。理解这些回调方法对于正确管理 Fragment 的状态至关重要。
+### 生命周期
+Fragment 的生命周期与它所依附的 Activity 的生命周期**紧密相关**。理解这些回调方法对于正确管理 Fragment 的状态至关重要。
 
 以下是 Fragment 生命周期中几个关键的方法及其大致顺序：
 
-  * **`onAttach()`**: 当 Fragment 与 Activity 关联时调用。此时可以获取到 `Context` 对象。
-  * **`onCreate()`**: Fragment 被创建时调用。在这里进行非 UI 的初始化，如变量设置、数据加载等。
-  * **`onCreateView()`**: 创建 Fragment 的用户界面（View）。在这里膨胀（inflate）布局并返回根视图。
-  * **`onViewCreated()`**: `onCreateView()` 返回后调用。在这里可以初始化 View 组件，设置监听器等。
-  * **`onActivityCreated()`**: 当宿主 Activity 的 `onCreate()` 方法完成时调用。可以在这里执行依赖于 Activity 已创建的代码。
-  * **`onStart()`**: Fragment 可见时调用。
-  * **`onResume()`**: Fragment 获得焦点并可与用户交互时调用。
-  * **`onPause()`**: Fragment 失去焦点，但仍然部分可见时调用（例如，另一个 Fragment 覆盖了它）。
-  * **`onStop()`**: Fragment 不再可见时调用。
-  * **`onDestroyView()`**: Fragment 的视图被移除时调用。在这里释放与 View 相关的资源。
-  * **`onDestroy()`**: Fragment 实例被销毁时调用。在这里释放所有非 View 相关的资源。
-  * **`onDetach()`**: Fragment 与 Activity 解除关联时调用。
+* **`onAttach()`**: 当 Fragment 与 Activity 关联时调用。此时可以获取到 `Context` 对象。
+* **`onCreate()`**: Fragment 被创建时调用。在这里进行非 UI 的初始化，如变量设置、数据加载等。
+* **`onCreateView()`**: 创建 Fragment 的用户界面（View）。在这里膨胀（inflate）布局并返回根视图。
+* **`onViewCreated()`**: `onCreateView()` 返回后调用。在这里可以初始化 View 组件，设置监听器等。
+* **`onActivityCreated()`**: 当宿主 Activity 的 `onCreate()` 方法完成时调用。可以在这里执行依赖于 Activity 已创建的代码。
+* **`onStart()`**: Fragment 可见时调用。
+* **`onResume()`**: Fragment 获得焦点并可与用户交互时调用。
+* **`onPause()`**: Fragment 失去焦点，但仍然部分可见时调用（例如，另一个 Fragment 覆盖了它）。
+* **`onStop()`**: Fragment 不再可见时调用。
+* **`onDestroyView()`**: Fragment 的视图被移除时调用。在这里释放与 View 相关的资源。
+* **`onDestroy()`**: Fragment 实例被销毁时调用。在这里释放所有非 View 相关的资源。
+* **`onDetach()`**: Fragment 与 Activity 解除关联时调用。
 
------
-
-### 如何使用 Fragment？
-
+### 使用流程
 #### 1\. 创建 Fragment
-
 创建一个继承自 `androidx.fragment.app.Fragment` 的 Java/Kotlin 类，并通常重写 `onCreateView()` 方法来提供其布局：
 
 ```kotlin
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-
 class MyFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,12 +90,10 @@ class MyFragment : Fragment() {
 ```
 
 #### 2\. 将 Fragment 添加到 Activity
-
 有两种主要方式将 Fragment 添加到 Activity 中：
-
 ##### a. 在布局 XML 中声明
 
-你可以在 Activity 的布局 XML 文件中直接声明一个 Fragment。这是静态添加 Fragment 的方式。
+你可以在 Activity 的布局 XML 文件中直接声明一个 Fragment。这是 **静态添加** Fragment 的方式。
 
 ```xml
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -130,18 +111,10 @@ class MyFragment : Fragment() {
 ```
 
 这种方式下，Fragment 的生命周期会与 Activity 的生命周期紧密耦合，并且在 Activity 创建时就被实例化。
-
 ##### b. 运行时动态添加（推荐）
-
 通过 `FragmentManager` 和 `FragmentTransaction` 在 Activity 运行时动态添加、移除、替换或显示/隐藏 Fragment。这是最常用的方式，因为它提供了更大的灵活性。
 
 ```kotlin
-// In your Activity (e.g., MainActivity.kt)
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentTransaction
-
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -174,10 +147,7 @@ class MainActivity : AppCompatActivity() {
     android:layout_height="match_parent" />
 ```
 
------
-
-### Fragment 间的通信
-
+### Fragment 的通信
 由于 Fragment 之间是独立的，它们之间以及与宿主 Activity 之间需要明确的通信机制。
 
 1.  **Fragment 到 Activity：**
@@ -224,11 +194,11 @@ class MainActivity : AppCompatActivity() {
     }
     ```
 
-      * **ViewModel (推荐，尤其是 Fragment 间通信)：** 使用共享的 `ViewModel` 可以非常方便地在 Fragment 和 Activity 之间共享数据和通信，尤其是在导航组件的场景下。
+    * **ViewModel (推荐，尤其是 Fragment 间通信)：** 使用共享的 `ViewModel` 可以非常方便地在 Fragment 和 Activity 之间共享数据和通信，尤其是在导航组件的场景下。
 
 2.  **Activity 到 Fragment：**
 
-      * **调用 Fragment 公开方法：** Activity 可以获取 Fragment 实例并直接调用其公共方法。
+    * **调用 Fragment 公开方法：** Activity 可以获取 Fragment 实例并直接调用其公共方法。
 
     <!-- end list -->
 
@@ -247,7 +217,7 @@ class MainActivity : AppCompatActivity() {
     }
     ```
 
-      * **通过 Bundle 传递参数：** 在创建 Fragment 实例时，通过 `setArguments(Bundle)` 方法传递参数。
+    * **通过 Bundle 传递参数：** 在创建 Fragment 实例时，通过 `setArguments(Bundle)` 方法传递参数。
 
     <!-- end list -->
 
@@ -270,30 +240,24 @@ class MainActivity : AppCompatActivity() {
 
 3.  **Fragment 到 Fragment：**
 
-      * **通过宿主 Activity 中转（旧版，不推荐）：** 一个 Fragment 通知 Activity，Activity 再通知另一个 Fragment。
-      * **共享 ViewModel (推荐)：** 多个 Fragment 可以观察同一个 `ViewModel` 中的 `LiveData`，实现数据共享和通信。
-      * **Parent-to-Child FragmentManager (如果存在嵌套 Fragment)：** 可以通过 `getParentFragmentManager()` 或 `getChildFragmentManager()` 获取对应的 `FragmentManager`。
-      * **Navigation Component (推荐)：** 使用 Android Navigation 组件是处理 Fragment 之间导航和参数传递的现代化且强大的方式。
-
------
+    * **通过宿主 Activity 中转（旧版，不推荐）：** 一个 Fragment 通知 Activity，Activity 再通知另一个 Fragment。
+    * **共享 ViewModel (推荐)：** 多个 Fragment 可以观察同一个 `ViewModel` 中的 `LiveData`，实现数据共享和通信。
+    * **Parent-to-Child FragmentManager (如果存在嵌套 Fragment)：** 可以通过 `getParentFragmentManager()` 或 `getChildFragmentManager()` 获取对应的 `FragmentManager`。
+    * **Navigation Component (推荐)：** 使用 Android Navigation 组件是处理 Fragment 之间导航和参数传递的现代化且强大的方式。
 
 ### FragmentTransaction 和回退栈
-
 当使用 `FragmentManager` 动态管理 Fragment 时，`FragmentTransaction` 是执行操作（如添加、移除、替换）的批处理API。
 
-  * **`add(containerId, fragment)`:** 将一个 Fragment 添加到容器中。
-  * **`remove(fragment)`:** 移除一个 Fragment。
-  * **`replace(containerId, fragment)`:** 移除容器中现有 Fragment，然后添加新的 Fragment。
-  * **`hide(fragment)` / `show(fragment)`:** 隐藏或显示一个 Fragment，但不会销毁其 View。
-  * **`addToBackStack(name)`:** 将当前 `FragmentTransaction` 添加到 Activity 的回退栈中。当用户按返回键时，会依次弹出栈中的 Fragment 事务，回退到之前的 Fragment 状态。
-  * **`commit()`:** 提交事务。这是异步操作。
-  * **`commitNow()`:** 提交事务。这是同步操作，但可能会阻塞 UI 线程，除非确定操作很快。通常不推荐。
-  * **`commitAllowingStateLoss()`:** 提交事务，即使 Activity 状态已保存，允许状态丢失。一般不推荐，除非你清楚这样做的后果。
-
------
+* **`add(containerId, fragment)`:** 将一个 Fragment 添加到容器中。
+* **`remove(fragment)`:** 移除一个 Fragment。
+* **`replace(containerId, fragment)`:** 移除容器中现有 Fragment，然后添加新的 Fragment。
+* **`hide(fragment)` / `show(fragment)`:** 隐藏或显示一个 Fragment，但不会销毁其 View。
+* **`addToBackStack(name)`:** 将当前 `FragmentTransaction` 添加到 Activity 的回退栈中。当用户按返回键时，会依次弹出栈中的 Fragment 事务，回退到之前的 Fragment 状态。
+* **`commit()`:** 提交事务。这是异步操作。
+* **`commitNow()`:** 提交事务。这是同步操作，但可能会阻塞 UI 线程，除非确定操作很快。通常不推荐。
+* **`commitAllowingStateLoss()`:** 提交事务，即使 Activity 状态已保存，允许状态丢失。一般不推荐，除非你清楚这样做的后果。
 
 ### 最佳实践与注意事项
-
 1.  **避免 Fragment 嵌套过多：** 复杂的 Fragment 嵌套会导致生命周期管理变得困难，并可能引入性能问题。
 2.  **使用 `setArguments()` 传递参数：** 避免在 Fragment 构造函数中传递参数，因为系统可能会在屏幕旋转等情况下重新创建 Fragment 而不调用自定义构造函数。
 3.  **Fragment 应该尽可能独立和可复用：** 它们不应该直接依赖于特定的 Activity 类型，而是通过接口或 ViewModel 进行通信。
@@ -306,16 +270,9 @@ class MainActivity : AppCompatActivity() {
 7.  **Navigation Component：** 对于复杂的导航和 Fragment 间的通信，强烈推荐使用 Android Jetpack 的 Navigation Component。它简化了 Fragment 的管理、深层链接和安全参数传递。
 8.  **View Binding 或 Data Binding：** 在 Fragment 中使用 View Binding 或 Data Binding 可以更安全、高效地访问 View 组件，避免 `findViewById` 带来的空指针异常。
 
------
-
 ### 常见用例
-
-  * **标签页（Tabbed Layouts）：** 每个标签页内容可以是一个 Fragment。
-  * **滑动视图（Swipe Views / ViewPager2）：** `ViewPager2` 经常与 `FragmentStateAdapter` 结合使用，每个页面都是一个 Fragment。
-  * **大屏幕设备布局：** 例如，在平板上，一个 Fragment 显示列表，另一个 Fragment 显示详情。
-  * **底部导航栏（Bottom Navigation）：** 每个导航项对应一个 Fragment。
-  * **向导流（Wizard Flows）：** 多个 Fragment 按顺序引导用户完成任务。
-
------
-
-希望这个详细的解释能帮助你更深入地理解 Android Fragment！如果你有具体的场景或问题，可以随时提出。
+* **标签页（Tabbed Layouts）：** 每个标签页内容可以是一个 Fragment。
+* **滑动视图（Swipe Views / ViewPager2）：** `ViewPager2` 经常与 `FragmentStateAdapter` 结合使用，每个页面都是一个 Fragment。
+* **大屏幕设备布局：** 例如，在平板上，一个 Fragment 显示列表，另一个 Fragment 显示详情。
+* **底部导航栏（Bottom Navigation）：** 每个导航项对应一个 Fragment。
+* **向导流（Wizard Flows）：** 多个 Fragment 按顺序引导用户完成任务。

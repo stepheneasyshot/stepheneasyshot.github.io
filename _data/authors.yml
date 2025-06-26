@@ -9,13 +9,8 @@ author1:
  # Used at the bottom of each page and at the top of the `about` layout
   # Markdown enabled, can use multiple paragraphs (enabled by `|`)
   about:             |
-    博主Stephen，2022年毕业于武汉理工大学自动化专业，主研物联网方向，毕业后转做车载Android研发，已从业三年。从Java零基础逐步学习。熟悉车载SOA架构，系统app开发，性能调优等。对跨平台甚感兴趣，近半年正深入了解JetBrains主推的CMP技术。
+    博主Stephen，2022年毕业于武汉理工大学，主研物联网方向，毕业后转做车载Android。近半年对移动端跨平台甚感兴趣，正深入了解Kotlin Multiplatform技术。
     
-  #对新技术充满热情，工作之余，
-    # 自学Kotlin，推动公司代码仓库从Java转型；定制过车载Android系统，预制app，替换SystemUi等；开发JNI接口，
-    # 将密集计算型任务绑定大核；开发Compose Multiplatform，手机端开发跨平台天气app。电脑端制作了一款Android
-    # 设备调试软件；目前正系统学习Android系统组件，还有Compose的跨平台技术原理，后续准备补齐后端相关知识，期望
-    # 用最少的代码完成全栈产品开发。
 
   # This photo will be used in the about section
   picture:

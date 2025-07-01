@@ -112,7 +112,6 @@ public void setImageResource(@DrawableRes int resId) {
 }
 ```
 
-
 根据这个简化的demo，切换主题的过程中，采集一段trace，查看主题切换过程中的耗时情况：
 
 ![](/assets/img/blog/blogs_configchange_trace.png)

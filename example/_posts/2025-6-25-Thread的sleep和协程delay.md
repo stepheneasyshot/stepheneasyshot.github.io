@@ -86,6 +86,37 @@ viewmodel.getTestData();
 不一定，在未来的1000毫秒内，线程不再参与到CPU竞争。那么1000毫秒过去之后，这时候也许另外一个线程**正在使用CPU**，那么这时候操作系统是**不会重新分配CPU**的，直到那个线程挂起或结束；况且，即使这个时候恰巧轮到操作系统进行CPU 分配，那么当前线程也不一定就是**总优先级最高**的那个，CPU还是可能被其他线程抢占去。
 #### Thread.sleep(0)，是否有用？
 休眠0ms，这样的休眠有何意义？Thread.Sleep(0)的作用，就是**触发操作系统立刻重新进行一次CPU竞争，重新计算优先级**。竞争的结果也许是当前线程仍然获得CPU控制权，也许会换成别的线程获得CPU控制权。这也是我们在大循环里面经常会写一句Thread.sleep(0) ，因为这样就给了其他线程获得CPU控制权的权力，界面就不会假死在那里。
+### SystemClock.sleep()
+在 Android 平台中，SystemClock.sleep(long millis) 是一个用于让当前线程休眠指定毫秒数的方法。它位于 `android.os.SystemClock` 类中，是一个非常常用的工具方法，在 Android 中被推荐使用，尤其是在系统级开发或需要 **更稳定、更可预测** 的休眠行为时。
+
+```java
+    public static void sleep(long ms)
+    {
+        long start = uptimeMillis();
+        long duration = ms;
+        boolean interrupted = false;
+        do {
+            try {
+                Thread.sleep(duration);
+            }
+            catch (InterruptedException e) {
+                interrupted = true;
+            }
+            duration = start + ms - uptimeMillis();
+        } while (duration > 0);
+
+        if (interrupted) {
+            // Important: we don't want to quietly eat an interrupt() event,
+            // so we make sure to re-interrupt the thread so that the next
+            // call to Thread.sleep() or Object.wait() will be interrupted.
+            Thread.currentThread().interrupt();
+        }
+    }
+```
+
+从源码中可以看到，`SystemClock.sleep` 是一个**循环调用 `Thread.sleep`** 的方法，直到时间到了才返回。内部做了try catch，在中途如果线程被中断，循环会临时忽略这次打断。在预设的睡眠时间结束之后，也会重新设置中断标志位，以便上层调用者知道线程被中断了。
+
+在使用时需要注意不要在主线程中进行过长的休眠，以避免影响用户体验和应用性能。根据具体需求，也可以考虑使用其他更灵活的调度机制来实现延迟或定时任务。
 ## Kotlin协程的delay
 上述的 `Thread.sleep` 和Kotlin 协程的 `delay` 函数之间存在一个根本性的区别：`Thread.sleep` 会阻塞（block）当前线程，而 `delay` 函数是非阻塞的（non-blocking）。故delay一般**不称为阻塞，而是挂起**。
 ### delay函数的上层实现

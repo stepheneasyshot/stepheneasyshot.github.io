@@ -113,8 +113,8 @@ public void setImageResource(@DrawableRes int resId) {
 ```
 
 
-根据这个简化的demo，我采集一段trace，查看主题切换过程中的耗时情况：
+根据这个简化的demo，切换主题的过程中，采集一段trace，查看主题切换过程中的耗时情况：
 
 ![](/assets/img/blog/blogs_configchange_trace.png)
 
-可以看到，共计耗时161ms，其中主要耗时都在五个ImageView的 `ImageDecoder.decodeDrawable()` 方法，这正是用来解码图片的。
+可以看到，共计耗时161ms，其中主要耗时都在这五个ImageView的 `ImageDecoder.decodeDrawable()` 方法，这正是用来解码图片，转换成 `Drawable` 对象的。

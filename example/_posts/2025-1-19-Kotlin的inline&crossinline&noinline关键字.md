@@ -13,6 +13,9 @@ excerpt_separator: <!--more-->
 sitemap: false
 ---
 # Kotlin的inline&crossinline&noinline关键字
+
+> 来自扔物线朱凯大佬的博客学习笔记
+
 ## JVM常量编译时优化
 Kotlin中，使用了 ```const val``` 关键字修饰的变量，在编译时会被视为常量，并且在编译时进行了优化。直接将其值复制到调用处，而不是像普通变量一样在运行时进行变量访问。这可以提高代码的执行效率，因为避免了变量调用的开销。
 
@@ -29,7 +32,7 @@ fun main() {
 }
 ```
 
-## 内联函数
+## inline 内联函数
 编译时同样被提前处理的还有内联函数，即使用了 ```inline``` 关键字修饰的函数。
 
 JVM在编译时，会将inline函数内的代码直接复制到调用处，而不是像普通函数一样在运行时进行函数调用。听起来可能会对性能有优化，实际上少一层函数调用栈的优化是非常微小的。
@@ -201,7 +204,6 @@ override fun onCreate() {
 这时候结束的不是这个lambdaReturnTest方法，而是onCreate方法。因为lambdaReturnTest方法被内联了，会直接铺平展开到调用处，连带里面的return。
 
 这样的话，我们每次在lambda里面使用return还需要确认这个函数是否是内联函数，才可以确认这个return结束的是哪一个函数。为此Kotlin规定 **不允许在lambda参数中使用return，除非这个使用lambda参数的函数是内联函数**。
-
 
 那这样的话规则就简单了：
 * Lambda 里的 return，结束的不是直接的外层函数，而是外层再外层的函数；

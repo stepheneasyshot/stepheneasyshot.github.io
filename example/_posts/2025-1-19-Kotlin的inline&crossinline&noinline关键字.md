@@ -107,6 +107,7 @@ fun main() {
 ```
 
 反编译之后：
+
 ```java
 public final class LambdaTest {
    public final void testInline(@NotNull Function0 lambdaParams) {

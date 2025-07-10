@@ -14,7 +14,7 @@ sitemap: false
 ---
 # RecyclerView原理和LazyColumn
 ## RecyclerView的优化点
-最初，要在Android界面中显示一个列表，使用的组件是ListView，但是由于ListView的性能问题，在Android 5.0之后，Google引入了RecyclerView组件。RecyclerView提供一个高度可定制的列表视图，同时保持了良好的性能和用户体验。
+最初，要在Android界面中显示一个列表，使用的组件是 `ListView` ，但是由于 `ListView` 的性能问题，在Android 5.0之后，Google引入了 `RecyclerView` 组件。 `RecyclerView` 提供一个高度可定制的列表视图，同时保持了良好的性能和用户体验。
 
 `RecyclerView` 用于在有限的屏幕空间内显示大量数据列表或网格。它是 `ListView` 和 `GridView` 的升级版，提供了更好的性能和灵活性。
 
@@ -22,11 +22,11 @@ sitemap: false
 
 `RecyclerView` 的核心优化点是 **视图回收机制** 。当列表中的项滚动出屏幕时，`RecyclerView` 不会销毁其视图。相反，它会**回收**这些不再可见的视图，并将其重新用于屏幕上即将显示的新项。通过视图回收机制，显著减少了视图创建的开销，尤其是在处理大量数据时表现出色。
 
-**对比ListView** 来说，ListView 的视图回收机制依赖于开发者在 getView() 方法中手动实现 ViewHolder 模式来缓存子视图的引用 (findViewById() 操作耗时)。如果开发者不使用 ViewHolder 模式，那么每次 getView() 被调用时（即使是重用 convertView），都会重复调用 findViewById() 来查找子视图，这会严重影响滚动性能。
+**对比ListView** 来说，ListView 的视图回收机制依赖于开发者在 `getView()` 方法中手动实现 `ViewHolder` 模式来缓存子视图的引用 (`findViewById()` 操作耗时)。如果开发者不使用 `ViewHolder` 模式，那么每次 `getView()` 被调用时（即使是重用 convertView），都会重复调用 `findViewById()` 来查找子视图，这会严重影响滚动性能。
 
 > `findViewById()` 的实现方式是从当前视图（通常是 Activity 的根视图或一个 ViewGroup）开始，递归地遍历整个视图树，查找具有指定 ID 的视图。具体的遍历算法可能是深度优先搜索（DFS）或广度优先搜索（BFS），但无论哪种，它都必须检查视图树中的每一个节点，直到找到匹配的 ID 或者遍历完整个树。
 
-RecyclerView 则强制并内置了 ViewHolder 模式，要求你必须创建并使用 ViewHolder 来持有视图引用，从而从根本上解决了这个问题。
+RecyclerView 则强制并内置了 `ViewHolder` 模式，要求你必须创建并使用 ViewHolder 来持有视图引用，从而从根本上解决了这个问题。
 
 **动画**
 

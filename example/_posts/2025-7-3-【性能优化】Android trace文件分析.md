@@ -98,7 +98,13 @@ dev           ftrace        irq_matrix    msr          power           sock     
 
 ![](/assets/img/blog/blogs_record_new_trace.png)
 
+CPU信息配置界面：
+
 ![](/assets/img/blog/blogs_record_new_trace_2.png)
+
+抓取GPU的配置页面：
+
+![](/assets/img/blog/blogs_trace_gpu.png)
 
 选取要抓取的信息之后，到 `cmdline` tab那里复制下来：
 
@@ -159,7 +165,32 @@ data_sources {
 duration_ms: 10000
 ```
 
-直接粘贴到本地 txt 文档里，更名为 `pbt` 后缀，推送到设备中，就可以使用命令来使用这个配置文件采集对应的trace数据。
+直接粘贴到本地 txt 文档里，更名为 `pbtx` 后缀，推送到设备中，就可以使用命令来使用这个配置文件采集对应的trace数据。
+
+值得注意的是 Perfetto 从 Android 9（P）开始集成，从 Android 11（R）开始默认开启。在 Android 9（P）和 Android 10（Q）上需要先确保开启 Trace 服务
+
+```bash
+adb shell setprop persist.traced.enable 1
+```
+
+上述从网站点选的配置内容，复制到本地 `pbtx` 文件之后，再通过 `adb` 把配置推送到手机：
+
+```bash
+adb push ~/Desktop/perfetto.pbtx /data/local/tmp/perfetto.pbtx
+```
+
+使用 adb 让手机以指定配置抓 Perfetto Trace：
+
+```bash
+adb shell 'cat /data/local/tmp/perfetto.pbtx | perfetto --txt -c - -o /data/misc/perfetto-traces/trace'
+```
+
+结束抓取：
+
+```bash
+adb shell 'perfetto --attach=perf_debug --stop'
+```
+
 ### **Android Studio CPU Profiler**
 Android Studio 中已经自带了一个 Profiler 性能分析工具，它集成了 CPU、内存、网络和电量分析功能。其中的 CPU Profiler 实际上在幕后使用了 Perfetto 或 ART (Android Runtime) 的采样/插桩机制来生成 trace 文件。
 
@@ -171,7 +202,45 @@ Android Studio 中已经自带了一个 Profiler 性能分析工具，它集成�
 
 ![](/assets/img/blog/blogs_trace_android_studio.png)
 
+### Python 脚本抓取
+最后介绍下使用 `python` 脚本来抓取trace，这个也是 Google 官方推出的一种方案。在使用 `python` 脚本抓取到 `Trace` 后，会把 Trace 文件保存到本地，也会自动在浏览器通过 **Perfetto UI** 直接打开 Trace 文件，我们直接进行分析。
+
+使用 python 脚本抓取时需要满足以下几个条件：
+
+* Android 设备通过 adb 连接到电脑。
+* 把 python 脚本保存在本地，在本地运行 python 脚本。
+* 把抓 Trace 的配置保存在本地，运行 python 脚本时需要指定配置文件。
+
+python 脚本在 GitHub 上的开源地址:
+
+https://github.com/google/perfetto/blob/main/tools/record_android_trace
+
+现在我们把 python 脚本和抓 Trace 的配置放在桌面，命名和目录结构如下：
+
+```
+~/Desktop$
+├── perfetto.py
+├── perfetto.pbtx
+```
+
+此时我们手机与电脑通过 adb 连接，然后运行以下命令抓取 Trace：
+
+```bash
+python3 perfetto.py -c perfetto.pbtx -o trace_file.perfetto-trace
+```
+
+上述命令中，`-c` 是指定配置文件位置， `-o` 是指定 `trace` 文件保存位置。
+
+运行命令后，我们开始操作 App，然后觉得抓取到目标 Trace 了，按下**ctrl + c** 手动结束即可，此时 Trace 文件会被放在 **-o** 指定的位置，且 Perfetto UI 会被自动打开，直接进行分析即可。
 ## Trace中的重要信息
+Trace记录文件，实际上就是系统提前设置好的一些打点记录，我们自己也可也可以手动调用 `Trace.beginSection()` 来进行标记的。
+
+```java
+Trace.beginSection("Choreographer#doFrame");
+...
+Trace.endSection();
+```
+
 在分析 trace 文件时，通常需要关注以下几个核心信息：
 1.  **CPU 使用率 (CPU Usage)**：显示每个 CPU 核的负载情况，以及进程和线程在 CPU 上的调度。
 2.  **线程状态 (Thread States)**：每个线程在时间轴上的状态，如 Running (运行中)、Sleeping (休眠)、Runnable (可运行，等待 CPU)、Blocked (阻塞)。这对于识别线程阻塞和死锁非常关键。
@@ -191,7 +260,6 @@ Android Studio 中已经自带了一个 Profiler 性能分析工具，它集成�
 * Binder IPC 问题：binder_driver, binder_lock, app, sched。
 
 选择的类别越多，生成的 trace 文件就越大，分析起来也可能越慢，所以建议只选择你真正需要关注的类别。
-
 ## 分析流程
 trace文件里面记录的信息是非常详细的，但是如果直接看这些信息，可能很难分析出问题所在。所以，我们需要分析trace文件里面的信息，得到我们想要的信息。并且根据所分析的问题不同，入手的地方也都不一样。常见的需要分析trace文件的场景有以下几个。
 ## 一、冷启动分析

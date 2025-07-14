@@ -26,22 +26,30 @@ Android系统是基于Linux系统而开发的，也继承了Linux的 **进程隔
 
 在 Linux 系统中，常见的 IPC 方式有**管道、消息队列、共享内存、信号量和Socket**等。然而，Android 并没有直接使用这些机制作为主要的 IPC 方式，而是选择了 Binder。这主要是出于以下几点考虑：
 
-* **性能优越：** Binder 机制在设计上针对移动设备进行了优化，相比 Socket 等方式，其**数据拷贝次数更少，效率更高**。传统的 IPC 方式（如管道、消息队列）通常需要**两次内存复制**，而 **Binder只需要一次复制** （从用户空间写到内核空间，再复制到目标用户空间）。
+* **性能优化：** Binder 机制在设计上针对移动设备进行了优化，相比 Socket 等方式，其**数据拷贝次数更少，效率更高**。传统的 IPC 方式（如管道、消息队列）通常需要**两次内存复制**，而 **Binder只需要一次复制** （从用户空间写到内核空间，再复制到目标用户空间）。
 * **安全性：** Binder 机制从底层提供 UID/PID 认证，可以方便地进行权限控制，确保通信的安全性。这对于 Android 这种多应用、多用户环境非常重要。
 * **架构优势：** Binder 机制基于 C/S (Client/Server) 架构，使得服务提供者和使用者之间解耦，更容易进行系统设计和扩展。
 * **内存管理：** Binder 机制在内核层实现了内存的映射和管理，能够更好地处理大块数据的传输。
 
 ## Binder通信过程的四个主要角色
-1.  **Client (客户端)：** 服务的使用者，通过 Binder 代理对象与服务端进行通信。
-2.  **Server (服务端)：** 服务的提供者，实现具体的业务逻辑。
-3.  **Service Manager (服务管理者)：** 负责注册和查找服务，类似于 DNS 服务器。当服务端启动时，会向 Service Manager 注册自己的 Binder 对象。客户端需要查找服务时，则通过 Service Manager 获取对应服务的 Binder 代理对象。
-4.  **Binder 驱动：** Binder 机制的核心，是 Linux 内核中的一个字符设备驱动程序。它负责完成进程间的数据传输和进程线程的调度。所有 Binder 通信都必须通过 Binder 驱动。
+Server，服务的提供者，实现具体的业务逻辑。
 
-除了上述四个主要角色，还需要了解应用层建立Binder通信几个重要概念：
-* **IBinder 接口：** 定义了 Binder 通信的基本接口，是 Binder 进程间通信的基石。所有可进行 Binder 通信的对象都必须实现 IBinder 接口。
-* **Stub (本地 Binder 对象)：** 服务端实际业务逻辑的实现。它继承自 Binder 本地对象，并实现了 Stub 接口（通常是 AIDL 生成的接口）。当 Binder 驱动收到 Client 的请求时，会唤醒 Server 进程，并调用 Stub 对象的方法来处理请求。
-* **Proxy (远程 Binder 代理对象)：** 客户端持有的服务端的 Binder 代理对象。它实现了 Stub 接口，但其内部并没有实际的业务逻辑。当客户端调用 Proxy 对象的方法时，Proxy 会将方法调用的信息（方法编号、参数等）打包，然后通过 Binder 驱动发送给服务端。
-* **AIDL (Android Interface Definition Language)：** Android 接口定义语言。它用于定义进程间通信的接口，通过 AIDL 文件，编译器可以自动生成 Stub 和 Proxy 类，大大简化了 Binder 的使用。
+Client，客户端， 服务的使用者，通过 `Binder` 代理对象与服务端进行通信。比如当我们获取WindowManager服务时，我们的APP就是客户端，当我们暴露通过AIDL暴露接口给其他应用去使用时，他们就是客户端，我们是提供服务的服务端。
+
+`Service Manager` ，负责注册和查找服务，类似于 DNS 服务器。当**服务端启动**时，会向 `Service Manager` **注册**自己的 `Binder` 对象。在客户端需要查找服务时，则通过 `Service Manager` 获取对应服务的 Binder 代理对象。
+
+`Binder` 驱动，这是整个 Binder 机制的核心，是 Linux 内核中的一个字符设备驱动程序。它负责完成进程间的数据传输和进程线程的调度。所有 Binder 通信都必须通过 Binder 驱动。
+
+除了上述四个通信过程中的主要角色，还需要了解应用层建立Binder通信几个重要概念。
+
+
+> **IBinder 接口：** 定义了 Binder 通信的基本接口，是 Binder 进程间通信的基石。所有可进行 Binder 通信的对象都必须实现 IBinder 接口。
+
+> **Stub (本地 Binder 对象)：** 服务端实际业务逻辑的实现。它继承自 Binder 本地对象，并实现了 Stub 接口（通常是 AIDL 生成的接口）。当 Binder 驱动收到 Client 的请求时，会唤醒 Server 进程，并调用 Stub 对象的方法来处理请求。
+
+> **Proxy (远程 Binder 代理对象)：** 客户端持有的服务端的 Binder 代理对象。它实现了 Stub 接口，但其内部并没有实际的业务逻辑。当客户端调用 Proxy 对象的方法时，Proxy 会将方法调用的信息（方法编号、参数等）打包，然后通过 Binder 驱动发送给服务端。
+
+> **AIDL (Android Interface Definition Language)：** Android 接口定义语言。它用于定义进程间通信的接口，通过 AIDL 文件，编译器可以自动生成 Stub 和 Proxy 类，大大简化了 Binder 的使用。
 
 ## Service Manager介绍
 **ServiceManager** 是 Android Binder 进程间通信（IPC）机制的核心组成部分之一。简单来说，它就像一个**服务注册中心**或**黄页**。当系统中的各种服务（例如 ActivityManagerService、PackageManagerService 等）启动时，它们会**将自己注册到 ServiceManager 中**。其他进程如果需要使用这些服务，就可以通过 ServiceManager **查询并获取** 到对应的 Binder 代理对象，进而与服务进行通信。
@@ -96,6 +104,10 @@ Binder 驱动在数据传输过程中会进行**权限验证**。它能够识别
 
 Binder 驱动维护着一个内部的数据结构，来管理所有已注册的 Binder 对象、它们的句柄以及与进程和线程的对应关系。它提供了一个高效、安全且面向对象的通信机制。它的存在使得 Android 上的各个系统服务和应用程序组件能够无缝地进行协作。
 ## Binder通信简化流程
+通信架构示意图：
+
+![](/assets/img/blog/blogs_binder_arch.png)
+
 Binder 通信的流程可以分为以下几步：
 1.  **注册服务：**
     * **Server 服务端**在启动时，会向 **Service Manager** 注册自己提供的服务及其对应的 Binder 对象。
@@ -116,3 +128,40 @@ Binder 通信的流程可以分为以下几步：
 3.  **线程管理：** Binder 驱动在内部维护了一个线程池，用于处理来自不同进程的 Binder 请求。当一个 Binder 请求到达时，如果当前没有空闲线程，Binder 驱动会创建新的线程来处理请求，从而保证并发性。
 4.  **引用计数：** Binder 驱动为每个 Binder 对象维护了引用计数。当一个 Binder 对象被创建或被 Client 引用时，引用计数会增加；当 Client 释放对 Binder 对象的引用时，引用计数会减少。当引用计数为零时，Binder 驱动会自动回收该 Binder 对象。
 5.  **驱动调度：** 当 Client 发送 Binder 请求时，Binder 驱动会将请求加入到等待队列中。当 Server 有空闲线程时，Binder 驱动会从等待队列中取出请求并唤醒 Server 线程进行处理。
+
+## oneway机制
+简单来说，oneway 是一种异步调用机制。当你通过Binder调用远程进程中的方法时，如果该方法被标记为 oneway，那么：
+* 调用者（Client）会立即返回，而不会等待被调用者（Server）执行完方法并返回结果。 调用请求会被发送到远程进程，但调用者线程不会被阻塞。
+* 被调用者（Server）会在一个单独的Binder线程池中处理这个 oneway 请求。 这意味着 oneway 调用不会阻塞服务端的UI线程或其他重要线程。
+
+oneway 方法不能有返回值。 因为调用者不会等待结果，所以也就没有返回值的意义。如果需要执行结果，可以设置一个callback。
+
+在声明AIDL接口时，将返回值类型设置为oneway既可。
+
+```java
+// IMyService.aidl
+package com.example.myapp;
+
+interface IMyService {
+    // 同步方法，会等待返回值
+    int add(int a, int b);
+
+    // oneway 方法，客户端不会等待其执行完成
+    oneway void doSomethingAsync(String message);
+
+    // 如果整个接口都是oneway的，也可以直接在接口前面声明
+    // oneway interface IAnotherService {
+    //     void notifyEvent(int eventCode);
+    // }
+}
+```
+
+## Binder 通信大小限制
+Binder 调用中同步调用优先级大于 oneway（异步）的调用，为了充分满足同步调用的内存需要，所以将 oneway 调用的内存限制到申请内存上限的一半。
+
+![](/assets/img/blog/blogs_binder_max_memory.png)
+
+Android系统 中大部分IPC场景是使用 Binder 作为通信方式，在进程创建的时候会为 Binder 创建一个1M 左右的缓冲区用于跨进程通信时的数据传输，如果超过这个上限就就会抛出这个异常，而且这个缓存区时当前进程内的所有线程共享的，线程最大数量为16（线程池 15 个子线程 + 1 个主线程）个，如同时间内总传输大小超过了1M，也会抛异常。
+
+另外在Activity启动的场景比较特殊，因为Binder 的通信方式为两种，一种是异步通信，一种是同步通信，异步通信时数据缓冲区大小被设置为了原本的1半。
+

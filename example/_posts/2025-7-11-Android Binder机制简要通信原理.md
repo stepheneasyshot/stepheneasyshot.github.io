@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_android_binder_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Android Binder机制通信原理
+# Android Binder机制简要通信原理
 Android Binder 机制是 Android 系统中非常核心的 **进程间通信（IPC）机制**，它在 Android 各种组件之间的通信中扮演着至关重要的角色，比如 **App和系统服务之间** 的通信、**两个App之间**的通信等。理解 Binder 机制是深入学习 Android 系统的重要一步。
 
 此前对于Binder的了解仅仅停留在**使用层面**，没有去了解其背后的原理，只知道在底层是通过内存映射实现的。现对其更加深入地学习一下，本文将介绍Android Binder机制通信流程和背后的原理，并对比下其他IPC通信之间的区别。
@@ -43,7 +43,59 @@ Android系统是基于Linux系统而开发的，也继承了Linux的 **进程隔
 * **Proxy (远程 Binder 代理对象)：** 客户端持有的服务端的 Binder 代理对象。它实现了 Stub 接口，但其内部并没有实际的业务逻辑。当客户端调用 Proxy 对象的方法时，Proxy 会将方法调用的信息（方法编号、参数等）打包，然后通过 Binder 驱动发送给服务端。
 * **AIDL (Android Interface Definition Language)：** Android 接口定义语言。它用于定义进程间通信的接口，通过 AIDL 文件，编译器可以自动生成 Stub 和 Proxy 类，大大简化了 Binder 的使用。
 
-## Binder通信流程
+## Service Manager介绍
+**ServiceManager** 是 Android Binder 进程间通信（IPC）机制的核心组成部分之一。简单来说，它就像一个**服务注册中心**或**黄页**。当系统中的各种服务（例如 ActivityManagerService、PackageManagerService 等）启动时，它们会**将自己注册到 ServiceManager 中**。其他进程如果需要使用这些服务，就可以通过 ServiceManager **查询并获取** 到对应的 Binder 代理对象，进而与服务进行通信。
+
+在 Android 早期版本中，ServiceManager 是一个独立的进程，但在现代 Android 版本中，它通常被集成在 `init` 进程中，作为 `servicemanager` 可执行文件运行。它监听一个固定的 Binder 端口（通常是 0），作为所有其他 Binder 通信的入口。
+### Service Manager在系统中的角色
+1.  **服务注册（Add Service）**:
+      * 各种系统服务（通常是 C++ 或 Java 实现）在启动时，会通过 Binder 机制将自己的 Binder 对象注册到 ServiceManager 中，并给自己的服务起一个唯一的名称（例如 "activity" 对应 ActivityManagerService）。
+      * 这个注册过程就是调用 ServiceManager 的 `addService()` 方法。
+
+2.  **服务查询（Get Service）**:
+      * 当客户端进程需要使用某个服务时，它不会直接知道服务的地址或句柄。
+      * 客户端会向 ServiceManager 发送请求，通过服务的名称来查询对应的 Binder 对象。
+      * ServiceManager 收到请求后，会返回该服务在 Binder 驱动中的句柄（handle），客户端就可以通过这个句柄与服务建立 Binder 通信。这个过程就是调用 ServiceManager 的 `getService()` 方法。
+
+### **ServiceManager 的实现原理（简化版）**
+* **进程:** ServiceManager 集成在 init 进程中，它是一个 Binder 服务端。
+* **Binder 驱动:** ServiceManager 与 Binder 驱动交互，维护一个服务名称到 Binder 句柄的映射表。
+* **固定句柄:** ServiceManager 自身在 Binder 驱动中拥有一个固定的句柄（通常是 0），所有需要获取服务的进程都知道这个句柄，因此它们可以首先与 ServiceManager 建立通信。
+* **代理与服务:** 当客户端通过 ServiceManager 获取服务时，它得到的是一个 Binder **代理对象**。这个代理对象负责将客户端的请求通过 Binder 驱动发送到实际的服务进程。
+
+### **ServiceManager 的重要性**
+* **解耦:** ServiceManager 实现了服务提供者和消费者之间的解耦。服务提供者不需要知道谁会使用它，只需要将自己注册到 ServiceManager；服务消费者不需要知道服务在哪里，只需要通过 ServiceManager 查询即可。
+* **统一入口:** 它为所有系统服务提供了一个统一的查找和访问入口，简化了服务的管理和调用。
+* **系统启动:** 在 Android 系统的启动过程中，ServiceManager 是最先启动的核心服务之一，因为它为后续其他关键服务的启动和交互提供了基础。
+
+### **获取服务简化源码**
+在 Android 源码中，你可以找到 ServiceManager 相关的 C++ 代码（例如 `frameworks/native/cmds/servicemanager/` 目录）。
+
+而作为应用程序开发者，我们通常不会直接与底层的 ServiceManager 交互，而是通过 `Context` 或者 `ServiceManager` 类（位于 `android.os.ServiceManager`）来间接获取系统服务。例如，我们经常使用的：
+
+```java
+// 获取 ActivityManagerService 的代理对象
+ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+
+// 实际上，getSystemService 内部会间接调用 ServiceManager 来获取服务
+// 更底层一点的，ServiceManager.getService() 方法：
+IBinder b = ServiceManager.getService(Context.ACTIVITY_SERVICE);
+IActivityManager am = IActivityManager.Stub.asInterface(b);
+```
+
+## Binder驱动介绍
+**Binder 驱动** 是 Linux 内核中的一个字符设备驱动程序。它的主要作用是**实现并管理 Android 系统中的进程间通信（IPC）机制**。
+
+Binder 驱动就像一个中间人或者一个**高性能的快递员**，负责在不同的进程之间安全、高效地传递数据和调用请求。所有基于 Binder 的 IPC 都是通过 Binder 驱动来完成的。
+
+Binder 驱动在数据传输过程中会进行**权限验证**。它能够识别通信的双方进程 ID (PID) 和用户 ID (UID)，从而对通信双方进行身份校验，保证了 IPC 的安全性。
+
+另外，Binder 机制是**面向对象**的。它允许进程间像调用本地对象方法一样调用远程进程中的服务方法，这使得 Android 服务的开发和使用更加符合面向对象的编程范式。客户端拿到的是一个远程服务的“代理对象”，通过这个代理对象调用方法时，Binder 会负责将请求转发到实际的服务进程。
+
+在稳定性方面， Binder 驱动通过统一管理进程和线程，以及 Binder 内存池，提供了一个更加健壮和稳定的 IPC 框架，减少了死锁和资源泄露的风险。
+
+Binder 驱动维护着一个内部的数据结构，来管理所有已注册的 Binder 对象、它们的句柄以及与进程和线程的对应关系。它提供了一个高效、安全且面向对象的通信机制。它的存在使得 Android 上的各个系统服务和应用程序组件能够无缝地进行协作。
+## Binder通信简化流程
 Binder 通信的流程可以分为以下几步：
 1.  **注册服务：**
     * **Server 服务端**在启动时，会向 **Service Manager** 注册自己提供的服务及其对应的 Binder 对象。

@@ -15,8 +15,7 @@ sitemap: false
 # Android Binder机制简要通信原理
 Android Binder 机制是 Android 系统中非常核心的 **进程间通信（IPC）机制**，它在 Android 各种组件之间的通信中扮演着至关重要的角色，比如 **App和系统服务之间** 的通信、**两个App之间**的通信等。理解 Binder 机制是深入学习 Android 系统的重要一步。
 
-此前对于Binder的了解仅仅停留在**使用层面**，没有去了解其背后的原理，只知道在底层是通过内存映射实现的。现对其更加深入地学习一下，本文将介绍Android Binder机制通信流程和背后的原理，并对比下其他IPC通信之间的区别。
-
+此前对于Binder的了解仅仅停留在**使用层面**，没有去了解其背后的原理，现对其更加深入地学习一下，本文将介绍Android Binder机制通信流程和背后的原理。
 ## 进程间通信需求由来
 Android系统是基于Linux系统而开发的，也继承了Linux的 **进程隔离机制** 。进程之间是无法直接进行交互的，每个进程内部各自的数据无法直接访问。
 
@@ -30,6 +29,19 @@ Android系统是基于Linux系统而开发的，也继承了Linux的 **进程隔
 * **安全性：** Binder 机制从底层提供 UID/PID 认证，可以方便地进行权限控制，确保通信的安全性。这对于 Android 这种多应用、多用户环境非常重要。
 * **架构优势：** Binder 机制基于 C/S (Client/Server) 架构，使得服务提供者和使用者之间解耦，更容易进行系统设计和扩展。
 * **内存管理：** Binder 机制在内核层实现了内存的映射和管理，能够更好地处理大块数据的传输。
+
+## 内存映射
+虽然用户地址空间是不能互相访问的，但是不同进程的内核地址空间是映射到相同物理地址的，它们是相同和共享的，我们可以借助内核地址空间作为中转站来实现进程间数据的传输。
+
+![](/assets/img/blog/blogs_binder_mem_share.png)
+
+进程B通过 `copy_from_user` 往内核地址空间里写值，进程A通过 `copy_to_user` 来获取这个值。可以看出为了共享这个数据，需要两个进程拷贝两次数据。
+
+我们可以通过 mmap 将 **进程 A 的用户地址空间与内核地址空间进行映射** ，让他们指向相同的物理地址空间，这样就只需要进行一次拷贝。
+
+![](/assets/img/blog/blogs_binder_mem_share_mmap.png)
+
+当B进程调用一次 `copy_from_user` 时，会将数据从用户空间拷贝到内核空间，而进程A和这个内核空间映射了同一个物理地址，故进程A可以直接使用这个数据，而无需再次拷贝。
 
 ## Binder通信过程的四个主要角色
 Server，服务的提供者，实现具体的业务逻辑。
@@ -65,32 +77,9 @@ Client，客户端， 服务的使用者，通过 `Binder` 代理对象与服务
       * 客户端会向 ServiceManager 发送请求，通过服务的名称来查询对应的 Binder 对象。
       * ServiceManager 收到请求后，会返回该服务在 Binder 驱动中的句柄（handle），客户端就可以通过这个句柄与服务建立 Binder 通信。这个过程就是调用 ServiceManager 的 `getService()` 方法。
 
-### **ServiceManager 的实现原理（简化版）**
-* **进程:** ServiceManager 集成在 init 进程中，它是一个 Binder 服务端。
-* **Binder 驱动:** ServiceManager 与 Binder 驱动交互，维护一个服务名称到 Binder 句柄的映射表。
-* **固定句柄:** ServiceManager 自身在 Binder 驱动中拥有一个固定的句柄（通常是 0），所有需要获取服务的进程都知道这个句柄，因此它们可以首先与 ServiceManager 建立通信。
-* **代理与服务:** 当客户端通过 ServiceManager 获取服务时，它得到的是一个 Binder **代理对象**。这个代理对象负责将客户端的请求通过 Binder 驱动发送到实际的服务进程。
+它为所有系统服务提供了一个统一的查找和访问入口，简化了服务的管理和调用。
 
-### **ServiceManager 的重要性**
-* **解耦:** ServiceManager 实现了服务提供者和消费者之间的解耦。服务提供者不需要知道谁会使用它，只需要将自己注册到 ServiceManager；服务消费者不需要知道服务在哪里，只需要通过 ServiceManager 查询即可。
-* **统一入口:** 它为所有系统服务提供了一个统一的查找和访问入口，简化了服务的管理和调用。
-* **系统启动:** 在 Android 系统的启动过程中，ServiceManager 是最先启动的核心服务之一，因为它为后续其他关键服务的启动和交互提供了基础。
-
-### **获取服务简化源码**
-在 Android 源码中，你可以找到 ServiceManager 相关的 C++ 代码（例如 `frameworks/native/cmds/servicemanager/` 目录）。
-
-而作为应用程序开发者，我们通常不会直接与底层的 ServiceManager 交互，而是通过 `Context` 或者 `ServiceManager` 类（位于 `android.os.ServiceManager`）来间接获取系统服务。例如，我们经常使用的：
-
-```java
-// 获取 ActivityManagerService 的代理对象
-ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-
-// 实际上，getSystemService 内部会间接调用 ServiceManager 来获取服务
-// 更底层一点的，ServiceManager.getService() 方法：
-IBinder b = ServiceManager.getService(Context.ACTIVITY_SERVICE);
-IActivityManager am = IActivityManager.Stub.asInterface(b);
-```
-
+在 Android 系统的启动过程中， `ServiceManager` 是最先启动的核心服务之一，因为它为后续其他关键服务的启动和交互提供了基础。
 ## Binder驱动介绍
 **Binder 驱动** 是 Linux 内核中的一个字符设备驱动程序。它的主要作用是**实现并管理 Android 系统中的进程间通信（IPC）机制**。
 
@@ -103,6 +92,13 @@ Binder 驱动在数据传输过程中会进行**权限验证**。它能够识别
 在稳定性方面， Binder 驱动通过统一管理进程和线程，以及 Binder 内存池，提供了一个更加健壮和稳定的 IPC 框架，减少了死锁和资源泄露的风险。
 
 Binder 驱动维护着一个内部的数据结构，来管理所有已注册的 Binder 对象、它们的句柄以及与进程和线程的对应关系。它提供了一个高效、安全且面向对象的通信机制。它的存在使得 Android 上的各个系统服务和应用程序组件能够无缝地进行协作。
+
+Binder 是一个字符驱动，对应的设备文件是 /dev/binder，和其他驱动一样，是通过 Linux 的文件访问系统调用对外提供具体功能的：
+* open()，用于打开 Binder 驱动，返回 Binder 驱动的文件描述符
+* mmap()，用于在内核中申请一块内存，并完成应用层与内核层的虚拟地址映射
+* ioctl，在应用层调用 ioctl ，从应用层向内核层发送数据或者读取内核层发送到应用层的数据
+
+
 ## Binder通信简化流程
 通信架构示意图：
 
@@ -121,6 +117,89 @@ Binder 通信的流程可以分为以下几步：
     * Binder 驱动将数据从 Client 进程的用户空间拷贝到内核空间，然后根据目标进程的 Binder 对象，再将数据从内核空间映射到 Server 进程的用户空间。
     * Server 端收到请求后，会解包（**unmarshalling**）数据，然后执行对应的服务方法，并将结果返回给 Client。这个返回过程也是通过 Binder 驱动进行的。
 
+一般来说，Client 进程访问 Server 进程函数，我们需要在 Client 进程中 **按照固定的规则打包数据** ，这些数据包含了：
+* 数据发给哪个进程，Binder 中是一个整型变量 `Handle`
+* 要调用目标进程中的那个函数，Binder 中用一个整型变量 `Code` 表示目标函数的参数
+* 要执行具体什么操作，也就是 Binder 协议
+
+Client 进程通过 IPC 机制将数据传输给 Server 进程。当 Server 进程收到数据，按照固定的格式解析出数据，调用函数，并使用相同的格式将函数的返回值传递给 Client 进程。
+
+通信关系图：
+
+![](/assets/img/blog/blogs_binder_relationship.jpg)
+
+### binder_node
+binder_node 是应用层的 **service 在内核中的存在形式** ，是内核中对应用层 service 的描述，在内核中具体表现为 binder_node 结构体。
+
+在上图中，ServiceManager 在 Binder 驱动中有对应的的一个 binder_node(Binder 实体)。每个 Server 在 Binder 驱动中也有对应的的一个 binder_node(Binder 实体)。这里假设每个 Server 内部仅有一个 service，内核中就只有一个对应的 binder_node(Binder 实体)，实际可能存在多个。
+
+binder_node 结构体中存在一个指针 struct binder_proc *proc;，指向 binder_node 对应的 binder_proc 结构体。
+
+```cpp
+// binder_node 是内核中对应用层 binder 服务的描述
+struct binder_node {
+	//......
+	struct binder_proc *proc;
+	//......
+}
+```
+
+### binder_proc
+binder_proc 是内核中对应用层进程的描述，内部有众多重要数据结构。
+
+```cpp
+// binder_proc 是内核中对应用层进程的描述
+struct binder_proc {
+	//......
+	struct binder_context *context;
+	//......
+}
+```
+
+### binder_ref（Binder 引用）
+所谓 binder_ref（Binder 引用），实际上是内核中 binder_ref 结构体的对象，它的作用是在表示 binder_node(Binder 实体) 的引用。
+
+换句话说，每一个 binder_ref（Binder 引用）都是某一个 binder_node (Binder实体)的引用，通过 binder_ref（Binder 引用） 可以在内核中找到它对应的 binder_node(Binder 实体)。
+
+### 寻址
+Binder 是一个 RPC 框架，最少会涉及两个进程。那么就涉及到寻址问题，所谓寻址就是当 A 进程需要调用 B 进程中的函数时，怎么找到 B 进程。
+
+Binder 中寻址分为两种情况：
+* ServiceManager 寻址，即 Client/Server 怎么找到 ServiceManager，对应于内核，就是找到 ServiceManager 对应的 binder_proc 结构体实例
+* Server 寻址，即 Client 怎么找到 Server，对应于内核，就是找到 Server 对应的 binder_proc 结构体实例
+
+#### 如何找到ServiceManager
+Service Manager 启动并注册自身
+* 在 Android 系统启动初期，servicemanager 进程（一个守护进程）会首先启动。
+* 它会打开 `/dev/binder` 设备文件，获取一个文件描述符 (fd)。
+*然后，它会通过一个特殊的 ioctl 系统调用：BINDER_SET_CONTEXT_MGR，将自己注册为 Binder 驱动的“上下文管理器”。这个操作会告诉 Binder 驱动，Service Manager 是那个负责管理所有其他 Binder 服务的特殊实体。
+* 在这个注册过程中，Binder 驱动会为 Service Manager 分配句柄 0。从此以后，**Service Manager 就成为了 Binder 驱动中唯一拥有句柄 0 的实体**。
+
+每个使用 binder 的进程，在初始化时，会在内核中将 `binder_device` 的 context 成员赋值给 `binder_proc->context` 。
+
+```cpp
+binder_proc->context = binder_device->context;
+```
+
+`binder_device` 指的是 Binder 驱动程序在 Linux 内核中提供的设备文件，而 binder_device是全局唯一变量，这样的话，所有进程的 `binder_proc->context` 都指向同一个结构体实例。
+
+当 `ServiceManager` 调用 `binder_become_context_manager` 后，会陷入内核，在内核中会构建一个 `binder_node` 结构体实例，构建好以后，会将他保存到 `binder_proc->context->binder_context_mgr_node` 中。
+
+也就是说，任何时候我们都可以通过 `binder_proc->context->binder_context_mgr_node` 获得 `ServiceManager` 对应的 `binder_node` 结构体实例。 `binder_node` 结构体中有一个成员 `struct binder_proc *proc;`，通过这个成员我们就能找到 `ServiceManager` 对应的 `binder_proc`.
+
+当任何其他 Binder 进程（Client 或 Server，在向 Service Manager 注册服务时，它也充当 Service Manager 的 Client）需要与 Service Manager 通信时，它们并不需要“查找” Service Manager。
+
+它们可以直接通过 Binder 框架提供的 API **获取一个代表 Service Manager 的 IBinder 代理对象**。 这个代理对象内部封装的 Binder 句柄值就是 0。
+#### 如何找到Server
+服务注册阶段
+* Server 端向 ServiceManager 发起注册服务请求时(svcmgr_publish)，会陷入内核，首先通过 ServiceManager 寻址方式找到 ServiceManager 对应的 binder_proc 结构体，然后在内核中**构建一个**代表待注册服务的 binder_node 结构体**实例**，并**插入服务端对应的 binder_proc->nodes 红黑树中**。
+* 接着会构建一个 binder_ref 结构体，binder_ref 会**引用**到上一阶段构建的 **binder_node** ，并插入到 ServiceManager 对应的 binder_proc->refs_by_desc 红黑树中，同时会计算出一个 desc 值（1，2，3 ....依次赋值）保存在 binder_ref 中。
+* 最后服务相关的信息（主要是名字和 desc 值）会传递给 ServiceManager 应用层，应用层通过一个链表将这些信息保存起来
+
+服务获取阶段
+* Client 端向 `ServiceManager` 发起获取服务请求时(svcmgr_lookup，请求的数据中包含服务的名字)，会陷入内核， 通过 `binder_proc->context->binder_context_mgr_node` 寻址到 ServiceManager，接着通过分配映射内存，拷贝数据后，将"获取服务请求"的数据发送给 ServiceManager， **ServiceManager** 应用层收到数据后，会**遍历内部的链表**，通过传递过来的 name 参数，找到对应的 handle，然后将数据返回给 Client 端，接着陷入内核，通过 handle 值在 ServiceManager 对应的 `binder_proc->refs_by_desc` 红黑树中**查找到服务对应 binder_ref**，接着通过 binder_ref 内部指针找到服务对应的 binder_node 结构。
+* 接着会**创建出一个新的 binder_ref 结构体**实例，内部 node 指针指向刚刚找到的服务端的 binder_node，接着再将 binder_ref 插入到 Client 端的 `binder_proc->refs_by_desc`，并计算出一个 desc 值（1，2，3 ....依次赋值），保存到 binder_ref 中。desc 值也会返回给 Client 的应用层。
+* Client 应用层收到内核返回的这个 desc 值，改名为 `handle` ，接着向 Server 发起远程调用，远程调用的数据包中包含有 handle 值，接着陷入内核，在内核中首先根据 handle 值在 Client 的 `binder_proc->refs_by_desc` 获取到 binder_ref，通过 binder_ref 内部 node 指针找到目标服务对应的 binder_node，然后通过 binder_node 内部的 proc 指针找到目标进程的 binder_proc，这样就完成了整个寻址过程。
 ### Binder机制的实现原理
 从更深层次看，Binder 机制主要依赖以下几点实现：
 1.  **内存映射 (mmap)：** Binder 驱动在内核空间和每个使用 Binder 的进程的用户空间之间建立了一块共享内存区域。当 Client 发送数据时，数据首先从 Client 进程的用户空间拷贝到这块共享内存的内核缓冲区。然后，Binder 驱动会修改 Server 进程的页表，将这块内核缓冲区映射到 Server 进程的用户空间，从而实现了数据的一次拷贝。

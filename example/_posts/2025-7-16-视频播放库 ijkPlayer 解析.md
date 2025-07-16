@@ -12,5 +12,5 @@ accent_image: /assets/img/blog/blogs_android_video_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Android图片显示流程与原理总结
+# 视频播放库 ijkPlayer 解析
 

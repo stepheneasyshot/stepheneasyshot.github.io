@@ -13,12 +13,7 @@ excerpt_separator: <!--more-->
 sitemap: false
 ---
 # Compose Desktop进行JNI开发
------
-
 在 Kotlin Multiplatform (KMP) 项目中，要在桌面端（通常指 JVM 桌面应用，如 macOS, Windows, Linux）进行 JNI (Java Native Interface) 开发，核心思路是利用 KMP 的 `expect`/`actual` 机制，为桌面 JVM 平台提供 JNI 的实际实现。
-
------
-
 ### JNI 简介
 
 JNI 允许 Java 代码（或运行在 JVM 上的 Kotlin 代码）调用原生应用程序（用 C/C++ 等语言编写）或库，反之亦然。在 KMP 桌面端，这通常用于：
@@ -26,8 +21,6 @@ JNI 允许 Java 代码（或运行在 JVM 上的 Kotlin 代码）调用原生应
   * **集成现有 C/C++ 库：** 如果你有成熟的原生库，JNI 是将其集成到 Kotlin 桌面应用的桥梁。
   * **访问平台特定功能：** 某些操作系统级别的功能可能没有 JVM 或 Kotlin 友好的 API，此时可以通过 JNI 调用原生 API。
   * **性能敏感部分：** 对于某些计算密集型任务，原生代码可能提供更好的性能。
-
------
 
 ### KMP 桌面端 JNI 开发步骤
 
@@ -252,8 +245,6 @@ fun main() {
       * **通过 `java.library.path`：** 你可以在启动 JVM 时通过 `-Djava.library.path=/path/to/your/native/libs` 参数指定原生库的查找路径。
       * **在 Gradle 中打包：** 某些 Gradle 插件可以帮助你将原生库打包到最终的可执行文件中（例如 `jpackage` 或一些 `shadowJar` 配置），但这会增加复杂性。
 
------
-
 ### 总结与建议
 
 在 KMP 桌面端进行 JNI 开发是一个相对复杂的过程，因为它涉及到 Kotlin/JVM、C/C++ 和构建系统（Gradle, CMake）之间的协作。
@@ -273,5 +264,4 @@ fun main() {
   * **考虑 Kotlin/Native：** 如果你的目标平台是完全原生的（例如，直接构建 macOS/Windows/Linux 可执行文件而不是 JVM 应用），**Kotlin/Native** 可能是更好的选择，它允许你直接调用 C 语言家族的库，而无需 JNI 的开销。但如果你需要利用 JVM 生态系统，JNI 是你的选择。
   * **逐步进行：** 从一个简单的 JNI 调用开始，逐步添加更复杂的功能。
   * **查阅官方文档：** JNI 和 Kotlin Multiplatform 的官方文档是最好的资源。
-
-祝你 JNI 开发顺利！
+  

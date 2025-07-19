@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_android_ai_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Android平台运行AI小模型
+# 【AI】Android平台运行AI小模型
 接上文：
 
 [【AI】大模型开发流程和运行环境简介](./2025-7-19-【AI】大模型开发流程和运行环境简介.md)

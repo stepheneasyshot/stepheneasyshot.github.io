@@ -308,9 +308,8 @@ GGUF 文件不仅包含模型权重，还打包了模型的词表、超参数、
 ## Android 端集成方法
 作为一名 Android 开发者，llama.cpp 打开了在移动应用中实现**端侧 AI** 的全新大门。
 
-可以通过 Android NDK (Native Development Kit) 将 llama.cpp 的 C/C++ 代码编译为 `.so` 库，并在您的 Java/Kotlin 代码中通过 JNI (Java Native Interface) 调用它。社区中也有一些封装好的 Android 库或示例项目，可以帮助您更快速地开始。
+可以通过 Android NDK (Native Development Kit) 将 llama.cpp 的 C/C++ 代码编译为 `.so` 库，并在您的 Java/Kotlin 代码中通过 JNI (Java Native Interface) 调用它。社区中也有一些封装好的 Android 库或示例项目，可以帮助您更快速地开始。llama.cpp 让您可以在 Android 应用中直接拥有一个“本地的智能大脑”，从而创造出前所未有的智能应用体验。
 
-简而言之，llama.cpp 让您可以在 Android 应用中直接拥有一个“本地的智能大脑”，从而创造出前所未有的智能应用体验。
+接下来介绍下如何在项目中集成llama.cpp，从而加载gguf模型，运行本地的小模型。直接由开源项目 [SmolChat-Android Public](https://github.com/shubham0204/SmolChat-Android) 分析。
 
-接下来介绍下如何在项目中集成llama.cpp，从而加载gguf模型，运行本地的小模型。
 ### 

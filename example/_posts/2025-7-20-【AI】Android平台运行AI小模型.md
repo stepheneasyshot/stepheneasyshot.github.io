@@ -85,3 +85,228 @@ TensorFlow 推理 API 适用于最常见的移动设备和嵌入式设备 Androi
 * 调用推理。
 * 输出张量值。
 
+### llama.cpp 的两种运行方案
+#### 一、使用Termux命令行编译运行
+笔者没有实操，主要实践的后一种方案，第一种方案直接参考的掘金文章：
+
+[安卓手机部署阿里的Qwen3-0.6B（llama.cpp，ollama）](https://juejin.cn/post/7506727402821042191)
+
+这种方法就是将 `Android` 设备当作 `Linux` 设备来使用，手机需要安装Termux.
+
+可以在Github Releases 选择 `termux-app_v0.118.2+github-debug_arm64-v8a.apk` 下载，并且安装到手机。
+
+[Releases · termux/termux-app](https://github.com/termux/termux-app/releases)
+
+下载 `llama.cpp` 库:
+
+```
+# 切换国内源
+termux-change-repo
+apt list --upgradable
+# 安装依赖工具
+pkg install -y cmake git build-essential
+# 下载 llama.cpp
+git clone https://github.com/ggml-org/llama.cpp.git
+# 如果git下不下来，通过scp拷贝进去
+scp -P 8022 .\llama.cpp-master.zip u0_a456@192.168.31.44:~
+```
+
+编译llama.cpp
+
+```
+# 进入目录
+cd llama.cpp
+# 创建build文件,并且进入文件夹
+mkdir build && cd build
+# 生成编译配置，-DGGML_CUDA=OFF 关闭GPU
+cmake .. -DGGML_CUDA=OFF 
+# 4个线程编译
+make -j4
+# 编译完成目录在/bin
+ls ~/llama.cpp/build/bin
+# bin添加到环境变量中
+echo 'export PATH=$PATH:~/llama.cpp/build/bin/' >> ~/.bashrc
+source ~/.bashrc
+```
+
+直接下载gguf文件，避免转换步骤：
+
+[Qwen3-0.6B-GGUF](https://huggingface.co/Qwen/Qwen3-0.6B-GGUF)
+
+直接在命令行中启动：
+
+```
+llama-cli -m Qwen3-0.6B-Q8_0.gguf
+```
+
+> llama-cli，即 ​​CLI 模式​​（Command-Line Interface 模式）是指通过命令行直接运行模型进行推理（文本生成）的方式，而不是通过 API 或图形界面。这是 llama.cpp 最基础的使用方式，适合本地测试、脚本调用或服务器部署。
+
+也可以以server方式启动：
+
+```
+llama-server -m Qwen3-0.6B-Q8_0.gguf --port 8080 --host 0.0.0.0
+```
+
+在同一个局域网中，电脑端可以直接通过 `openai` 的开发套件，和手机端运行的服务进行通信：
+
+```python
+import requests
+import json
+import time
+
+# API_URL = "http://192.168.31.86:8080/v1/chat/completions"
+API_URL = "http://192.168.31.44:8080/v1/chat/completions"
+# API_URL = "http://127.0.0.1:8080/v1/chat/completions"
+
+
+payload = {
+    "model": "Qwen3-0.6B-Q8_0",  # llama-server 中可随意写
+    "messages": [
+        {"role": "system", "content": "你是一个英语学习助手。"},
+        {"role": "user", "content": "请用中文解释单词 ability 的含义，并给出一个英文例句。"}
+    ],
+    "temperature": 0.7,
+    "max_tokens": 256,
+    "stream": False
+}
+
+# 记录开始时间
+start_time = time.time()
+
+# 发送请求
+response = requests.post(API_URL, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
+
+# 记录结束时间
+end_time = time.time()
+
+if response.ok:
+    result = response.json()
+    message = result['choices'][0]['message']['content']
+    print("模型回复：\n", message)
+    
+    # 处理 token usage 和速度统计
+    usage = result.get("usage", {})
+    total_tokens = usage.get("total_tokens", "未知")
+    elapsed = end_time - start_time
+    
+    print(f"\n总 tokens: {total_tokens}")
+    print(f"耗时: {elapsed:.2f} 秒")
+    if isinstance(total_tokens, int) and elapsed > 0:
+        print(f"生成速度: {total_tokens / elapsed:.2f} tokens/秒")
+else:
+    print("请求失败，状态码：", response.status_code)
+    print(response.text)
+```
+
+#### 二、使用JNI开发接口和llama.cpp交互
+这种方案就是比较符合 `Android` 设备上运行的直观预期，通过一个APP页面来承载功能，在应用中，以用户友好的 `UX交互` 来和本地模型进行通信。
+
+![](/assets/img/blog/blogs_ai_llamacpp_smollchat.png){:width="300" height="620" loading="lazy"}
+
+底层使用 `llama.cpp` 加载和执行 GGUF 模型。
+
+由于 llama.cpp 是用纯 C/C++ 编写的，因此很容易利用 AndroidStudio 的NDK工具，和应用app一起编译运行。
+
+首先，定义JNI函数，第一步需要通过 `kotlin` 代码来加载 `gguf` 文件。
+
+```kotlin
+class GGUFReader {
+    companion object {
+        init {
+            System.loadLibrary("ggufreader")
+        }
+    }
+
+    private var nativeHandle: Long = 0L
+
+    suspend fun load(modelPath: String) =
+        withContext(Dispatchers.IO) {
+            nativeHandle = getGGUFContextNativeHandle(modelPath)
+        }
+
+    fun getContextSize(): Long? {
+        assert(nativeHandle != 0L) { "Use GGUFReader.load() to initialize the reader" }
+        val contextSize = getContextSize(nativeHandle)
+        return if (contextSize == -1L) {
+            null
+        } else {
+            contextSize
+        }
+    }
+
+    fun getChatTemplate(): String? {
+        assert(nativeHandle != 0L) { "Use GGUFReader.load() to initialize the reader" }
+        val chatTemplate = getChatTemplate(nativeHandle)
+        return chatTemplate.ifEmpty {
+            null
+        }
+    }
+
+    private external fun getGGUFContextNativeHandle(modelPath: String): Long
+
+    private external fun getContextSize(nativeHandle: Long): Long
+
+    private external fun getChatTemplate(nativeHandle: Long): String
+}
+```
+
+`nativeHandle` 是一个长整型（Long）变量，代表指向本地（C/C++）端创建的 gguf_context 的指针。在 Native 代码里，gguf_context 是一个上下文对象，负责管理 GGUF 文件的读取操作。nativeHandle 唯一标识这个上下文对象，方便 Kotlin 代码引用。借助 nativeHandle 能把本地对象的地址传递给 Kotlin 代码，进而在 Kotlin 代码里调用本地函数操作这些对象。
+
+定义的三个JNI方法作用分别如下：
+* `getGGUFContextNativeHandle()` ： 加载模型文件，返回模型上下文的指针。
+* `getContextSize()` ： 获取模型上下文的大小，即模型参数的数量。
+* `getChatTemplate()` ： 获取模型的聊天模板，用于生成聊天对话的提示。
+
+在Native层的代码中，实现也非常简单，引入 `llama.cpp` 中的 `gguf.h` 头文件。
+
+在获取上下文指针的方法中，传入模型文件的绝对地址字符串，调用 `gguf_init_from_file` ，即可获取到 `gguf_context` 对象指针，转换回 `jlong` 类型传递给Kotlin即可。
+
+第二，在获取模型参数数量的方法中，需要先从 `gguf_context` 中找到 `architecture` 字段，再根据 `architecture` 字段的值，拼接出 `context_length` 字段的名称，最后调用 `gguf_get_val_u32` 方法获取参数数量。
+
+第三个方法是获取模型的聊天模板，需要先找到分词器 `tokenizer.chat_template` 字段，调用 `gguf_get_val_str` 方法获取字符串值。
+
+```cpp
+#include "gguf.h"
+#include <jni.h>
+#include <string>
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_io_shubham0204_smollm_GGUFReader_getGGUFContextNativeHandle(JNIEnv* env, jobject thiz, jstring modelPath) {
+    jboolean         isCopy        = true;
+    const char*      modelPathCStr = env->GetStringUTFChars(modelPath, &isCopy);
+    gguf_init_params initParams    = { .no_alloc = true, .ctx = nullptr };
+    gguf_context*    ggufContext   = gguf_init_from_file(modelPathCStr, initParams);
+    env->ReleaseStringUTFChars(modelPath, modelPathCStr);
+    return reinterpret_cast<jlong>(ggufContext);
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_io_shubham0204_smollm_GGUFReader_getContextSize(JNIEnv* env, jobject thiz, jlong nativeHandle) {
+    gguf_context* ggufContext       = reinterpret_cast<gguf_context*>(nativeHandle);
+    int64_t       architectureKeyId = gguf_find_key(ggufContext, "general.architecture");
+    if (architectureKeyId == -1)
+        return -1;
+    std::string architecture       = gguf_get_val_str(ggufContext, architectureKeyId);
+    std::string contextLengthKey   = architecture + ".context_length";
+    int64_t     contextLengthKeyId = gguf_find_key(ggufContext, contextLengthKey.c_str());
+    if (contextLengthKeyId == -1)
+        return -1;
+    uint32_t contextLength = gguf_get_val_u32(ggufContext, contextLengthKeyId);
+    return contextLength;
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_io_shubham0204_smollm_GGUFReader_getChatTemplate(JNIEnv* env, jobject thiz, jlong nativeHandle) {
+    gguf_context* ggufContext       = reinterpret_cast<gguf_context*>(nativeHandle);
+    int64_t       chatTemplateKeyId = gguf_find_key(ggufContext, "tokenizer.chat_template");
+    std::string   chatTemplate;
+    if (chatTemplateKeyId == -1) {
+        chatTemplate = "";
+    } else {
+        chatTemplate = gguf_get_val_str(ggufContext, chatTemplateKeyId);
+    }
+    return env->NewStringUTF(chatTemplate.c_str());
+}
+```
+
+然后根据 `llama.cpp` 的几个核心的方法，如加载，对话等功能，来编写对接的接口类 

@@ -85,8 +85,8 @@ TensorFlow 推理 API 适用于最常见的移动设备和嵌入式设备 Androi
 * 调用推理。
 * 输出张量值。
 
-### llama.cpp 的两种运行方案
-#### 一、使用Termux命令行编译运行
+## llama.cpp 的两种运行方案
+### 一、使用Termux命令行编译运行
 笔者没有实操，主要实践的后一种方案，第一种方案直接参考的掘金文章：
 
 [安卓手机部署阿里的Qwen3-0.6B（llama.cpp，ollama）](https://juejin.cn/post/7506727402821042191)
@@ -198,7 +198,7 @@ else:
     print(response.text)
 ```
 
-#### 二、使用JNI开发接口和llama.cpp交互
+### 二、使用JNI开发接口和llama.cpp交互
 这种方案就是比较符合 `Android` 设备上运行的直观预期，通过一个APP页面来承载功能，在应用中，以用户友好的 `UX交互` 来和本地模型进行通信。
 
 ![](/assets/img/blog/blogs_ai_llamacpp_smollchat.png){:width="300" height="620" loading="lazy"}
@@ -1292,3 +1292,15 @@ object LLManager {
     }
 }
 ```
+
+## 使用 LiteRT 来运行本地模型
+这个在Google开源项目中有已经体现：
+
+[google-ai-edge gallery](https://github.com/google-ai-edge/gallery)
+
+项目截图：
+
+![](/assets/img/blog/blogs_ai_google_dege_gallery.png)
+
+可以看到，Google的LiteRT是支持多模态的，可以进行图片交互。
+

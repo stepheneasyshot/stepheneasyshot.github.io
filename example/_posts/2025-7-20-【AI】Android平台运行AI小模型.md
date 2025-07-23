@@ -59,16 +59,16 @@ TensorFlow 的核心概念之一是数据流图。它将计算表示为图中的
 * 支持多种语言：包括适用于 Java/Kotlin、Swift、Objective-C、C++ 和 Python 的 SDK。
 * 高性能：通过 GPU 和 iOS Core ML 等专用代理实现硬件加速。
 
-### 运行流程
-本节介绍了在设备上运行 LiteRT（简称 Lite Runtime）模型以根据输入数据进行预测的过程。这是 使用 LiteRT 解释器来实现，该解释器使用静态图排序和 自定义（非动态）内存分配器，以确保将负载、初始化 和执行延迟时间
+### LiteRT集成的运行流程
+本节介绍了在设备上运行 `LiteRT`（简称 Lite Runtime）模型以根据输入数据进行预测的过程。这是 使用 `LiteRT` 解释器来实现，该解释器使用静态图排序和 自定义（非动态）内存分配器，以确保将负载、初始化 和执行延迟时间
 
-LiteRT 推理通常遵循以下步骤：
-* 加载模型：将 .tflite 模型加载到内存中，其中包含模型的执行图。
+`LiteRT` 推理通常遵循以下步骤：
+* 加载模型：将 `.tflite` 模型加载到内存中，其中包含模型的执行图。
 * 转换数据：将输入数据转换为预期格式并 维度。模型的原始输入数据通常与模型预期的输入数据格式不匹配。例如，您可能需要调整图片大小或更改图片格式，以使其与模型兼容。
-* 运行推理：执行 LiteRT 模型以进行预测。这个 这个步骤涉及使用 LiteRT API 执行模型。它涉及 例如构建解释器和分配张量等步骤。
+* 运行推理：执行 `LiteRT` 模型以进行预测。这个 这个步骤涉及使用 `LiteRT API` 执行模型。它涉及 例如构建解释器和分配张量等步骤。
 * 解释输出：以有意义的方式解释输出张量 对您的应用非常有用例如，一个模型可能只返回 概率列表。您可以将概率映射到相关类别并设置输出格式。
 
-TensorFlow 推理 API 适用于最常见的移动设备和嵌入式设备 Android、iOS 和 Linux 等平台，支持多种编程语言。
+`TensorFlow` 推理 API 适用于最常见的移动设备和嵌入式设备 Android、iOS 和 Linux 等平台，支持多种编程语言。
 
 在大多数情况下，API 设计反映的是性能优先于易用性。LiteRT 专为在小型设备上快速推理而设计，因此 API 会避免不必要的复制，但会牺牲便捷性。在所有库中，LiteRT API 可让您加载模型、提供输入并检索推理输出。
 
@@ -87,11 +87,9 @@ TensorFlow 推理 API 适用于最常见的移动设备和嵌入式设备 Androi
 
 ## llama.cpp 的两种运行方案
 ### 一、使用Termux命令行编译运行
-笔者没有实操，主要实践的后一种方案，第一种方案直接参考的掘金文章：
+这种方法就是将 `Android` 设备当作 `Linux` 设备来使用，手机需要安装Termux。参考的掘金文章：
 
-[安卓手机部署阿里的Qwen3-0.6B（llama.cpp，ollama）](https://juejin.cn/post/7506727402821042191)
-
-这种方法就是将 `Android` 设备当作 `Linux` 设备来使用，手机需要安装Termux.
+[原文：安卓手机部署阿里的Qwen3-0.6B（llama.cpp，ollama）](https://juejin.cn/post/7506727402821042191)
 
 可以在Github Releases 选择 `termux-app_v0.118.2+github-debug_arm64-v8a.apk` 下载，并且安装到手机。
 
@@ -111,6 +109,8 @@ git clone https://github.com/ggml-org/llama.cpp.git
 scp -P 8022 .\llama.cpp-master.zip u0_a456@192.168.31.44:~
 ```
 
+![](/assets/img/blog/blogs_ai_termux_clone_llamacpp.png)
+
 编译llama.cpp
 
 ```
@@ -129,23 +129,41 @@ echo 'export PATH=$PATH:~/llama.cpp/build/bin/' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-直接下载gguf文件，避免转换步骤：
+![](/assets/img/blog/blogs_ai_termux_build_llamacpp.png)
 
-[Qwen3-0.6B-GGUF](https://huggingface.co/Qwen/Qwen3-0.6B-GGUF)
+直接从 `Hugging Face` 下载gguf文件，避免转换步骤。我下载的是 `DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf`.推荐在电脑端下载完毕，通过USB使用adb或者文件模式，推送到手机端。
+
+注意Termux默认是无法操作手机文件系统的，需要执行命令来获取权限，初始化文件管理系统。
+
+```
+termux-setup-storage
+```
+
+![](/assets/img/blog/blogs_ai_termux_get_file_permissions.png)
+
+然后，将文件复制到内部目录：
+
+![](/assets/img/blog/blogs_ai_termux_copy_model_gguf_file.png)
 
 直接在命令行中启动：
 
 ```
-llama-cli -m Qwen3-0.6B-Q8_0.gguf
+llama-cli -m DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf
 ```
 
 > llama-cli，即 ​​CLI 模式​​（Command-Line Interface 模式）是指通过命令行直接运行模型进行推理（文本生成）的方式，而不是通过 API 或图形界面。这是 llama.cpp 最基础的使用方式，适合本地测试、脚本调用或服务器部署。
 
+运行效果如下：
+
+![](/assets/img/blog/blogs_ai_termux_run_deepseek_model.png)
+
 也可以以server方式启动：
 
 ```
-llama-server -m Qwen3-0.6B-Q8_0.gguf --port 8080 --host 0.0.0.0
+llama-server -m DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf --port 8080 --host 0.0.0.0
 ```
+
+![](/assets/img/blog/blogs_ai_termux_run_deepseek_model_as_server.png)
 
 在同一个局域网中，电脑端可以直接通过 `openai` 的开发套件，和手机端运行的服务进行通信：
 
@@ -160,7 +178,7 @@ API_URL = "http://192.168.31.44:8080/v1/chat/completions"
 
 
 payload = {
-    "model": "Qwen3-0.6B-Q8_0",  # llama-server 中可随意写
+    "model": "DeepSeek-R1-Distill-Qwen-1.5B-Q2_K",  # llama-server 中可随意写
     "messages": [
         {"role": "system", "content": "你是一个英语学习助手。"},
         {"role": "user", "content": "请用中文解释单词 ability 的含义，并给出一个英文例句。"}

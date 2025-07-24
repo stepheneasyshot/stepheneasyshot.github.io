@@ -141,11 +141,11 @@ termux-setup-storage
 
 ![](/assets/img/blog/blogs_ai_termux_get_file_permissions.png)
 
-然后，将文件复制到内部目录：
+出现管理所有文件的权限授予弹窗，打开之后将文件复制到内部目录：
 
 ![](/assets/img/blog/blogs_ai_termux_copy_model_gguf_file.png)
 
-直接在命令行中启动：
+可以先试试运行效果，使用 `llama-cli` 直接在命令行中启动：
 
 ```
 llama-cli -m DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf
@@ -157,7 +157,7 @@ llama-cli -m DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf
 
 ![](/assets/img/blog/blogs_ai_termux_run_deepseek_model.png)
 
-也可以以server方式启动：
+也可以使用 `llama-server` 的方式启动：
 
 ```
 llama-server -m DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf --port 8080 --host 0.0.0.0
@@ -172,10 +172,7 @@ import requests
 import json
 import time
 
-# API_URL = "http://192.168.31.86:8080/v1/chat/completions"
 API_URL = "http://192.168.31.44:8080/v1/chat/completions"
-# API_URL = "http://127.0.0.1:8080/v1/chat/completions"
-
 
 payload = {
     "model": "DeepSeek-R1-Distill-Qwen-1.5B-Q2_K",  # llama-server 中可随意写
@@ -1321,4 +1318,5 @@ object LLManager {
 ![](/assets/img/blog/blogs_ai_google_dege_gallery.png)
 
 可以看到，Google的LiteRT是支持多模态的，可以进行图片交互。
+
 

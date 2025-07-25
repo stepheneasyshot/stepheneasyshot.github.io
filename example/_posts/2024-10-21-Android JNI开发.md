@@ -268,9 +268,9 @@ C 和 C++ 有着不同的命名协议，因为 C++ 支持函数重载，用了�
 * JNIEXPORT、JNICALL 两个宏在 linux 平台的定义如下：
 
 ```
-//该声明的作用是保证在本动态库中声明的方法 , 能够在其他项目中可以被调用
+// 该声明的作用是保证在本动态库中声明的方法 , 能够在其他项目中可以被调用
 #define JNIEXPORT  __attribute__ ((visibility ("default")))
-//一个空定义
+// 一个空定义
 #define JNICALL
 ```
 

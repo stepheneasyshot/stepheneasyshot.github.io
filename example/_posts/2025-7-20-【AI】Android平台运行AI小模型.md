@@ -165,7 +165,72 @@ llama-server -m DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf --port 8080 --host 0.0.0
 
 ![](/assets/img/blog/blogs_ai_termux_run_deepseek_model_as_server.png)
 
-在同一个局域网中，电脑端可以直接通过 `openai` 的开发套件，和手机端运行的服务进行通信：
+#### 手机端client直接访问
+通过 `llama-server` 作为服务器启动之后，我们可以直接**在手机端**编写client，通过http请求来访问，直接和这个服务交互。这里大部分可以复用之前写的和**deepseek官方api**的请求逻辑。
+
+网络Repository代码：
+
+```kotlin
+class DeepseekChatRepository(private val ktorClient: KtorClient) {
+
+    companion object {
+        const val BASE_URL =
+            "https://api.deepseek.com"
+        const val LOCAL_SERVER = "http://0.0.0.0:8080/v1"
+        const val COMMON_SYSTEM_PROMT = "你是一个人工智能系统，可以根据用户的输入来返回生成式的回复"
+        const val ENGLISH_SYSTEM_PROMT =
+            "You are a English teacher, you can help me improve my English skills, please answer my questions in English."
+        const val API_KEY = "xxxxxxxxxxxxxxxxx"
+        const val MODEL_NAME = "deepseek-chat"
+    }
+
+    suspend fun localLLMChat(chat: String) = withContext(Dispatchers.IO) {
+        ktorClient.client.post("${LOCAL_SERVER}/chat/completions") {
+            // 配置请求头
+            headers {
+                append("Content-Type", "application/json")
+            }
+            setBody(
+                DeepSeekRequestBean(
+                    model = "DeepSeek-R1-Distill-Qwen-1.5B-Q2_K",
+                    max_tokens = 256,
+                    temperature = 0.7f,
+                    stream = false,
+                    messages = listOf(
+                        RequestMessage(COMMON_SYSTEM_PROMT, ChatRole.SYSTEM.roleDescription),
+                        RequestMessage(chat, ChatRole.USER.roleDescription)
+                    )
+                )
+            )
+        }.body<LocalModelResult>()
+    }
+}
+```
+
+界面上维护一个chatListState，里面是一个
+
+```kotlin
+data class AiChatUiState(
+    val chatList: List<ChatItem> = listOf(),
+    val listSize: Int = chatList.size
+) {
+    fun toUiState() = AiChatUiState(chatList = chatList, listSize = listSize)
+}
+
+data class ChatItem(
+    val content: String,
+    val role: ChatRole,
+)
+```
+
+界面观察这个State响应式刷新即可。
+
+运行结果：
+
+![](/assets/img/blog/blogs_local_llm_server_client.png){:width="300" height="620" loading="lazy"}
+
+#### 局域网内其他设备访问
+除了同一设备直接访问本地服务，在同一个局域网中，比如电脑端，我们也可以使用Python，通过 `openai` 的Python开发套件，和手机端运行的服务进行通信：
 
 ```python
 import requests
@@ -214,15 +279,17 @@ else:
 ```
 
 ### 二、使用JNI开发接口和llama.cpp交互
-这种方案就是比较符合 `Android` 设备上运行的直观预期，通过一个APP页面来承载功能，在应用中，以用户友好的 `UX交互` 来和本地模型进行通信。
+上面那种在Termux中运行模型的方式还是感觉比较麻烦，每次也需要手动开启服务。
+
+下面这种方案就是比较符合 `Android` 设备上运行的直观预期，通过一个APP页面来承载功能，在应用中，以用户友好的 `UX交互` 来和本地模型进行通信。
 
 ![](/assets/img/blog/blogs_ai_llamacpp_smollchat.png){:width="300" height="620" loading="lazy"}
 
-底层使用 `llama.cpp` 加载和执行 GGUF 模型。
+底层依然是使用 `llama.cpp` 加载和执行 GGUF 模型。
 
 由于 llama.cpp 是用纯 C/C++ 编写的，因此很容易利用 AndroidStudio 的NDK工具，和应用app一起编译运行。
 
-首先，定义JNI函数，第一步需要通过 `kotlin` 代码来加载 `gguf` 文件。
+首先，定义JNI函数，第一步需要加载 `gguf` 文件。在 Android 应用中，需要使用 Kotlin 语言来定义页面需要用到的接口，再到 Native 层使用 `llama.cpp` 的能力，来编写 C++ 的桥接代码。
 
 ```kotlin
 class GGUFReader {
@@ -380,14 +447,8 @@ Java_com_stephen_llamacppbridge_GgufFileReader_getChatTemplate(JNIEnv *env, jobj
 头文件定义如下：
 
 ```cpp
-#include "llama.h"
-#include <jni.h>
-#include <string>
-#include <vector>
-
 /**
- * @class LLMInference
- * @brief 该类用于管理大语言模型（LLM）的推理过程，包括模型加载、聊天消息处理、推理循环等功能。
+管理大语言模型（LLM）的推理过程，包括模型加载、聊天消息处理、推理循环等功能
  */
 class LLMInference {
     // llama.cpp 特定类型的成员变量
@@ -435,78 +496,25 @@ class LLMInference {
     /// 记录对话过程中已使用的上下文大小
     int _nCtxUsed = 0;
 
-    /**
-     * @brief 检查输入的字符串是否为有效的 UTF-8 编码。
-     * 
-     * @param response 待检查的字符串。
-     * @return bool 若为有效 UTF-8 编码返回 true，否则返回 false。
-     */
     bool _isValidUtf8(const char *response);
 
 public:
-    /**
-     * @brief 加载大语言模型并初始化相关参数。
-     * 
-     * @param modelPath 模型文件的路径。
-     * @param minP 采样时的最小概率阈值。
-     * @param temperature 采样时的温度参数。
-     * @param storeChats 是否存储聊天记录。
-     * @param contextSize 模型的上下文大小。
-     * @param chatTemplate 聊天模板字符串。
-     * @param nThreads 推理时使用的线程数量。
-     * @param useMmap 是否使用内存映射加载模型。
-     * @param useMlock 是否使用内存锁定。
-     */
     void loadModel(const char *modelPath, float minP, float temperature, bool storeChats,
                    long contextSize,
                    const char *chatTemplate, int nThreads, bool useMmap, bool useMlock);
 
-    /**
-     * @brief 向聊天消息列表中添加一条消息。
-     * 
-     * @param message 消息内容。
-     * @param role 消息角色，如 "user" 或 "assistant"。
-     */
     void addChatMessage(const char *message, const char *role);
 
-    /**
-     * @brief 获取响应生成的速度。
-     * 
-     * 计算方式为生成的 token 数量除以生成所用的总时间（秒）。
-     * 
-     * @return float 响应生成速度，单位为 token/秒。
-     */
     float getResponseGenerationTime() const;
 
-    /**
-     * @brief 获取当前已使用的上下文大小。
-     * 
-     * @return int 当前已使用的上下文大小。
-     */
     int getContextSizeUsed() const;
 
-    /**
-     * @brief 开始完成任务，处理用户输入并准备推理。
-     * 
-     * @param query 用户输入的查询内容。
-     */
     void startCompletion(const char *query);
 
-    /**
-     * @brief 完成任务的循环函数，进行模型推理和响应生成。
-     * 
-     * @return std::string 生成的有效 UTF-8 词块，若无效则返回空字符串，若生成结束则返回 "[EOG]"。
-     */
     std::string completionLoop();
 
-    /**
-     * @brief 停止完成任务，处理收尾工作。
-     */
     void stopCompletion();
 
-    /**
-     * @brief 析构函数，释放类实例占用的资源。
-     */
     ~LLMInference();
 };
 ```
@@ -886,17 +894,7 @@ LLMInference::~LLMInference() {
 
 ```kotlin
   /**
-     * 加载模型的本地方法。
-     * @param modelPath 模型文件路径。
-     * @param minP 最小概率。
-     * @param temperature 采样温度。
-     * @param storeChats 是否存储聊天记录。
-     * @param contextSize 上下文大小。
-     * @param chatTemplate 聊天模板。
-     * @param nThreads 线程数。
-     * @param useMmap 是否使用内存映射。
-     * @param useMlock 是否锁定内存。
-     * @return 模型指针。
+     * 加载模型
      */
     private external fun loadModel(
         modelPath: String,
@@ -911,10 +909,7 @@ LLMInference::~LLMInference() {
     ): Long
 
     /**
-     * 添加聊天消息的本地方法。
-     * @param modelPtr 模型指针。
-     * @param message 消息内容。
-     * @param role 消息角色。
+     * 添加聊天消息
      */
     private external fun addChatMessage(
         modelPtr: Long,
@@ -923,29 +918,22 @@ LLMInference::~LLMInference() {
     )
 
     /**
-     * 获取响应生成速度的本地方法。
-     * @param modelPtr 模型指针。
-     * @return 响应生成速度。
+     * 获取响应生成速度
      */
     private external fun getResponseGenerationSpeed(modelPtr: Long): Float
 
     /**
-     * 获取上下文使用大小的本地方法。
-     * @param modelPtr 模型指针。
-     * @return 上下文使用大小。
+     * 获取上下文使用大小
      */
     private external fun getContextSizeUsed(modelPtr: Long): Int
 
     /**
-     * 关闭模型的本地方法。
-     * @param modelPtr 模型指针。
+     * 关闭模型
      */
     private external fun close(modelPtr: Long)
 
     /**
-     * 开始完成任务的本地方法。
-     * @param modelPtr 模型指针。
-     * @param prompt 提示内容。
+     * 开始完成任务
      */
     private external fun startCompletion(
         modelPtr: Long,
@@ -953,15 +941,12 @@ LLMInference::~LLMInference() {
     )
 
     /**
-     * 完成循环的本地方法。
-     * @param modelPtr 模型指针。
-     * @return 生成的片段。
+     * 完成循环
      */
     private external fun completionLoop(modelPtr: Long): String
 
     /**
-     * 停止完成任务的本地方法。
-     * @param modelPtr 模型指针。
+     * 停止完成任务
      */
     private external fun stopCompletion(modelPtr: Long)
 ```
@@ -1173,140 +1158,11 @@ Java_com_stephen_llamacppbridge_LlamaCppBridge_stopCompletion(JNIEnv* env, jobje
 
 将这个模组直接封装成一个aar，也可以直接被其他模组依赖编译。
 
-外部使用时，先将gguf文件从手机下载路径复制到内部目录，也可以直接在线从 `Hugging Face` 上下载到本地内部目录。然后调用 `loadModel()` 、 `getResponseAsFlow()` 等接口。
+外部使用时，先将gguf文件从手机下载路径复制到内部目录，也可以直接在线从 `Hugging Face` 上下载到本地内部目录。然后调用 `loadModel()` 、 `getResponseAsFlow()` 等接口来加载模型，获取生成的对话回复。
 
-下面是使用这个模组进行简单调用的Demo：
+运行结果如下，模型加载和对话回复：
 
-```kotlin
-object LLManager {
-    private val instance = LlamaCppBridge()
-    private var modelInitJob: Job? = null
-    private var responseGenerationJob: Job? = null
-    private var chat: Chat? = null
-
-    fun load(
-        chat: Chat = Chat(),
-        absolutePath: String,
-        params: LlamaCppBridge.InferenceParams = LlamaCppBridge.InferenceParams(),
-        onError: (String) -> Unit,
-        onSuccess: () -> Unit,
-    ) {
-        kotlin.runCatching {
-            LLManager.chat = chat
-            modelInitJob = CoroutineScope(Dispatchers.Default).launch {
-                instance.load(absolutePath, params)
-                debugLog("Model loaded")
-                if (chat.systemPrompt.isNotEmpty()) {
-                    instance.addSystemPrompt(chat.systemPrompt)
-                    infoLog("System prompt added")
-                }
-                withContext(Dispatchers.Main) {
-                    onSuccess()
-                }
-            }
-        }.onFailure {
-            onError(it.message.orEmpty())
-        }
-    }
-
-    fun getResponse(
-        query: String,
-        responseTransform: (String) -> String,
-        onPartialResponseGenerated: (String) -> Unit,
-        onSuccess: (String) -> Unit,
-        onCancelled: () -> Unit,
-        onError: (Exception) -> Unit,
-    ) {
-        try {
-            assert(chat != null) { "Please call SmolLMManager.create() first." }
-            responseGenerationJob =
-                CoroutineScope(Dispatchers.Default).launch {
-                    var response = ""
-                    val duration =
-                        measureTime {
-                            instance.getResponseAsFlow(query).collect { piece ->
-                                response += piece
-                                withContext(Dispatchers.Main) {
-                                    onPartialResponseGenerated(response)
-                                }
-                            }
-                        }
-                    response = responseTransform(response)
-                    // once the response is generated
-                    // add it to the messages database
-                    withContext(Dispatchers.Main) {
-                        onSuccess(response)
-                    }
-                }
-        } catch (e: CancellationException) {
-            onCancelled()
-        } catch (e: Exception) {
-            onError(e)
-        }
-    }
-
-    fun copyModelFile(
-        uri: Uri,
-        onComplete: (String) -> Unit,
-    ) {
-        var fileName = ""
-        appContext.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            cursor.moveToFirst()
-            fileName = cursor.getString(nameIndex)
-        }
-        if (fileName.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                appContext.contentResolver.openInputStream(uri).use { inputStream ->
-                    FileOutputStream(File(appContext.filesDir, fileName)).use { outputStream ->
-                        inputStream?.copyTo(outputStream)
-                    }
-                }
-                val ggufFileReader = GgufFileReader()
-                ggufFileReader.load(File(appContext.filesDir, fileName).absolutePath)
-                withContext(Dispatchers.Main) {
-                    onComplete(fileName)
-                }
-            }
-        } else {
-            errorLog("File name is empty")
-        }
-    }
-
-    suspend fun loadChat(fileName: String, onSuccess: () -> Unit) = withContext(Dispatchers.IO) {
-        val path = File(appContext.filesDir, fileName).absolutePath
-        LLManager.load(absolutePath = path, onSuccess = {
-            infoLog("Model loaded")
-            onSuccess()
-        }, onError = {
-            infoLog("Model load error: $it")
-        })
-    }
-
-    fun checkGGUFFile(uri: Uri): Boolean {
-        appContext.contentResolver.openInputStream(uri)?.use { inputStream ->
-            val ggufMagicNumberBytes = ByteArray(4)
-            inputStream.read(ggufMagicNumberBytes)
-            return ggufMagicNumberBytes.contentEquals(byteArrayOf(71, 71, 85, 70))
-        }
-        return false
-    }
-
-    /**
-     * 查看内部目录下是否有gguf后缀文件
-     */
-    fun checkModelFileExist(): String? {
-        val filesDir = appContext.filesDir
-        val files = filesDir.listFiles()
-        files?.forEach { file ->
-            if (file.name.endsWith(".gguf")) {
-                return file.name
-            }
-        }
-        return null
-    }
-}
-```
+![](/assets/img/blog/blogs_local_llm_load_models.png){:width="600" height="360" loading="lazy"}
 
 ## 使用 LiteRT 来运行本地模型
 这个在Google开源项目中有已经体现：
@@ -1317,6 +1173,5 @@ object LLManager {
 
 ![](/assets/img/blog/blogs_ai_google_dege_gallery.png)
 
-可以看到，Google的LiteRT是支持多模态的，可以进行图片交互。
-
+从官方Github仓库介绍页面可以看到，Google的LiteRT是支持多模态的，可以进行图片交互。
 

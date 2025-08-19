@@ -13,7 +13,7 @@ excerpt_separator: <!--more-->
 sitemap: false
 ---
 
-# 使用CMP开发跨平台的Android调试工具
+# 使用Compose Multiplatform开发跨平台的Android调试工具
 ## 背景
 最近对CMP跨平台很感兴趣，为了练手，在移动端做了一个Android和IOS共享UI和逻辑代码的天气软件，简单适配了一下双端的深浅主题切换，网络状态监测，刷新调用振动器接口。
 
@@ -72,12 +72,13 @@ upgradeUuid = "xxxx-xxxxxxx-xxxxx"
 
 注意 Mac 端的图标需要使用苹果电脑才能生成。
 
-首先我们切到png格式的图片所在的目录，执行下面三组命令即可生成Mac端的图标文件了：
+首先我们切到png格式的图片所在的目录，执行下面三组命令即可生成Mac端的图标文件了。第一步创建输出文件夹：
 
-> 创建输出文件夹
+```
 mkdir MyIcon.iconset
+```
 
-> 输入这些命令来生成图标
+输入这些命令来生成不同尺寸的图标：
 
 ```
 sips -z 16 16     original.png --out MyIcon.iconset/icon_16x16.png
@@ -92,9 +93,11 @@ sips -z 512 512   original.png --out MyIcon.iconset/icon_512x512.png
 sips -z 1024 1024 original.png --out MyIcon.iconset/icon_512x512@2x.png
 ```
 
-> 合成不同尺寸的图标
-iconutil -c icns MyIcon.iconset
+最后合成不同尺寸的图标：
 
+```
+iconutil -c icns MyIcon.iconset
+```
 
 之后就可以看到一个后缀为icns的文件了，将其复制到项目中，gradle脚本里配置为应用图标。
 

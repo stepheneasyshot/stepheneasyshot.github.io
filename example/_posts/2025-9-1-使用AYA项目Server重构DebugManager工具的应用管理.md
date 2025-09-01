@@ -211,6 +211,10 @@ DebugManager内部，通过 `adb shell pm list packages` 命令，获取到所�
 
 ![](/assets/img/blog/blogs_debugmanager_app_info.png)
 
+详细信息弹窗：
+
+![](/assets/img/blog/blogs_debugmanager_app_info_gallery.png)
+
 同时为了缩小重组范围，使用应用的packageName作为key，来标识每一个item，还可以以此来实现每一个item的移动动效，比图标的体验更丝滑。
 
 ```kotlin

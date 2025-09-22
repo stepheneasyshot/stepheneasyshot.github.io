@@ -107,7 +107,8 @@ fun startCollect() {
 
 第一次收集完毕，延时6s，再次调用collect。打印结果如下：
 
-> 19:34:57.752  I  init
+```
+19:34:57.752  I  init
 19:35:00.758  I  startCollect
 19:35:01.260  I  FlowOne collect 0
 19:35:01.761  I  FlowOne collect 1
@@ -119,6 +120,7 @@ fun startCollect() {
 19:35:04.779  I  FlowOne collect twice 2
 19:35:05.280  I  FlowOne collect twice 3
 19:35:05.782  I  FlowOne collect twice 4
+```
 
 有两个值得关注的点，一是第二次collect开始的时间并不是紧跟着第一次，而是第一次收集所有数据完毕之后才开始。说明collect函数是一个挂起的函数，只有在数据收集完毕之后，函数退出，才会继续往下执行。
 

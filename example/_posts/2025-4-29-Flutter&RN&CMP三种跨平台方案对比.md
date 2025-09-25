@@ -265,7 +265,7 @@ Kotlin 编译器在Android和IOS上生成对应平台特有文件的流程，它
 * 后端- 它将 IR 转换为机器可执行的原生代码。这得益于 JetBrains 构建的 Kotlin/Native 基础架构。对于 Android，它将 IR 转换为 Java 字节码；对于 iOS，它将 IR 转换为 iOS 原生机器可执行代码。
 
 #### 支持转译成哪些语言？
-Kotlin 编译器将源代码作为输入，并生成一组特定于平台的二进制文件。在编译多平台项目时，它可以从同一份代码生成多个二进制文件。例如，编译器可以.class从同一个 Kotlin 文件生成 JVM 文件和原生可执行文件。
+Kotlin 编译器将源代码作为输入，并生成一组特定于平台的二进制文件。在编译多平台项目时，它可以从同一份代码生成多个二进制文件。例如，编译器可以从同一个 Kotlin 文件生成 JVM 文件和原生可执行文件。
 
 目前，其中三种语言的支持最为成熟， JetBrains 正在不断努力扩展支持范围。
 
@@ -307,13 +307,13 @@ Skia 库的主要特点有：
     * 以及其他各种应用程序和框架。
 
 Skia 的**核心优势**在于它能在各种硬件上高效地渲染这些图形。它通过支持各种后端渲染技术来实现这一目标：
-* GPU 加速：** 对于现代设备，Skia 可以利用图形处理器（GPU）进行硬件加速渲染。为此，Skia 可将其内部绘图命令转换为对 GPU 应用程序接口的调用，例如：
-    * OpenGL ES / OpenGL：** 一种广泛应用于 2D 和 3D 图形的 API。
-    * AGLE：** 兼容性层，可将 OpenGL ES 调用转换为特定供应商的本地 API（如 Windows 上的 Direct3D 或 macOS 上的 Metal），以获得一致的性能。
-    * Vulkan：** 一种现代高性能图形和计算 API。
-    * Metal：** 苹果用于 iOS 和 macOS 的底层图形 API。
-* CPU 软件光栅化：** 在 GPU 加速不可用或不可取的情况下（如某些服务器或特定的渲染需求），Skia 可以退回到 CPU 上的软件渲染。这包括直接在 CPU 上将矢量图形光栅化为像素。
- * PDF/SVG 输出：** Skia 还可以渲染成 PDF 或 SVG 等格式，这些格式基于矢量，可按比例缩放而不会降低质量。
+* **GPU 加速：** 对于现代设备，Skia 可以利用图形处理器（GPU）进行硬件加速渲染。为此，Skia 可将其内部绘图命令转换为对 GPU 应用程序接口的调用，例如：
+    * **OpenGL ES / OpenGL：** 一种广泛应用于 2D 和 3D 图形的 API。
+    * **AGLE：** 兼容性层，可将 OpenGL ES 调用转换为特定供应商的本地 API（如 Windows 上的 Direct3D 或 macOS 上的 Metal），以获得一致的性能。
+    * **Vulkan：** 一种现代高性能图形和计算 API。
+    * **Metal：** 苹果用于 iOS 和 macOS 的底层图形 API。
+* **CPU 软件光栅化：** 在 GPU 加速不可用或不可取的情况下（如某些服务器或特定的渲染需求），Skia 可以退回到 CPU 上的软件渲染。这包括直接在 CPU 上将矢量图形光栅化为像素。
+ * **PDF/SVG 输出：** Skia 还可以渲染成 PDF 或 SVG 等格式，这些格式基于矢量，可按比例缩放而不会降低质量。
 
 #### CMP的绘制
 这是 Skia 发挥关键作用的地方。Compose Multiplatform **不会直接使用每个平台原生的 UI 组件（例如 Android 上的 View 或 iOS 上的 UIKit 控件）来绘制**。相反，它采取了**像素渲染 (pixel-painting)** 的方式，这与 Flutter 的工作方式类似。
@@ -438,6 +438,7 @@ Dart（Flutter）VS Kotlin（KMP 和 CMP）
 你也得不到一个合适的集成开发环境，flutter 支持是在 android studio 上附加的。
 试着在 flutter 中做一个懒列表，然后再在 jetpack compose 中做，这就是它们生态系统的完美体现。
 
+Me:
 就我个人的情况，专业为Android开发，对于Kotlin和Jetpack Compose的写法，架构设计，已经是比较熟悉了，如果有做跨平台的需求，在业务不是太复杂的情况下，使用CMP几乎是最佳选择。所以这个跨平台的能力对于熟悉这两个技术的Android开发可以说是买一送一，拿起电脑，稍微看看文档就可以写功能。
 
-国内已经有Bilibili，快手在使用KMP来重构自己的产品，腾讯甚至基于CMP自己改了一套Kuikly，所以站在发展的角度看，我认为CMP日后的成熟度和公司接受度，说不定可以超过Flutter。
+国内已经有Bilibili，快手在使用KMP来重构自己的产品，腾讯甚至基于CMP自己改了一套Kuikly来适配鸿蒙平台，所以站在发展的角度看，我认为CMP日后的成熟度和公司接受度，说不定可以超过Flutter。

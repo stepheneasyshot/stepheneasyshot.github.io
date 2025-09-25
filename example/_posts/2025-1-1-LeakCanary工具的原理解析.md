@@ -41,6 +41,7 @@ LeakCanary 内部有一个周期性的任务，会定期在后台线程中运行
 在 GC 之后，LeakCanary 会遍历之前创建的集合，查看其中的弱引用是否已经被清除。
 * 弱引用已清除： 如果 KeyedWeakReference.get() 返回 null，说明它引用的 Activity 对象已经被垃圾回收了。这表示 Activity 正常地被销毁， **没有发生内存泄漏** 。这个 KeyedWeakReference 就会从集合中移除。
 * 弱引用未清除（被保留）： 如果 KeyedWeakReference.get() 仍然返回 **非 null** ，说明它引用的 Activity 对象仍然存在于内存中，它其实应该是被销毁的。此时，LeakCanary 就认为这个 Activity 对象被“保留（retained）”了，并且很可能发生了内存泄漏。 LeakCanary 会在 Logcat 中打印一条信息，指示哪个 Activity 被保留了。
+
 ### 3. 触发堆转储
 LeakCanary 会统计被保留对象的数量。默认情况下，当被保留对象的数量达到 5个（可配置）时，LeakCanary 会触发一次堆转储。这是为了避免频繁的堆转储对用户体验造成影响。
 

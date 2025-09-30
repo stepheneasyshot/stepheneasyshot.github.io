@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_aidl.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 应用层AIDL接口的实现
+# 【Android基础】应用层AIDL接口的实现
 通常包括以下步骤
 ## 定义AIDL接口文件
 首先，通信的服务端和客户端，需要创建一个AIDL文件来定义接口。AIDL文件类似于Java接口文件，但它使用AIDL语法。例如，你可以创建一个名为IAirConditionerService.aidl的文件，并在其中定义你的接口方法。客户端和服务端，需要在同一个包名的文件夹里面创建。

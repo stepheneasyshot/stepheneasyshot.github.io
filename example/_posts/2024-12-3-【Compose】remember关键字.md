@@ -12,11 +12,9 @@ accent_image: /assets/img/blog/blogs_compose_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Compose中的remember关键字
-
+# 【Compose】remember关键字
 ## 使用
-
-```remember``` 关键字，用于在 Jetpack Compose 中保存可组合函数在重组期间的状态。它通过在组合中缓存计算结果，确保每次重组时状态保持不变。
+`remember` 关键字，用于在 Jetpack Compose 中保存可组合函数在重组期间的状态。它通过在组合中缓存计算结果，确保每次重组时状态保持不变。
 
 使用举例：
 

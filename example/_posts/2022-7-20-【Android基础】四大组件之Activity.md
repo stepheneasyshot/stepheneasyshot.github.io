@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_activity_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 四大组件之Activity
+# 【Android基础】四大组件之Activity
 
 ## 概念
 Activity是最常用的四大组件之一，主要用于显示用户界面，管理维护界面内的一系列控件和数据，并响应用户的屏幕操作事件。

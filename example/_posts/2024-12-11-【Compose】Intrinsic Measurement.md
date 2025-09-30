@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_compose_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Compose的Intrinsic Measurement
+# 【Compose】Intrinsic Measurement
 Compose 有一项规则，**子项只能测量一次，测量两次就会引发运行时异常**
 
 但是，有时需要先收集一些关于子项的信息，然后再测量子项。

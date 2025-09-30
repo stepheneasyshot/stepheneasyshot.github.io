@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_adb_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# ADB调试命令大全
+# 【Android基础】ADB调试命令大全
 ## 前言
 这篇笔记用来收集在日常开发中所用到的安卓adb shell命令，参照了一些大佬的再加上我自己平时用到的整理在了一块儿，感谢无私共享的大佬们。
 将会持续更新，欢迎收藏~

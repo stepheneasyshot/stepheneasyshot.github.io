@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_android_common_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Android多屏开发
+# 【Android基础】多屏开发
 车载Android开发和手机端的一个重大区别之一，就是车载Android设备通常拥有多个屏幕，比如一个主屏幕和一个副屏幕。在手机端通常只需要一个屏幕，但是在车载Android开发中，我们很多时候需要同时处理多个屏幕。
 
 例如现在相当一部分的新能源车拥有主副驾两块大屏幕，主驾显示的界面为导航和车辆状态等，副驾屏幕用来显示一些娱乐app的流媒体等。甚至很多车企，还会有吸顶屏幕给后排乘客使用。

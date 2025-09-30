@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_activity_stack.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Activity任务栈和启动模式
+# 【Android基础】Activity任务栈和启动模式
 ## 任务栈
 应用任务栈定义
 Activity的任务栈Task Stacks，是用户在执行某项工作时与之互动的一系列 Activity 的集合。

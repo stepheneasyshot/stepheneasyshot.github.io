@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_android_common_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 第一个Android应用学习记录
+# 【Android基础】第一个Android应用学习记录
 
 #### xmlns
 xmlns 是主节点的namespace命名空间的意思，告诉内部语句可以使用哪些合法的属性参数.

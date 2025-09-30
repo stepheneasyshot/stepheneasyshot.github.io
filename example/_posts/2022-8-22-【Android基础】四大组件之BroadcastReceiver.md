@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_broadsact_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 四大组件之BroadcastReceiver
+# 【Android基础】四大组件之BroadcastReceiver
 ## 什么是BroadcastReceiver
 Android系统里面的广播可以看作村里的大喇叭。而BroadcastReceiver是Android四大组件之一，主要用于接收系统或其他应用发送的广播消息。
 

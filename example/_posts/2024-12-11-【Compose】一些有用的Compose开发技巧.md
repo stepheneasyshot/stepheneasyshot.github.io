@@ -1,0 +1,220 @@
+---
+layout: post
+description: > 
+  本文记录了若干有用的Compose开发技巧
+image: 
+  path: /assets/img/blog/blogs_cmp_new_cover.png
+  srcset: 
+    1920w: /assets/img/blog/blogs_cmp_new_cover.png
+    960w:  /assets/img/blog/blogs_cmp_new_cover.png
+    480w:  /assets/img/blog/blogs_cmp_new_cover.png
+accent_image: /assets/img/blog/blogs_cmp_new_cover.png
+excerpt_separator: <!--more-->
+sitemap: false
+---
+# 【Compose】一些有用的Compose开发技巧
+使用Jetpack Compose有很长一段时间了，最近也有在开发跨平台的版本CMP。结合网络上和实际项目的应用，分享几个可以增强性能，提升可读性和可维护性的Compose开发技巧。
+
+## 状态提升
+这个在很多地方都有提到，可以提升Composable的可测试性和可维护性。
+
+具体来说，就是将Composable的状态提升到父Composable中，由父Composable来管理和维护状态，而子Composable只负责展示和交互。这样可以避免子Composable的状态和逻辑与父Composable的状态和逻辑耦合在一起，从而提高代码的可维护性和可测试性。
+
+例如一个简单的计数组件：
+
+```kotlin
+@Composable
+fun Counter(count: Int, onIncrement: () -> Unit) {
+    Button(onClick = onIncrement) {
+        Text("Clicked $count times")
+    }
+}
+```
+
+## MVI架构设计
+这个核心理念用一句话概括就是：**数据向下流动，事件向上流动**。
+
+* ViewModel组件来管理维护数据状态
+* View层的Composable组件来观测数据
+* 操作和输入事件通过回调的方式向上流动，触发ViewModel的状态更新
+
+还是以计数为例：
+
+```kotlin
+// ViewModel
+class CounterViewModel : ViewModel() {
+    private val _count = mutableStateOf(0)
+    val count: State<Int> = _count
+
+    fun increment() {
+        _count.value++
+    }
+}
+
+// View
+@Composable
+fun CounterScreen(viewModel: CounterViewModel = viewModel()) {
+    val count by viewModel.count.collectAsState()
+    
+    Counter(
+      count = count, 
+      onIncrement = viewModel::increment
+    )
+}
+```
+
+## 插槽化设计
+将通用的父组合项抽离出来，将子组合项以插槽的形式传递进去，实现代码的复用和灵活性。
+
+```kotlin
+@Composable
+fun FancyCard(content: @Composable () -> Unit) {
+    Card {
+        content()
+    }
+}
+```
+
+Composed的相当一部分的官方API都是这样设计的。
+
+## ViewModel层使用StateFlow作为数据状态
+LiveData这个类在Compose中已经不推荐使用了，因为它的设计初衷是为了与传统的Android组件（如Activity和Fragment）进行集成，而Compose是一个基于声明式UI的框架，不依赖于传统的组件生命周期。使用StateFlow可以提供更好的Kotlin适配和灵活性。
+
+```kotlin
+class MainViewModel : ViewModel() {
+    private val _themeState = MutableStateFlow(ThemeState.DEFAULT)
+    val themeStateStateFlow = _themeState.asStateFlow()
+
+    fun setThemeState(themeState: ThemeState) {
+        _themeState.value = themeState
+    }
+}
+
+// View
+@Composable
+fun MainScreen(viewModel: MainViewModel = viewModel()) {
+    val themeState by viewModel.themeStateStateFlow.collectAsState()
+
+    LaunchEffect(themeState) {
+        // 处理主题状态变化
+    }
+}
+```
+
+## Composables分类
+将各个可组合项分类，如状态相关的、布局相关的、样式相关的等，方便管理和维护。有的只需要显示固定的UI，有的是响应数据变化的组件。
+
+```kotlin
+// 状态相关的Composable
+@Composable
+fun Counter(count: Int, onIncrement: () -> Unit) {
+    Button(onClick = onIncrement) {
+        Text("Clicked $count times")
+    }
+}
+```
+
+## 使用脚手架Scaffold组件
+对于移动端来说，界面的布局一般是有固定的部分，如顶部的导航栏、底部的底部栏等。这些部分可以使用Scaffold组件来实现。
+
+```kotlin
+@Composable
+fun MainScreen() {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Compose Scaffold") }
+            )
+        },
+        bottomBar = {
+            BottomAppBar {
+                Button(onClick = { /* 处理底部按钮点击 */ }) {
+                    Text("底部按钮")
+                }
+            }
+        }
+    ) { innerPadding ->
+        // 主要内容区域
+    }
+}
+```
+
+## 对列表类控件，设置元素的key减少重组，配置动效
+列表类控件，如`LazyColumn`、`LazyRow`等，在Compose中使用时，需要为每个列表项设置一个唯一的key，这样可以帮助Compose在列表项发生变化时，只重新组合发生变化的项，而不是全部重新组合。
+
+```kotlin
+LazyColumn {
+    items(items = items, key = { item -> item.id }) { item ->
+        ListItem(item)
+    }
+}
+```
+
+有了这个key标识之后，Compose列表项还可以对每一个item组件都应用动效，比如一个元素A前面再插入一个元素B，元素A的位置变化就不是闪现，而是平滑的过渡。注意列表原数据中的每一个元素的key都要求唯一，如果出现了重复的key标识，会报运行错误。
+## DerivedStateOf
+`derivedStateOf` 的核心作用是只在它的计算结果发生变化时才触发重组。
+
+例如：
+
+```kotlin
+// 不推荐
+val isFormValid = email.isNotEmpty() && password.length >= 8
+```
+
+在上面的代码中，`isFormValid` 是一个计算属性，它依赖于 `email` 和 `password` 两个变量。当这两个变量发生变化时，就算 `isFormValid` 的值没有变化，也会触发持有这个属性的外部可组合项发生重组。比如在桌面端，一般会有一个Window可组合项，这个可组合项一个周期内只执行一次，如果在这里触发重组会直接报错。
+
+推荐做法：
+
+```kotlin
+// 推荐
+val isFormValid by derivedStateOf {
+    email.isNotEmpty() && password.length >= 8
+}
+```
+
+## rememberSaveable
+`rememberSaveable` 是 Jetpack Compose 中用于在配置变更（如屏幕旋转）或进程被系统杀死后保留状态的工具。
+
+它和 `remember` 很像，但功能更强大：
+
+* `remember` 只在重组（recomposition）过程中保留状态。如果用户旋转了屏幕，Activity 被重建，remember 保存的状态就会丢失。
+* `rememberSaveable` 不仅能在重组时保留状态，还能在 Activity 或进程被销毁和重建时（例如，屏幕旋转、从后台长时间返回）保存状态。
+
+```kotlin
+val name by rememberSaveable { mutableStateOf("") }
+```
+
+## 善用LaunchedEffect
+Compose中提供了很多Side Effect方法，用来处理一些副作用，如网络请求、文件读写等。
+
+其中`LaunchedEffect`是最常用的一个，它可以在Composable中启动一个协程，用来处理一些异步操作。
+
+比如界面的初始化数据获取，会使用Unit作为key，这样只会在Composable第一次被调用时执行一次。
+
+```kotlin
+LaunchedEffect(Unit) {
+    // 初始化数据获取
+}
+```
+
+除此之外，`LaunchedEffect`还可以用来处理一些变化执行的场景
+
+```kotlin
+LaunchedEffect(themeState) {
+    // 处理主题状态变化
+}
+```
+
+## 自定义Modifier
+一些超高频的Modifier可以自定义，比如点击事件、背景设置、间距设置等。
+
+```kotlin
+fun Modifier.defaultPadding() = padding(16.dp)
+```
+
+```kotlin
+fun Modifier.defaultClickable() = clickable {
+    // 处理点击事件
+}
+```
+

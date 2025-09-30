@@ -1,0 +1,483 @@
+---
+layout: post
+description: > 
+  本文记录了Python里的基础知识，方便调试AI工具代码
+image: 
+  path: /assets/img/blog/blogs_python_cover.png
+  srcset: 
+    1920w: /assets/img/blog/blogs_python_cover.png
+    960w:  /assets/img/blog/blogs_python_cover.png
+    480w:  /assets/img/blog/blogs_python_cover.png
+accent_image: /assets/img/blog/blogs_python_cover.png
+excerpt_separator: <!--more-->
+sitemap: false
+---
+# 【Python】Python基础扫盲
+经常有一些电脑端的批量的小任务，比如后台截屏，轮询检查文件变化，批量处理文件等。
+
+之前可能会专门搜一个软件安装下来，或者找一个工具网站，再去使用其提供的功能。现在第一时间想到的是打开 `PyCharm` ，然后把需求描述给AI，再不断地运行测试与优化。大部分情况下，都是可以一次解决问题的。
+
+**小例子——后台截屏**
+
+比如上周想对一个软件界面截个图，但是各个截图快捷键按下时，都会导致这个软件界面发生变化。就想能不能先让这个软件保持界面，弄一个服务在后台自动截图并存文件。AI实现的功能如下：
+
+```python
+from time import sleep
+
+from PIL import ImageGrab
+
+# 捕获整个屏幕
+print("等待10秒")
+sleep(10)
+print("开始截图")
+screenshot = ImageGrab.grab()
+screenshot.save("full_screen_capture.png")
+print("已捕获整个屏幕并保存为 full_screen_capture.png")
+```
+
+**问题**
+
+在不能一次搞定的任务中，除了不断地更改需求，向AI粘贴报错信息（这也不一定能获得完美的结果）之外，我希望自己也具备基础的调适和开发能力，一些简单的问题点可以立即发现，并精准地提出修改需求和意见，这样可以大大提高AI开发这个模式的完成效率。
+
+目前对Python的了解尚少，比如看到项目中的：
+
+```python
+if __name__ == '__main__':
+```
+
+还有
+
+```python
+__init__.py
+```
+
+不知道它们的含义和运行时机。此文作为基础性的学习记录，语法层面快速带过，主要是项目中的一些最佳实践，运行环境的配置，代码的组织架构，了解实际的工程中是如何书写的，因为AI的训练数据就来自实际的工程项目代码，所以它生成的代码应该是更符合实际工程项目的风格。
+
+下面大部分例子来自菜鸟教程的Python基础教程：[菜鸟教程](https://www.runoob.com/python3/python3-data-type.html)
+
+## Python代码运行方式
+Python 代码的运行可以分为两个主要阶段：**编译**和**解释**。但与传统的编译型语言（如 C++）不同，Python 的编译过程更轻量、更灵活。
+
+C++的编译阶段，编译完成就是面向特定平台可直接运行的二进制文件。Python的编译成果也是平台无关的，但是是给Python虚拟机使用的，由Python虚拟机来逐行解释成机器码，然后由计算机 CPU 执行。这个过程就是**解释执行**。
+## py文件的直接运行和作为模块运行
+开头背景中的那个问题，`if __name__ == '__main__':` 是做什么用的？这是Python 中一个非常常见的结构，它的主要作用是**控制代码块的执行时机**。
+
+简单来说，它的意思是：**“如果当前文件是作为单个脚本直接被运行的，那么就执行这个判断语句下面的代码。”**
+
+在 Python 中，一个 `.py` 文件有两种用途：
+
+1.  **作为脚本直接运行：** 你在命令行中输入 `python your_script.py` 来运行它。
+2.  **作为模块导入：** 你在另一个文件中，使用 `import your_script` 来导入它的功能。
+
+当你直接运行一个文件时，Python 解释器会给 **一个特殊的内置变量** `__name__` 赋值为 `'__main__'`。
+
+而当你将它作为模块导入时，`__name__` 的值会被设置为**模块的名字**（也就是文件名，比如 `'your_script'`）。
+
+因此，`if __name__ == '__main__':` 这个条件判断就成了区分这两种情况的“开关”。
+
+总结下来，这个结构的主要作用是：
+* **保护代码：** 确保某些代码（通常是程序的主体逻辑、测试代码或示例调用）只在文件被作为主程序运行时才执行。
+* **提高模块化：** 让你的文件既可以作为独立的脚本运行，也可以作为一个可导入的库，提供函数和类给其他程序使用，而不会在导入时意外执行主程序逻辑。
+
+这个习惯在 Python 项目开发中非常重要，可以帮助你更好地组织和复用代码。
+## `__init__.py` 的作用
+`__init__.py` 是 Python 包（Package）中一个特殊的文件，它的主要作用是**将一个目录变成一个可被导入的 Python 包**。
+
+简单来说，只要一个目录下存在 `__init__.py` 文件，Python 解释器就会把这个目录当作一个包来处理。
+
+`__init__.py` 文件也可以为空，它在包的导入机制和初始化中扮演着关键角色：
+
+1.  **标识包：** 这是它最基础的作用。当 Python 解释器看到一个带有 `__init__.py` 文件的目录时，它就知道这个目录不是普通的文件夹，而是一个可以包含多个模块的包。这允许你通过 `import` 语句来访问包内的模块。
+
+2.  **包的初始化：** 当你导入一个包时，比如 `import my_package`，这个包下的 `__init__.py` 文件会自动执行。你可以利用这个特性来做一些初始化工作，例如：
+
+      * 设置包级别的变量。
+      * 执行某些初始化代码。
+      * 导入包内的常用模块，以简化外部调用。
+
+3.  **简化导入：** 这是 `__init__.py` 最实用的功能之一。假设你有一个包结构如下：
+
+    ```
+    my_package/
+    ├── __init__.py
+    ├── module_a.py
+    └── module_b.py
+    ```
+
+    通常情况下，如果你想导入 `module_a` 中的函数 `func_a`，你需要写 `from my_package.module_a import func_a`。
+
+    如果你在 `__init__.py` 中添加一行代码：
+
+    `from . import module_a` 或 `from .module_a import func_a`
+
+    那么外部就可以直接通过 `from my_package import func_a` 来导入，从而简化了调用路径。
+
+### 简化外部导入的示例
+
+假设你有如下文件结构：
+
+```
+animals/
+├── __init__.py
+├── cat.py
+└── dog.py
+```
+
+`dog.py` 的内容：
+
+```python
+def bark():
+    print("Woof!")
+```
+
+`cat.py` 的内容：
+
+```python
+def meow():
+    print("Meow!")
+```
+
+如果你想在 `main.py` 中使用这两个函数，你可以这样做：
+
+**`main.py`**
+
+```python
+import animals.dog
+import animals.cat
+
+animals.dog.bark()
+animals.cat.meow()
+```
+
+现在，如果你想让导入更方便，你可以在 `__init__.py` 中做些手脚：
+
+**`animals/__init__.py`**
+
+```python
+# 这会将 dog 和 cat 模块导入到 animals 包的命名空间中
+from . import dog
+from . import cat
+
+# 也可以直接导入具体的函数，让它们成为包的直接成员
+from .dog import bark
+from .cat import meow
+```
+
+现在，你的 `main.py` 就可以写得更简洁了：
+
+**`main.py`**
+
+```python
+from animals import bark, meow
+
+bark()
+meow()
+```
+
+`__init__.py` 还可以控制包的 `__all__` 变量，来明确定义 `from animals import *` 这种写法可以导入哪些模块，这有助于提高代码的清晰度和安全性。
+
+> `__all__` 是 Python 中一个特殊的列表，它定义了当用户使用 `from <module> import *` 语句时，可以从模块或包中导入哪些名称（比如变量、函数、类等）。简单来说，`__all__` 就像一个“白名单”，它明确地告诉 Python 解释器：“请只导出这个列表中列出的东西。”
+
+## 命名风格
+在Python中，主流的命名规范通常遵循 **PEP 8**（Python Enhancement Proposal 8），这是Python社区公认的代码风格指南。遵循这些规范能让你的代码更具可读性，也更符合Python生态的习惯。
+### 文件命名
+Python文件名（模块名）应该全部使用小写，并可以用下划线连接单词。
+
+* **正确示例:** `my_module.py`, `data_processing.py`
+* **错误示例:** `MyModule.py`, `data-processing.py`
+
+### 方法和函数命名
+方法和函数名也应该全部使用小写，并用下划线连接单词。这是最常见和推荐的风格。
+
+* **正确示例:** `calculate_total_price()`, `get_user_info()`
+* **错误示例:** `calculateTotalPrice()`, `GetUser_Info()`
+
+### 变量命名
+变量名同样使用小写，并用下划线连接单词。
+
+* **正确示例:** `user_name`, `total_count`, `is_active`
+* **错误示例:** `userName`, `TotalCount`, `is-active`
+
+### 类和常量命名
+
+* **类名 (Class Names):** 使用 **驼峰式命名法 (CamelCase)**。每个单词的首字母都大写，不使用下划线。
+    * **正确示例:** `MyClass`, `UserInfo`, `HttpClient`
+
+* **常量名 (Constants):** 全部使用大写字母，并用下划线连接单词。
+    * **正确示例:** `MAX_SIZE`, `PI_VALUE`, `DEFAULT_TIMEOUT`
+
+总的来说，PEP 8 的核心思想是让代码清晰易读。作为一名Android开发者，可能习惯了Java的驼峰命名法（CamelCase），但在Python中，下划线命名法（`snake_case`）才是更主流的约定。
+## 注释风格
+在Python中，主流的注释风格也遵循 **PEP 8** 规范，主要分为两种类型：**行内注释**和**文档字符串（Docstrings）**。
+
+### 行内注释 (Inline Comments)
+行内注释用于解释代码中特定行或段落的用途。
+
+  * 使用一个井号 `#` 开始。
+  * 通常用于解释为什么这样做，而不是做什么。例如：
+      * **好的注释：**
+        ```python
+        x = x + 1  # 增加计数器，以防止无限循环。
+        ```
+      * **不好的注释（解释了显而易见的事情）：**
+        ```python
+        x = x + 1  # x加1
+        ```
+  * 注释内容和井号 `#` 之间应至少有一个空格。
+  * 如果行内注释和代码在同一行，通常在 `#` 前面留两个空格。
+
+### 文档字符串 (Docstrings)
+文档字符串（简称 `docstrings`）是Python特有的，用于为模块、函数、类和方法提供详细说明。它们不是简单的代码注释，而是可以被工具自动解析和提取的。
+
+> 在Python中，**单引号 `' '` 和双引号 `" "` 在定义字符串字面量时是完全相同的**，它们没有功能上的区别。Python提供了两种引号，这主要是为了方便处理字符串中包含引号的特殊情况，可以避免使用转义字符。如果你想在字符串中包含一个单引号（例如 `'It's a great day!'`），使用双引号来定义字符串，就无须使用转义符。反之亦然，如果字符串中包含双引号，使用单引号来定义会更方便。并且，Python 没有单独的字符类型，一个字符就是长度为 1 的字符串。
+
+> 反斜杠可以用来转义，使用 r 可以让反斜杠不发生转义。 如 r"this is a line with \n" 则 \n 会显示，并不是换行。
+
+  * 使用三引号 `"""` 或 `'''` 包围。
+  * **用途**：
+      * **函数/方法**：解释函数的功能，参数（`Args`），返回值（`Returns`）和可能引发的异常（`Raises`）。
+      * **类**：解释类的用途，属性和使用方法。
+      * **模块**：解释模块的整体功能。
+  * **风格**：
+      * 对于简单的单行文档字符串，可以这样写：
+        ```python
+        def add(a, b):
+            """返回两个数字的和。"""
+            return a + b
+        ```
+      * 对于多行文档字符串，通常在第一行写简短摘要，然后空一行，再写详细说明。这在大型项目中非常常见。
+        ```python
+        def complex_calculation(value, factor=1.0):
+            """对输入值执行复杂的数学计算。
+
+            此函数首先将值乘以一个因子，然后进行平方，
+            最后加上一个预设的常量。
+
+            Args:
+                value (int): 需要计算的整数值。
+                factor (float, optional): 乘法因子。默认为 1.0。
+
+            Returns:
+                float: 计算后的结果。
+            """
+            result = (value * factor) ** 2 + 10
+            return result
+        ```
+
+有意思的区别，Java的注释写在方法的上面，Python的注释写在方法的下面。
+## 行与缩进
+python最具特色的就是使用缩进来表示代码块，不需要使用大括号 `{ }` 。
+
+缩进的空格数是可变的，但是同一个代码块的语句必须包含相同的缩进空格数。实例如下：
+
+```python
+if True:
+    print ("True")
+else:
+    print ("False")
+```
+
+以下代码最后一行语句缩进数的空格数不一致，会导致运行错误：
+
+```python
+if True:
+    print ("Answer")
+    print ("True")
+else:
+    print ("Answer")
+  print ("False")    # 缩进不一致，会导致运行错误
+```
+
+## print 输出
+Python的 `print()` 函数功能很强大，特别是在处理多个参数和格式化输出方面，它提供了更多灵活的选项。
+
+在Python中，`print()` 不是一个语句，而是一个内置函数。它是学习Python的第一个重要工具，用于在控制台输出信息。
+
+### 1\. 基本用法
+`print()` 函数最简单的用法是直接传入你想要输出的**对象**。它可以是字符串、数字、变量，甚至更复杂的对象。
+
+```python
+print("Hello, Python!")
+name = "Gemini"
+age = 2
+print("My name is", name, "and I'm", age, "years old.")
+```
+
+上面的代码会输出：`Hello, Python!` 和 `My name is Gemini and I'm 2 years old.`
+
+`print()` 函数会自动在每个参数之间添加一个空格。
+
+### 2\. 参数详解
+`print()` 函数有很多可选参数，可以帮助你更好地控制输出的格式。最常用的有：
+
+  * **`sep` (separator)**：分隔符。用来指定多个参数之间的分隔符，默认是空格。
+
+    ```python
+    print("apple", "banana", "cherry", sep=", ")
+    # 输出: apple, banana, cherry
+
+    print("2025", "09", "05", sep="-")
+    # 输出: 2025-09-05
+    ```
+
+  * **`end`**：结尾符。用来指定输出结束后在行尾添加的字符，默认是换行符 `\n`。
+
+    ```python
+    print("Hello", end=" ")
+    print("world!")
+    # 输出: Hello world!
+    # 注意，两个 print 语句的输出在同一行
+    ```
+
+  * **`file`**：指定输出到哪个文件对象。默认是标准输出 `sys.stdout`，也就是控制台。
+
+    ```python
+    with open("output.log", "w") as f:
+        print("This message will be written to a file.", file=f)
+    ```
+
+  * **`flush`**：布尔值，是否强制刷新缓冲区。当你将内容输出到文件或管道时，内容可能会先缓存在内存中。`flush=True` 会立即将内容写入目标。在通常的控制台输出中，你很少需要用到这个参数。
+
+### 3\. 高级格式化输出
+除了 `print()` 函数本身，Python还提供了几种强大的字符串格式化方法，可以和 `print()` 配合使用。
+
+  * **`%` 运算符（旧式）**：类似C语言的 `printf()`。
+
+    ```python
+    print("My name is %s and I'm %d years old." % (name, age))
+    ```
+
+    这种方式在现代Python代码中已经不那么常见了，但你可能会在一些老项目中看到它。
+
+  * **`str.format()` 方法**：更灵活和可读性更好的方式。
+
+    ```python
+    print("My name is {} and I'm {} years old.".format(name, age))
+    ```
+
+  * **f-string (推荐)**：从Python 3.6开始引入，语法简洁，可读性极高，是目前最主流的格式化方式。
+
+    ```python
+    print(f"My name is {name} and I'm {age} years old.")
+    ```
+
+## 类型问题
+Python中变量的类型是动态的，也就是说，你不需要在定义变量时指定它的类型，Python会根据赋值自动确定。并且在运行过程中，变量类型是可以随时更改的：
+
+```python
+a = int(0)
+print(f"a: {a}, type: {type(a)}, address: {id(a)}")
+a = "test"
+print(f"a: {a}, type: {type(a)}, address: {id(a)}")
+a = {"keyOne": "valueOne"}
+print(f"a: {a}, type: {type(a)}, address: {id(a)}")
+```
+
+变量a可以指向不同类型的对象，这就是动态类型的含义。
+
+判断类型的方法，isinstance 和 type 的区别在于：
+* type()不会认为子类是一种父类类型。
+* isinstance()会认为子类是一种父类类型。
+
+### 字符串截取
+索引值以 0 为开始值，-1 为从末尾的开始位置。
+
+```python
+a = "hello"
+print(a[-4:-1])
+# 输出: ell
+
+print(a[1:3])
+# 输出: el
+```
+
+不管索引方向是哪一个，这个区间都是左闭右开的。即含头不含尾。
+
+### List类型
+List（列表） 是 Python 中使用最频繁的数据类型。
+
+列表可以完成大多数集合类的数据结构实现。 **列表中元素的类型可以不相同** ，它支持数字，字符串甚至可以包含列表（所谓嵌套）。
+
+列表是写在方括号 `[]` 之间、用逗号分隔开的元素列表。
+
+和字符串一样，列表同样可以被索引和截取，列表被截取后返回一个包含所需元素的新列表。
+
+列表截取的语法格式如下：
+
+```python
+变量[头下标:尾下标]
+```
+
+索引值以 0 为开始值，-1 为从末尾的开始位置。
+
+```python
+list = [ 'abcd', 786 , 2.23, 'runoob', 70.2 ]  # 定义一个列表
+tinylist = [123, 'runoob']
+
+print (list)            # 打印整个列表
+print (list[0])         # 打印列表的第一个元素
+print (list[1:3])       # 打印列表第二到第四个元素（不包含第四个元素）
+print (list[2:])        # 打印列表从第三个元素开始到末尾
+print (tinylist * 2)    # 打印tinylist列表两次
+print (list + tinylist)  # 打印两个列表拼接在一起的结果
+```
+
+Python 列表截取可以接收第三个参数，参数作用是截取的步长，以下实例在索引 1 到索引 4 的位置并设置为步长为 2（间隔一个位置）来截取字符串。如果是负数就表示逆向截取。
+
+```python
+def reverseWords(input): 
+      
+    # 通过空格将字符串分隔符，把各个单词分隔为列表
+    inputWords = input.split(" ") 
+  
+    # 翻转字符串
+    # 假设列表 list = [1,2,3,4],  
+    # list[0]=1, list[1]=2 ，而 -1 表示最后一个元素 list[-1]=4 ( 与 list[3]=4 一样) 
+    # inputWords[-1::-1] 有三个参数
+    # 第一个参数 -1 表示最后一个元素
+    # 第二个参数为空，表示移动到列表末尾
+    # 第三个参数为步长，-1 表示逆向
+    inputWords=inputWords[-1::-1] 
+  
+    # 重新组合字符串
+    output = ' '.join(inputWords) 
+      
+    return output 
+  
+if __name__ == "__main__": 
+    input = 'I like runoob'
+    rw = reverseWords(input) 
+    print(rw)
+```
+
+### Tuple（元组）
+元组（tuple）与列表类似，不同之处在于元组的元素不能修改。元组写在小括号 () 里，元素之间用逗号隔开。元组中的元素类型也可以不相同。
+
+```python
+#!/usr/bin/python3
+
+tuple = ( 'abcd', 786 , 2.23, 'runoob', 70.2  )
+tinytuple = (123, 'runoob')
+
+print (tuple)             # 输出完整元组
+print (tuple[0])          # 输出元组的第一个元素
+print (tuple[1:3])        # 输出从第二个元素开始到第三个元素
+print (tuple[2:])         # 输出从第三个元素开始的所有元素
+print (tinytuple * 2)     # 输出两次元组
+print (tuple + tinytuple) # 连接元组
+```
+
+构造包含 0 个或 1 个元素的元组比较特殊，所以有一些 **额外的语法规则** ：
+
+```python
+tup1 = ()    # 空元组
+tup2 = (20,) # 一个元素，需要在元素后添加逗号
+```
+
+如果你想创建只有一个元素的元组，需要注意 **在元素后面添加一个逗号** ，以区分它是一个元组而不是一个普通的值，这是因为在没有逗号的情况下，Python会将括号 **解释为数学运算中的括号** ，而不是元组的表示。
+
+如果不添加逗号，如下所示，它将被解释为一个普通的值而不是元组：
+
+```python
+not_a_tuple = (42)
+```

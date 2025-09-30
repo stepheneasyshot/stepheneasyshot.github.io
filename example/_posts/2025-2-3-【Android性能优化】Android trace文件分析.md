@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_trace_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 【性能优化】Android trace文件分析
+# 【Android性能优化】Android trace文件分析
 **Android trace 文件**（也常被称为 **Systrace 文件**或 **Perfetto trace 文件**）是 Android 系统生成的一种包含详细性能事件数据的文件。它记录了设备在特定时间段内 **CPU、线程、进程、函数调用、Binder 通信、I/O 操作、SurfaceFlinger 帧渲染等** 各个层面的活动。
 
 可以把它想象成一个高性能的“黑匣子记录仪”，它在系统运行时不断记录各种事件，当出现性能问题时，我们可以回放这些记录，了解系统当时到底发生了什么。

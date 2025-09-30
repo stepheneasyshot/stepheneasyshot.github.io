@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_jvm_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Java平台的try-catch机制简介
+# 【通用开发】Java平台的try-catch机制简介
 每天都在使用try-catch，但是没有对其设计理念和工作机制做一个比较详细的了解，现稍微总结下。
 
 JVM 上的 try-catch 机制的实现是基于 Java 字节码层面的一些特殊指令和数据结构来完成的。

@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_can_bus_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 车载通信架构——CAN分布式
+# 【Android进阶】车载通信架构——CAN分布式
 车载通信中的**CAN（Controller Area Network，控制器局域网）协议**是汽车电子系统中应用最广泛的串行通信协议之一，一种专门为恶劣环境设计的串行通信协议。它的老家是德国，由博世公司在1986年正式发布，后来被写进了ISO11898-1标准，定义了OSI模型的数据链路层和物理层。
 
 其设计初衷是为了解决汽车内部日益复杂的电子控制单元（ECU）之间的通信需求，替代传统的点对点布线方式，以减少线束重量、降低成本并提高通信可靠性。

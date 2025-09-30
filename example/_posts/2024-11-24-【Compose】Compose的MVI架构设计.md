@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_compose.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Jetpack Compose的MVI架构设计
+# 【Compose】Jetpack Compose的MVI架构设计
 课题分享，对不熟悉 `Compose` 及其架构设计的老师，介绍一下 `Compose` 这个声明式UI框架，还有其官方推荐的MVI架构最佳实践。
 ## 声明式UI框架
 ‌Jetpack Compose‌是由Google在2019年推出的一个现代化的声明式UI工具包，旨在简化Android UI的开发过程。

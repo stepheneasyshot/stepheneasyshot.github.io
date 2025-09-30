@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_kmp_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Kotlin Multiplatform闲谈
+# 【跨平台】Kotlin Multiplatform闲谈
 论题来自于 **霍丙乾(Benny Huo)** 在B站上的答网友问。基于其描述，详细扩展开来。
 ## 有浏览器H5套壳，为什么还要用Kotlin跨端
 H5 主要是使用 Web 技术（HTML、CSS、JavaScript）来构建应用程序，然后通过 WebView（一个内嵌的浏览器组件）在不同平台的原生应用中运行。常见的 H5 跨平台框架包括 Ionic、PhoneGap (Cordova)、以及一些基于小程序（如微信小程序）的开发方式。

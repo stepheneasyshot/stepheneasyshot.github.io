@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_cmp_new_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Compose编译到显示的流程解析
+# 【Compose】Compose编译到显示的流程解析
 Jetpack Compose 是 Google 推出的用于构建原生 Android UI 的现代声明式框架，它简化了 Android 应用的 UI 开发过程。
 
 将XMl+Java的开发方式转变为Kotlin语法的Compose的开发方式，让开发者可以使用更简洁、更直观的代码来构建用户界面，开发体验上极致的统一。

@@ -266,6 +266,28 @@ GGUF 遵循命名约定， `<BaseName><SizeLabel><FineTune><Version><Encoding><T
 
 ![](/assets/img/blog/blogs_gguf_file_structure.png)
 
+## 运行原理简介
+详细运行流程见原文：
+
+[【AI】Understanding how LLM inference works with llama.cpp](./2025-8-6-【AI】Understanding%20how%20LLM%20inference%20works%20with%20llama.cpp.md)
+
+即使没有高性能的独立 GPU 的设备也**可以运行大模型**，但这通常会有一些重要的**限制和权衡**。
+
+**CPU 也能执行并行计算** ，现代 CPU 通常有多个核心，并且支持 **SIMD (Single Instruction, Multiple Data)** 指令集（如 Intel 的 AVX、SSE 指令集），这使得它们能够同时处理少量数据。例如机器学习框架（如 TensorFlow 或 PyTorch），在设备没有GPU时，会**自动回退到使用 CPU 来执行所有的矩阵乘法和其他计算**。这些框架的 CPU 版本也会进行高度优化，以尽可能利用 CPU 的并行能力。
+
+**相比于大模型的训练，推理阶段的计算量相对较小** ，**训练**大模型需要极其强大的 GPU，因为它涉及数万亿次的参数更新，需要多次迭代和反向传播。而在 **推理（Inference）**阶段，即模型用于实际预测时，只需要进行前向传播。虽然计算量依然庞大，但比训练时少得多。对于量化后的模型，推理的计算需求会进一步降低。
+
+本质上，**llama.cpp** 加载数据，构建计算图并进行计算。主要关注点也是在于使用高效的 **`SIMD`** 指令在 **`CPU`** 上运行——这内置于库的核心实现中（ggml.c）。后端（ggml-cuda、ggml-metal等）用于在 GPU 加速器上计算图。
+
+因此，它是一个通用 API，可以更轻松地在项目中运行 `gguf` 模型。如果有非常具体的需求或用例，也可以直接在其基础上构建 `gguf`，或者通过删除不必要的内容来创建一个精简版本 `llama.cpp`。
+
+它使用 `llama_init_from_file` 函数从 gguf 文件初始化一个 `llama` 上下文。此函数读取 `gguf` 文件的头文件和正文，并创建一个 `llama` 上下文对象，该对象包含模型信息和运行模型的后端（CPU、GPU 或 Metal）。
+
+再使用 `llama_tokenize` 函数对输入文本进行标记。此函数根据 `gguf` 文件头中指定的标记器将输入文本转换为标记序列。这些标记存储在一个 `llama` `标记数组中，llama` 标记是表示标记 ID 的整数。
+
+在执行推理生成时，通过 `llama_generate` 函数生成输出文本。此函数将输入标记和 `llama` 上下文作为参数，并在后端运行模型。它使用 `gguf` 文件头中指定的计算图执行模型的前向传递并计算下一个标记的概率。然后，它从概率分布中采样下一个标记并将其附加到输出标记中。它会重复此过程，直到文本结束标记或达到最大标记数。输出标记存储在另一个 `llama` 标记数组中。
+
+最后通过 `llama_detokenize` 函数对输出文本进行去标记化。该函数根据 `gguf` 文件头中指定的标记器将输出标记转换为文本字符串。它会处理特殊标记，例如文本结束标记、填充标记和未知标记，并返回最终的输出文本。
 ## 部署运行实操
 接下来介绍下如何在项目中集成llama.cpp，从而加载gguf格式的模型，运行本地的小模型。
 ### 一、使用Termux命令行编译运行

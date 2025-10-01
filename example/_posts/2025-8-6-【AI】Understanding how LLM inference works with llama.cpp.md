@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_ai_llamacpp_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Understanding how LLM inference works with llama.cpp
+# 【AI】Understanding how LLM inference works with llama.cpp
 本文从原理上讲解了llama.cpp项目是如何运行LLM模型的，原文链接：
 
 [Understanding how LLM inference works with llama.cpp](https://www.omrimallis.com/posts/understanding-how-llm-inference-works-with-llama-cpp/)

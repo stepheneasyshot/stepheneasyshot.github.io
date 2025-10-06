@@ -1,0 +1,98 @@
+---
+layout: post
+description: > 
+  本文记录了我在使用Python过程中的一些环境报错记录。
+image: 
+  path: /assets/img/blog/blogs_python_cover.png
+  srcset: 
+    1920w: /assets/img/blog/blogs_python_cover.png
+    960w:  /assets/img/blog/blogs_python_cover.png
+    480w:  /assets/img/blog/blogs_python_cover.png
+accent_image: /assets/img/blog/blogs_python_cover.png
+excerpt_separator: <!--more-->
+sitemap: false
+---
+# 【Python】Python环境报错记录
+类似于之前的一篇Desktop环境配置记录：
+
+[Desktop系统环境适配等操作记录](./2025-7-12-Desktop系统环境适配等操作记录.md)
+
+这篇文章记录了我在配置Python环境时遇到的一些问题。以供日后查阅。
+
+## pip安装库报错CERTIFICATE_VERIFY_FAILED
+此错误通常是因为 Python 无法验证 SSL 证书的颁发者，导致无法建立安全的 HTTPS 连接。这在 macOS 上尤其常见，通常是由于缺少或配置不正确的 SSL 证书链。
+
+#### 1\. 运行证书安装脚本 (推荐)
+
+最简单且最有效的解决方法是运行 Python 自带的证书安装脚本。
+
+  * **Python 3.6 及更高版本**：
+    在 Finder 中，前往“应用程序” -\> “Python 3.x”文件夹，然后双击运行 **Install Certificates.command** 文件。
+
+  * **通过命令行运行**：
+    你也可以在终端中运行以下命令。
+
+    ```bash
+    /Applications/Python\ 3.x/Install\ Certificates.command
+    ```
+
+    请将 `3.x` 替换为你安装的 Python 版本号，例如 `3.10`。
+
+这个脚本会下载并安装用于验证 SSL 连接所需的证书链，通常能解决大多数问题。
+
+#### 配置环境变量 (备用方案)
+
+如果前两种方法都不可行，可以尝试设置 `SSL_CERT_FILE` 环境变量来指定正确的证书路径。
+
+1.  **找到证书文件**：
+    通常在 `/etc/ssl/certs/` 或 `/usr/local/etc/openssl/` 目录下。
+
+2.  **设置环境变量**：
+    在你的终端配置文件（如 `~/.zshrc` 或 `~/.bash_profile`）中添加以下行，然后重启终端或运行 `source ~/.zshrc` 使其生效。
+
+    ```bash
+    export SSL_CERT_FILE=/usr/local/etc/openssl/cert.pem
+    ```
+
+发现均未解决问题。未安装openssl，使用homebrew来安装一下。
+
+```bash
+brew install openssl
+```
+
+找到证书目录：
+
+```bash
+export LDFLAGS="-L/opt/homebrew/opt/openssl/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/openssl/include"
+```
+
+重启电脑后，可以正常安装库了。
+
+## 虚拟环境 .venv 配置
+到项目根目录下执行
+
+```bash
+python3 -m venv .venv
+```
+
+激活虚拟环境：
+
+```bash
+source .venv/bin/activate
+```
+
+安装库：
+
+```bash
+pip install requests
+```
+
+退出：
+
+```bash
+deactivate
+```
+
+## 
+

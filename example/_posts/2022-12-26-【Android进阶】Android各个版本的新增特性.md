@@ -1,0 +1,403 @@
+---
+layout: post
+description: > 
+  本文介绍了Android各个版本的新增特性，包括Android 5到Android 16
+image: 
+  path: /assets/img/blog/blogs_android_sixteen.png
+  srcset: 
+    1920w: /assets/img/blog/blogs_android_sixteen.png
+    960w:  /assets/img/blog/blogs_android_sixteen.png
+    480w:  /assets/img/blog/blogs_android_sixteen.png
+accent_image: /assets/img/blog/blogs_android_sixteen.png
+excerpt_separator: <!--more-->
+sitemap: false
+---
+# 【Android进阶】Android各个版本的新增特性
+我入行的时候，手机端最新版本是Android 13，车机使用的是Android 11。
+
+而今年2025年都出到16预览版了，看到掘金上有一个总结性的帖子，基于这一篇来扩展下，回顾下有哪些重点特性改动：
+
+[Android 各个版本的新增特性](https://juejin.cn/post/7478894814811045926)
+
+## Android 5.0 Lollipop (API 21 & 22)
+### Material Design
+在设计语言上引入了Material Design，这是一种全新的视觉、运动和交互设计规范，旨在为用户提供直观且一致的体验。全新的用户界面，色彩鲜明，动画流畅，阴影和层级感更强。
+### Android Runtime (ART)
+默认运行时从 Dalvik 切换到 ART (Android Runtime)，带来更好的应用性能和更长的电池续航。ART 的新功能有：
+* 预先 (AOT) 编译
+* 改进的垃圾回收 (GC)
+* 改进的调试支持
+
+### 通知改进
+在 Android 5中，通知可以在锁屏时出现，同时来电等重要通知提醒会显示在浮动通知中，这是一个小浮动窗口，让用户无需离开当前应用即可响应或关闭通知。对于媒体播放和通知跳转等功能增加了 Notification.MediaStyle 模块。
+### “概览”屏幕
+支持了显示多个来做同一个应用的activity。“最近使用的应用”屏幕，也称为“概览”屏幕，表示近期任务 或“最近用过的应用”屏幕，这是系统级界面，其中会列出 activity 和 tasks。 用户可以浏览列表、选择某个任务 恢复任务，或者通过滑开任务将其从列表中移除。
+
+在 Android 5 中，我们可以通过 documentLaunchMode 属性来让最近屏幕显示多个来做同一个应用的activity。如上图所示，Google 云端硬盘应用的两个 Activity 显示在最近屏幕上，并且每个 Activity 展示不同的内容。
+### Android NDK 支持 64 位支持
+Android 5.0 引入了对 64 位系统的支持。64 位增强功能可增加地址空间并提升性能，同时仍完全支持现有的 32 位应用。
+### OpenGL ES 3.1 的支持
+Android 5.0 添加了 Java 接口和对 OpenGL ES 3.1 的原生支持。
+### 引入了新的 Camera2 API
+Android 5.0 引入了新的 android.hardware.camera2 API 来简化精细照片采集和图像处理。
+### 多用户支持（平板电脑）
+允许在同一设备上创建多个用户配置文件。还有访客模式，方便他人临时使用你的设备。
+## Android 6 Marshmallow (API 23)
+### 运行时权限
+应用不再在安装时请求所有权限，而是在需要时向用户动态请求。用户可以在运行时授予或拒绝权限。checkSelfPermission() 方法用来确定应用是否已获得权限； requestPermissions() 方法用于请求权限。即使应用并不以 Android 6.0（API 级别 23）为目标平台，我们也应该在新权限模式下测试应用。
+### 休眠（Doze）模式和应用待机模式
+在 Android 6.0 开始引入了两项省电功能，分别是休眠和应用待机。其中休眠是针对系统的，触发条件是设备静止、屏幕关闭、未连接电源；而应用待机则是针对应用的，触发条件是当用户有一段时间未触摸应用。
+
+在休眠（Doze）模式下，系统会尝试通过限制应用对网络和 CPU 密集型服务的访问来节省电量。它还会阻止应用访问网络，并延迟其作业、同步和标准闹钟。
+
+这两个措施可以优化电池续航，当设备长时间处于静止状态时，Doze 模式会降低后台活动；App Standby 则限制不常用应用的后台活动。
+### 支持文本选择
+当用户在应用中选择文本时，可以在浮动工具栏中显示文本选择操作。
+### 指纹身份验证
+Android 6 中引入了指纹认证API，提供标准化的指纹识别支持。该 api 的相关示例可以见 `BiometricAuthentication`
+### USB Type-C 支持
+官方支持 USB Type-C 接口。
+### Google Now on Tap
+长按 Home 键即可根据屏幕内容提供相关信息。
+## Android 7 Nougat (API 24 & 25)
+Android 7.0 Nougat 提升了多任务处理能力和通知系统，并引入了 Vulkan API。
+### 多窗口支持
+在 Android 7中，引入了多窗口的支持，允许用户屏幕上同时弹出两个应用。（Multi-window）
+### 增强了通知的功能
+在 Android 7中重新设计了通知，让其变得更简单。更新功能有：
+* 直接回复，可以添加直接在通知中回复消息或输入其他文字的操作。
+* 系统可以将消息分组 （例如按消息主题），以及显示相应群组
+* 重新设置了通知模板样式
+
+### 加强了休眠模式 Doze on the Go
+在 Android 6中，需要设备处于静止状态才会进入休眠模式。而在 Android 7中，只要屏幕关闭一段时间且设备未接通电源，就会进入休眠模式，并对应用施加 CPU 和网络限制。 这意味着，即使用户随身携带设备，也可以节省电量 。
+### 移除 CONNECTIVITY_ACTION、ACTION_NEW_PICTURE 和 ACTION_NEW_VIDEO 三个隐式广播
+后台进程可能会耗费大量内存和电池电量。例如，某一隐式广播可能会启动许多已注册监听它的后台进程，即使这些进程可能并没有执行很多任务。这会对设备性能和用户体验产生重大影响。
+
+因此在 Android 7 中移除了 CONNECTIVITY_ACTION（用于通知网络连接状态的变化）、ACTION_NEW_PICTURE（用于通知新图片的添加） 和 ACTION_NEW_VIDEO（用于通知新视频的添加） 这三个隐式广播。其中 CONNECTIVITY_ACTION 可以通过动态注册广播接收到，其他两个则静态和动态注册的都无法收到。
+### SurfaceView
+在 Android 7中，对 SurfaceView 做了优化，让其电量的消耗更少。因此从 Android 7开始，建议使用 SurfaceView 而不是 TextureView。
+### Vulkan
+Vulkan 是新一代的 3D 渲染库，提供了更高性能的3D图形渲染。在 Android 7 中我们可以使用它来代替 OpenGL ES。
+### Art 支持 AOT 和 JIT 混合编译
+JIT 是一种动态编译技术，在应用运行时将字节码编译为机器码。AOT 是一种预先编译技术，在应用安装时将字节码（DEX 文件）直接编译为机器码
+
+在 Android 5 以前，Dalvik 虚拟机使用 JIT。而在 Android 5 中，替换成了 ART 虚拟机，ART 虚拟机则依赖 AOT 编译。
+在 Android 7 及其以后，支持 AOT 与 JIT 结合使用。即安装时部分代码进行 AOT 编译，加快启动速度。运行时 JIT 编译热点代码。设备空闲时，ART会根据 JIT 的热点代码进行 AOT 编译。
+
+AOT 与 JIT 结合使用的最大好处是，加快了应用程序安装和系统更新的速度。比如之前大型应用在 Android 6中需要几分钟安装，而现在只需要几秒即可。
+### 支持应用快捷方式
+### 支持签名方案 v2
+Android 7.0 引入了 APK Signature Scheme v2，这是一种新的应用签名方案， 可缩短应用安装时间，增强防范未经授权的行为 对 APK 文件的更改。
+## Android 8 Oreo (API 26 & 27)
+Android 8 有两个版本，分别是 8.0 和 8.1，分别对应 API 26 和 API 27。Android 8.0 Oreo 专注于后台管理、通知系统和画中画模式。
+### 画中画模式
+允许应用在小窗口中继续播放视频，同时用户可以进行其他操作。Android 8.0 支持 activity 在画中画（PIP）模式中运行，主要应用于视频播放。
+### 通知优化
+Android 8.0 中对通知进行了重新设计，通知修改有：
+* 通知渠道：是一种将通知分类管理的机制。开发者可以为不同类型的通知创建不同的渠道，用户可以根据渠道单独管理通知的行为（如声音、振动、重要性等）。
+* 通知圆点：提醒用户有未读通知，提升通知的可见性。
+* 通知延后：通知延后允许用户将某个通知暂时隐藏，并在指定的时间后重新显示。
+* 通知超时：允许开发者设置通知的显示时间，超过时间后通知会自动消失。
+
+在 Android 8.1 中，应用每秒只能发出一次通知提醒。如果一秒内有两次通知，那么只有第一次的通知会有提示音提醒一次，后面的会正常通知但是没有提示音提醒。
+### 可下载字体
+Android 8.0 允许开发者从供应商获取可下载字体资源，而无需将字体绑定到 APK 中。供应商和 Android 支持库负责下载字体，并将这些字体分享到各个 App 中。同样的操作也可用于获取表情资源，让应用不再止步于设备内置表情包。
+由于国内手机厂商比较多，没有一个统一的Android手机生态（众所周知的原因，Google Play服务国内无法使用），所以必须自己搭建一套字体提供程序，因此比较麻烦。
+### 自适应图标
+自适应图标是 Android 8.0 引入的一项重要特性，其主要作用是：统一应用图标的外观，确保在不同设备上显示一致；支持动态效果，提升用户体验；提升主屏幕的视觉一致性。效果如下所示：
+### 固定快捷方式
+在 Android 8中可以把快捷方式固定在桌面上。
+### Neural Networks API
+Android 8.1 推出了神经网络 API，具体可以看Neural Networks API
+### SharedMemory API
+SharedMemory 是 Android 8.1 中新引入的 api，用于在进程之间共享内存。相对 MemoryFile ，SharedMemory 能更灵活地访问和控制共享内存区域。更多关于 SharedMemory ，可以看 Ashmem(Android共享内存)使用方法和原理
+### Bitmap内存的存放位置变更
+在Android 8.0以前，图片的宽高数据和像素数据都保存在Java层。从Android 8.0开始，Java层只保存图片的宽高数据，图片的像素数据保存在Native层，不再占用Java Heap内存。
+### 后台执行限制
+Android 8.0 会限制后台应用可以执行的操作。应用在两个方面受到限制：
+* 后台服务限制：当应用处于空闲状态时，其对后台服务的使用受到限制。这不适用于对用户更明显的前台服务。
+* 广播限制：除了少数例外情况外，应用无法使用其清单注册隐式广播。它们仍然可以在运行时注册这些广播，并且可以使用清单注册显式广播和专门针对其应用的广播。
+
+### 后台位置限制
+为降低耗电量，Android 8.0 会对应用在后台运行时检索用户当前位置信息的频率进行限制。在这些情况下，应用每小时只能接收几次位置信息更新。
+### 自动填充框架
+方便用户快速填充表单信息。
+## Android 9.0 Pie (API 28)
+### 室内定位
+在 Android 9 中添加了 Wifi RTT 的支持，应用可以使用 RTT API 来实现室内定位的功能。
+### 刘海屏支持
+在 Android 9中提供了无边框屏幕、刘海屏的支持。我们可以提供 getDisplayCutout 来确定是否有刘海屏的存在。使用 DisplayCutout 类则可以让我们找出非功能区域的位置和形状。
+### 通知增强
+* 增强即时通讯体验
+* 可以屏蔽渠道组
+* 新增广播类型
+
+在 Android 9 之前，已暂停的应用发出的通知会被取消。 从 Android 9 开始，已暂停的应用发出的通知将一直隐藏，直到 应用恢复运行。
+### 多摄像头支持
+在 Android 9 中，支持同时访问多个摄像头。
+### 针对非 SDK 接口的限制
+从 Android 9（API 级别 28）开始，Android 平台对应用能使用的非 SDK 接口实施了限制。只要应用引用非 SDK 接口或尝试使用反射或 JNI 来获取其句柄，这些限制就适用。
+更多信息可以看 针对非 SDK 接口的限制
+### 签名方案v3
+Android 9 增加了对 APK 签名方案 v3 的支持。v3支持密钥轮换，并增强了安全性。V3 签名方案与 V1 和 V2 完全兼容，即使设备不支持 V3，仍然可以使用 V1 或 V2 进行验证
+### 旋转锁定
+Android 9 增加了新的旋转锁定的旋转模式。
+### ImageDecoder
+Android 9 引入了 ImageDecoder 类，它提供了一种现代化的图像解码方法。
+### 改进了 PrecomputedText 类
+提供了Magnifier，用于实现放大镜功能
+Android 9 增强了 TextClassifier 类，该模型利用机器学习来识别所选文本中的某些实体， 提供操作建议。例如，TextClassifier 可让应用检测用户已选择电话号码。这样应用就可以让用户使用该号码拨打电话。
+### 前台服务
+在 Android 9中，前台服务需要申请 FOREGROUND_SERVICE 权限
+### 隐私权变更
+为了加强用户隐私保护，Android 9 引入了多项行为变更，例如限制后台应用对设备传感器的访问权限、限制从 Wi-Fi 扫描检索的信息，以及与通话、手机状态和 Wi-Fi 扫描相关的新权限规则和权限组。
+### 电源管理
+在 Android 9中，引入了应用待机分组机制，将应用根据用户的使用模式分为不同的优先级组（Buckets），每个组有不同的资源限制和唤醒策略。
+
+同时 Android 9 对省电模式进行了改进，比如系统会更积极地将应用置于应用待机模式，而不是等待应用进入空闲状态。
+
+应用待机分组包括：
+* 活跃（Active） ：用户正在使用的应用。
+* 工作集（Working Set） ：用户经常使用但当前未在前台的应用。
+* 常用（Frequent） ：用户定期使用但不频繁的应用。
+* 罕见（Rare） ：用户很少使用的应用。
+* 限制（Restricted） ：长时间未使用且可能被限制后台活动的应用。
+
+## Android 10 (API 29)
+### 可折叠设备的支持
+在 Android 10 中，提供了对可折叠设备的支持。我们可以使用 Jetpack WindowManager 库为可折叠设备的窗口功能（如折叠边或合页）提供了一个 API surface，让应用具备折叠感知能力。
+关于折叠屏的适配具体可见 了解可折叠设备
+### 5G
+Android 10 新增了针对 5G 的平台支持。可以使用 ConnectivityManager 来检测设备是否具有高带宽连接，还可以检查连接是否按流量计费。
+### 深色主题
+Android 10 新增了一个系统级的深色主题，非常适合光线较暗的场景并能帮助节省电量。
+### 手势导航
+Android 10 引入了全手势导航模式，该模式不显示通知栏区域，允许应用使用全屏来提供更丰富、更让人沉浸的体验。它通过边缘滑动（而不是可见的按钮）保留了用户熟悉的“返回”“主屏幕”和“最近用过”导航。
+### Thermal API
+当设备过热时，会可能影响到 CPU 和 GPU 的运行。在 Android 10 中，应用和游戏可以使用 Thermal API 监控设备变化情况，并在设备过热时采取措施，使设备恢复到正常温度。
+### 共享内存
+以 Android 10 为目标平台的应用无法直接使用 ashmem (/dev/ashmem)，而必须通过 NDK 的 ASharedMemory 类访问共享内存。
+
+此外，应用无法直接对现有 ashmem 文件描述符进行 IOCTL，而必须改为使用 NDK 的 ASharedMemory 类或 Android Java API 创建共享内存区域。这项变更可以提高使用共享内存时的安全性和稳健性，从而提高 Android 的整体性能和安全性。
+### 隐私权变更
+在 Android 10 中对隐私权又做了一次变更，具体变更可以看 Android 10 中的隐私权 
+### 前台服务类型
+Android 10 引入了 foregroundServiceType XML 清单属性，为前台服务定义对应的服务类型。比如 dataSync 是指从网络下载文件；mediaPlayback 是指播放音乐、有声读完等。
+## Android 11 (API 30)
+### 隐私设置
+Android 11 引入了一些变更和限制来加强用户隐私保护，其中包括：
+* 强制执行分区存储：对外部存储目录的访问仅限于应用专用目录，以及应用已创建的特定类型的媒体。
+* 自动重置权限：如果用户几个月未与应用互动，系统会自动重置应用的敏感权限。
+* 在后台访问位置信息的权限：用户必须转到系统设置，才能向应用授予在后台访问位置信息的权限。
+* 软件包可见性：当应用查询设备上已安装应用的列表时，系统会过滤返回的列表。
+
+### 增加 APk 签名方案 v4
+Android 11 添加了对 APK 签名方案 v4 的支持。注意 targetSdkVersion 为 Android 11 的应用不支持 v1 签名的应用，需要签名版本在 v2 及以上。
+### 无线调试支持
+Android 11 支持通过 Android 调试桥 (adb) 以无线方式部署和调试应用。
+### apk 增量安装
+我们使用 adb install --incremental 可以支持 apk 增量更新。需要注意 apk 增量需要 v4 签名方案支持。
+### NDK Thermal API
+native 版本的监控设备是否过热的 API，具体可以看 NDK Thermal
+### IME 新API
+Android 11 引入了新的 API 以改进输入法 (IME) 的转换，例如屏幕键盘。这些 API 可让我们更轻松地调整应用内容，并与 IME 的出现和消失以及状态和导航栏等其他元素保持同步。
+### Frame rate API
+Android 11 提供了一个 API，可让应用告知系统其预期帧速率，从而减少支持多个刷新率的设备上的抖动。
+### 应用退出原因
+Android 11 引入了 ActivityManager.getHistoricalProcessExitReasons() 方法，用于报告近期任何进程终止的原因。该方法可以用来收集崩溃诊断信息，例如进程终止是由于 ANR、内存问题还是其他原因所致。此外，我们还可以使用新的 setProcessStateSummary() 方法存储自定义状态信息，以便日后进行分析。
+### 一次性权限
+Android 11 允许用户授予应用一次性访问麦克风、摄像头或位置信息的权限。
+### ResourcesLoader 和 ResourcesProvider
+在 Android 11（API 级别 30）中，ResourcesLoader 和 ResourcesProvider 是用于动态加载和管理资源的新 API。它们为开发者提供了更灵活的方式来加载和访问资源。
+### 动态 intent 过滤器
+Android 11 引入了 MIME 组，这是一个新的清单元素，可让应用在 intent 过滤器中声明一组动态的 MIME 类型，并在运行时以编程方式对其进行修改。
+## Android 12 (API 31)
+### Material You
+全新的设计语言，允许系统根据壁纸颜色自动生成主题色，并应用于系统 UI 和支持的应用。
+### 生命周期变更
+在 Android 12 中，root activity 中按下了 back 按钮，不会 finish 当前的 activity。而是会将该 activity  放到后台。
+### 自动更新应用
+在 Android 12，增加了  PackageInstaller#setRequireUserAction() 方法，该方法可让安装程序应用执行应用更新而无需用户确认操作。
+### 前台服务启动限制
+当在后台运行时，不再允许应用启动前台服务。
+### 应用启动画面 API
+Android 12 引入了全新的应用启动画面 API ，可为所有应用启用可自定义的应用启动动画。
+### 应用存储访问权限
+现在，应用可以创建自定义 activity，让用户可以管理设备上的应用数据，并将此 activity 提供给文件管理器。具体可以看应用存储访问权限
+### 游戏模式
+Android 12 引入了一个新的游戏模式  ，可让用户优化游戏体验以提升性能或延长电池续航时间。
+## Android 13 (API 33)
+### ART 优化
+在 Android 13（API 级别 33）及更高版本中，ART 可大大加快在原生代码之间切换的速度，JNI 调用速度现在最高可提高 2.5 倍。我们还重新设计了运行时引用处理，使其大部分都为非阻塞处理，从而进一步减少了卡顿。此外，我们还可以使用 Reference.refersTo() 公共 API 更快地回收无法访问的对象。
+### 开发者可降级权限
+从 Android 13 开始，应用可以撤消未使用的运行时权限。
+### APK 签名方案 v3.1
+Android 13 可支持 APK 签名方案 v3.1，此方案在现有的 APK 签名方案 v3 的基础上进行了改进，此方案解决了 APK 签名方案 v3 的一些已知问题。
+### 可编程的着色器
+从 Android 13 开始，系统支持可编程 RuntimeShader 对象，其行为通过 Android 图形着色语言 (AGSL) 定义。AGSL 与 GLSL 共用大部分语法，但可用于 Android 渲染引擎中以自定义 Android 画布中的绘制行为以及过滤 View 内容。
+Android 在内部使用这些着色器来实现涟漪效果、模糊和拉伸滚动。通过 Android 13 及更高版本，我们可以为应用创建类似的高级效果。
+### 照片选择器
+用户可以更精细地选择与应用共享的照片和视频，而不是授予整个媒体库的访问权限。
+## Android 14 (API 34)
+### 限制最低可安装目标的 API 级别
+在 Android 14，用户无法安装 targetSdkVersion 低于 23 的应用。
+### 对隐式 intent 的限制
+对于以 Android 14（API 级别 34）或更高版本为目标平台的应用，Android 会限制应用向内部应用组件发送隐式 intent。详情看对隐式 intent 和待处理 intent 的限制
+### 应用只能终止自己的后台进程
+从 Android 14 开始，当您的应用调用 `killBackgroundProcesses()` 时，该 API 只能终止自己应用的后台进程。如果我们传入其他应用的包名，此方法将不会对该应用的后台进程产生任何影响
+### 必须提供前台服务类型
+如果应用以 Android 14（API 级别 34）或更高版本为目标平台，则必须为应用中的每个前台服务指定至少一个前台服务类型  。
+### 屏幕截图检测
+如果用户在应用 activity 可见时截取屏幕截图，屏幕截图检测API 会调用回调并显示消息框消息。
+## Android 15 (API 35)
+### 支持 16 KB 页面大小
+从 Android 15 开始，Android 系统支持配置为使用 16 KB 页面大小的开发设备。详细信息可以看支持 16 KB 页面大小
+### 私密空间
+私密空间是 Android 15 中推出的一项新功能，可让用户在设备上创建一个单独的空间，在额外的身份验证层保护下，防止敏感应用遭到窥探。
+### 最低可安装目标API级别
+在 Android 15中，用户无法安装 targetSdkVersion 低于 24 的应用。
+### ApplicationStartInfo API
+Android 15 上的 ApplicationStartInfo API 有助于深入了解应用启动，包括启动状态、在启动阶段所花的时间、在实例化 Application 类时应用的启动方式等。
+### 详细的应用大小信息
+Android 15 添加了 `StorageStats.getAppBytesByDataType([type]) API`，可让我们深入了解应用如何使用所有这些空间，包括 APK 文件分块、AOT 和加速相关代码、dex 元数据、库和引导式配置文件。详情可以看详细的应用大小信息
+### 应用管理的性能分析
+Android 15 包含 ProfilingManager 类，可让我们从应用中收集性能分析信息。详情可以看应用管理的性能分析
+### 屏幕录制检测
+Android 15 添加了屏幕录制检测 的支持，以检测是否正在录制应用。
+## Android 16 
+在Pixel设备上可以刷写最新的beta版本，从目前已经放出的消息来看，Android 16 有很多激动人心的新特性。
+
+首先看看Android16的释放计划：
+
+![](/assets/img/blog/blogs_android_release_plan.png)
+
+到25年第四季度会释放主要版本。
+
+官方推介的新特性有如下几点：
+### 相机和媒体 API 赋能创作者
+Android 16 增强了对专业相机用户的支持，支持夜间模式场景检测、混合自动曝光和精确的色温调节。使用新的 Intent 操作捕捉动态照片比以往任何时候都更加轻松，并且我们正在持续改进 UltraHDR 图像，支持 HEIC 编码和 ISO 21496-1 草案标准中的新参数。对高级专业视频(APV) 编解码器的支持提升了 Android 在专业录制和后期制作工作流程中的地位，其感知无损的视频质量即使在多次解码/重新编码后也不会出现严重的视觉质量下降。
+
+此外，Android 的照片选择器现在可以嵌入到您的视图层次结构中，用户将会喜欢搜索云媒体的功能。
+### 更加一致、美观的应用程序
+Android 16 引入了多项改进，旨在提升应用的一致性和视觉外观，为即将推出的Material 3 Expressive改进奠定基础。针对 Android 16 的应用将无法再选择关闭无边框显示，并且会忽略elegantTextHeight属性，以确保阿拉伯语、老挝语、缅甸语、泰米尔语、古吉拉特语、卡纳达语、马拉雅拉姆语、奥迪亚语、泰卢固语和泰语的间距合适。
+### 自适应 Android 应用
+随着 Android 应用如今可在各种设备上运行，以及大屏幕上更多窗口模式的出现，开发者应该构建能够适应任何屏幕和窗口尺寸（无论设备方向如何）的 Android 应用。对于以 Android 16（API 级别 36）为目标平台的应用，Android 16 改进了系统对方向、可调整大小和宽高比限制的管理方式。在最小宽度 >= 600dp 的屏幕上，这些限制将不再适用，应用将填满整个显示窗口。您应该检查您的应用，确保现有的界面能够无缝缩放，并在纵向和横向宽高比下正常运行。我们将提供框架、工具和库来提供帮助。
+
+并排显示非自适应应用程序 UI，左侧显示文本“再见‘仅限移动’的应用程序”，右侧显示自适应应用程序 UI，文本“你好自适应应用程序”
+
+您可以通过启用UNIVERSAL_RESIZABLE_BY_DEFAULT标志，在不使用应用兼容性框架的情况下测试这些替换。详细了解Android 16 中屏幕方向和可调整大小 API 的变更。
+### 默认预测返回及更多
+针对 Android 16 的应用将默认具有返回主屏幕、跨任务和跨活动的系统动画。此外，Android 16 将预测性返回导航扩展为三键导航，这意味着用户长按返回按钮后，在导航返回之前会看到上一屏幕的概览。
+
+为了更轻松地获取返回主屏幕动画，Android 16 新增了对onBackInvokedCallback的支持，并添加了新的PRIORITY_SYSTEM_NAVIGATION_OBSERVER。Android 16 还添加了finishAndRemoveTaskCallback和moveTaskToBackCallback，用于通过预测返回实现自定义返回堆栈行为。
+### 持续的进度通知
+Android 16 引入了Notification.ProgressStyle ，它允许您创建以进度为中心的通知，这些通知可以使用点和段来指示用户旅程中的状态和里程碑。主要用例包括拼车、送货和导航。它是实时更新的基础，将在即将发布的 Android 16 更新中全面实现。
+
+### 自定义 AGSL 图形效果
+Android 16 添加了 RuntimeColorFilter 和 RuntimeXfermode，允许您在 AGSL 中创作诸如阈值、棕褐色和色相饱和度等复杂效果，并将它们应用于绘制调用。
+
+帮助创建性能更好、更高效的应用程序和游戏
+从帮助您了解应用性能的 API，到旨在提高效率的平台变更，Android 16 致力于确保您的应用拥有出色的性能。Android 16为ProfilingManager引入了系统触发的分析功能，确保在应用恢复有效生命周期后立即执行最多一次的ScheduleAtFixedRate执行，以提高效率；引入了hasArrSupport和getSuggestedFrameRate(int) 函数，使您的应用能够更轻松地利用自适应显示刷新率；并在SystemHealthManager中引入了getCpuHeadroom和getGpuHeadroom API 以及CpuHeadroomParams和GpuHeadroomParams函数，以便为游戏和资源密集型应用提供受支持设备上可用 GPU 和 CPU 资源的估算值。
+### JobScheduler 更新
+Android 16 中的JobScheduler.getPendingJobReasons会返回作业待处理的多个原因，这些原因既包括您设置的显式约束，也包括系统设置的隐式约束。新的JobScheduler.getPendingJobReasonsHistory会返回最近待处理作业原因变更的列表，让您能够更好地调整应用在后台的运行方式。
+
+Android 16 正在根据应用程序所在的应用程序待机存储桶、作业是否在应用程序处于顶部状态时开始执行以及作业是否在应用程序运行前台服务时执行来调整常规和加急作业运行时配额。
+
+为了检测（然后减少）废弃作业，应用应使用系统为废弃作业分配的新STOP_REASON_TIMEOUT_ABANDONED作业停止原因，而不是STOP_REASON_TIMEOUT。
+### 16KB 页面大小
+Android 15 引入了对 16KB 页面大小的支持，以提升应用启动、系统启动和相机启动的性能，同时降低电池消耗。Android 16 新增了16 KB 页面大小兼容模式，结合新的Google Play 技术要求，使 Android 设备更接近于搭载这一重要变更。您可以使用最新版 Android Studio 中的16KB 页面大小检查和 APK 分析器来验证您的应用是否需要更新。
+### ART 内部变化
+Android 16 包含 Android 运行时 (ART) 的最新更新，这些更新提升了 Android 运行时 (ART) 的性能并支持更多语言功能。这些改进也可通过 Google Play 系统更新应用于搭载 Android 12（API 级别 31）及更高版本的超过十亿台设备。依赖于内部非 SDK ART 结构的应用和库可能无法继续正常运行这些变更。
+### 隐私和安全
+Android 16 延续了我们提升安全性和保障用户隐私的使命。它改进了针对 Intent 重定向攻击的安全性，使MediaStore.getVersion在每个应用上都具有唯一性，添加了允许应用共享Android Keystore密钥的 API，整合了Android 隐私沙盒的最新版本，在配套设备配对流程中引入了新的行为以保护用户的位置隐私，并允许用户在照片选择器中轻松选择并限制对应用拥有的共享媒体的访问。
+### 本地网络权限测试
+Android 16 允许您的应用测试即将推出的本地网络权限功能，该功能需要您的应用获得 NEARBY_WIFI_DEVICES 权限。此变更将在未来的 Android 主要版本中强制执行。
+### 为每个人打造的 Android
+Android 16 添加了一些功能，例如与兼容 LE Audio 助听器的Auracast 广播音频、辅助功能更改（例如使用TYPE_DURATION扩展TtsSpan ）、 AccessibilityNodeInfo中基于列表的新 API 、使用setExpandedState改进对可扩展元素的支持、 用于不确定ProgressBar小部件的RANGE_TYPE_INDETERMINATE、 支持“部分检查”状态的AccessibilityNodeInfo getChecked和setChecked(int)方法、 setSupplementalDescription （以便您可以为ViewGroup提供文本而无需覆盖其子级的信息）以及setFieldRequired（以便应用程序可以告知辅助功能服务需要输入表单字段）。
+### 轮廓文本以实现最大文本对比度
+Android 16 引入了轮廓文本，取代了高对比度文本，它在文本周围绘制更大的对比区域，从而大大提高了可读性，同时还引入了新的AccessibilityManager API，允许您的应用检查或注册监听器以查看此模式是否已启用。
+
+以下还有一些对于开发者需要关注的点
+### ProfilingManager
+在 15 的时候 Android 添加了 ProfilingManager，让应用能够使用 Perfetto 请求收集性能分析数据，例如启动或 ANR 等情况，而从 Android 16 开始，ProfilingManager 现在提供了系统触发的分析。
+现在 App 可以使用 `ProfilingManager#addProfilingTriggers()` 来注册接收需要的信息，包括用于基于 Activity 的冷启动的 onFullyDrawn 和 ANR。
+
+```kotlin
+val anrTrigger = ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_ANR
+            )
+                .setRateLimitingPeriodHours(1)
+                .build()
+
+val startupTrigger: ProfilingTrigger =  //...
+
+mProfilingManager.addProfilingTriggers(listOf(anrTrigger, startupTrigger))
+```
+
+### ApplicationStartInfo
+同样，在 15 中 Android 添加的 ApplicationStartInfo，用于支持应用查看进程启动的原因、启动类型、开始时间、限制和其他有用的诊断数据。
+
+而 Android 16 添加了 getStartComponent 来区分触发启动的组件类型，从而帮助开发者优化应用的启动流程。
+### 触觉反馈
+从 Android 11 开始，系统就增加了对更复杂的触觉效果的支持，更高级的 actuators 可以通过设备定义的语义基元的 VibrationEffect.Compositions 来支持这些效果。
+而 Android 16 添加了新的  haptic API ，可以让应用定义触感反馈效果的振幅和频率曲线，同时抽象出设备功能之间的差异：
+
+VibratorEnvelopeEffectInfo ：提供有关振动器硬件功能和限制的信息，如支持的最大控制点数、单个区段的最小和最大持续时间、最大总持续时间等
+VibratorFrequencyProfile：描述不同振动频率下 Vibrator 的输出。
+
+这些新 API 消除了 App 在开发时需要对设备特定功能的 if 判断，开发人员可以直接使用 API 去创建自定义触觉反馈效果。
+### JobScheduler
+Android 16  还引入了 `JobScheduler#getPendingJobReasons(int jobId)`，它可以返回 Job 待处理的多个原因，比如开发者设置了显式约束条件和系统设置了隐式约束条件：
+
+关于 Job  Android 16 还引入了 `JobScheduler#getPendingJobReasonsHistory(int jobId)`，从而支持返回最近约束更改的列表：
+
+对于给定的 jobId，返回任务可能一直等待执行的原因的有限历史视图，返回的列表由 `PendingJobReasonsInfo` 组成，每个对象都包含一个自 epoch 以来的时间戳以及一个 `ERROR(PendingJobReason constants/android.app.job.JobScheduler.PendingJobReason PendingJobReason constants)` 表示
+
+这些 API 调整，可以帮助开发者在调试 Job 时分析无法执行的原因，尤其是在看到某些任务的成功率降低或 Job 完成出现延迟问题时，可以更好地了解到某些 Job 是由于系统定义的约束还是由于显式设置的约束而未完成。
+
+另外，从 Android 16 开始，Job 的执行会被优化调整，例如：
+
+* 在应用对用户可见时启动，并在应用不可见后继续的 Job 将遵守 Job runtime 配额
+* 与前台服务同时执行的 Job 将遵守  Job runtime  配额
+
+> 配额（Quotas）：简单来说，就是系统必须将执行时间分配给加急 Job，而执行时间不是无限的，相反每个应用都会收到一个执行时间配额，当应用使用其执行时间并达到其分配的配额时，在配额刷新之前，App 会无法再执行加速工作，这是 Android 有效地平衡应用 App 之间的资源策略，而限制前台执行时间的系统级配额决定了加急 Job 是否可以启动。
+
+简单说就是，Android 16 会根据不同场景来调整常规和加速 Job 执行运行时配额，该优化调整会影响 WorkManager、JobScheduler 和 DownloadManager 调度的任务，要调试 Job 停止的原因，可以通过调用 `WorkInfo.getStopReason` 或则 `JobParameters.getStopReason` 来记录 Job 停止的原因。
+
+最后，Android 16 完全弃用 `JobInfo#setImportantWhileForeground` ，这个人方法自 Android 12 （API 31） 开始已经弃用，从 Android 16 开始它将不再有效运行，并且  `JobInfo#isImportantWhileForeground`  方法从 Android 16 开始也将返回 false。
+### 自适应刷新
+Android 15 中引入的自适应刷新率 Adaptive refresh rate （ARR） ，从而支持硬件上的显示刷新率能够使用离散的 VSync 步骤适应内容帧速率，从而降低了功耗，同时消除了可能引起卡顿的模式切换。
+
+但是尽管 Android 15 增加了对自适应刷新率的平台级支持，但它并没有为应用提供实际利用它的方法，而在 Android 16 DP2 在恢复 getSupportedRefreshRates()  的同时引入了 hasArrSupport() 和 getSuggestedFrameRate(int) ，从而让 App 可以更轻松地适配 ARR。
+
+之前 getSupportedRefreshRates 在 **API level 23 的时候被 deprecated ** ，改成了  getSupportedModes ，现在它又复活了。
+
+通过 getSuggestedFrameRate(int)  可以在给定描述性帧速率类别的情况下，获取显示器定义的帧速率：
+
+```kotlin
+float desiredMinRate = display.getSuggestedFrameRate(FRAME_RATE_CATEGORY_NORMAL);
+  Surface.FrameRateParams params = new Surface.FrameRateParams.Builder().
+                                      setDesiredRateRange(desiredMinRate, Float.MAX).build();
+  surface.setFrameRate(params);
+```
+
+在不需要快速渲染速率的动画可以使用 `FRAME_RATE_CATEGORY_NORMAL` 来获取建议帧速率， 然后建议的帧速率可以在 `Surface.FrameRateParams.Builder.setDesiredRateRange` 设置。
+
+同时 RecyclerView 1.4 页在内部支持了 ARR（例如  fling 或者 smooth scroll 下），并且未来 ARR 支持会添加到更多 Jetpack 库中。
+### Photo picker
+Photo picker 是 Android 为用户提供了一种安全的媒体选择内置方式，它可以授予应用访问本地和云存储中所选图像和视频的权限，而不是让 App 访问到整个媒体库。
+通过 Google 系统更新和 Google Play 服务组合使用模块化系统组件，它可支持到 Android 4.4（API 级别 19）。
+而 Android 16 本次更新的预览版包含了新的 API，支持从云媒体提供商搜索 Android 照片选择器，照片选择器中的搜索功能未来也将适配推出。
+### Wifi 测距
+在 Android 15 版本就增加了 Wi-Fi 测距的支持，这是一种可实现精确室内位置跟踪的定位技术，Wi-Fi 测距允许 <1m 精度，使其比使用信号强度测量的传统基于 Wi-Fi 的位置跟踪精确得多。
+
+Wi-Fi 测距基于飞行时间而不是信号强度，因此更加精确。
+
+而 Android 16 在采用 WiFi 6 的 802.11az 的受支持设备上，增加了对 WiFi 位置功能的安全功能支持，主要是应用能够将协议的更高精度、更强的可扩展性和动态调度与安全增强功能相结合，包括基于 AES-256 的加密和防止 MITM 攻击，例如通过 802.11az 与 Wi-Fi 6 标准集成解锁笔记本电脑或车门。
+### Predictive back
+尽管 Android 15 默认启用系统预测性返回动画，但应用是否支持这些动画仍取决于应用本身。
+
+而为了帮助 App 支持这些 API，Android 16 添加了新的 API，可帮助开发者在手势导航中启用预测性返回系统动画，例如返回主页动画，通过向新的 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` ,  App 可以在系统处理返回导航时接收常规的 onBackInvoked 调用，而不会影响正常的返回导航流程。
+
+Android 16 还添加了 `finishAndRemoveTaskCallback` 和 `moveTaskToBackCallback` ，通过使用 `OnBackInvokedDispatcher` 注册这些回调，系统可以在调用返回手势时触发特定行为并播放相应的提前动画。

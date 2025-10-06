@@ -1,0 +1,98 @@
+---
+layout: post
+description: > 
+  本文介绍了车载通信架构中的 SOA（Service Oriented Architecture，面向服务的架构）通信协议相关内容。
+image: 
+  path: /assets/img/blog/blogs_soa_arch_cover.png
+  srcset: 
+    1920w: /assets/img/blog/blogs_soa_arch_cover.png
+    960w:  /assets/img/blog/blogs_soa_arch_cover.png
+    480w:  /assets/img/blog/blogs_soa_arch_cover.png
+accent_image: /assets/img/blog/blogs_soa_arch_cover.png
+excerpt_separator: <!--more-->
+sitemap: false
+---
+# 【Android进阶】车载通信架构——SOA
+服务导向架构（Service-Oriented Architecture，SOA）是一种软件设计方法论，它强调将应用程序构建为一系列**松散耦合（loosely coupled）**、**可独立部署（independently deployable）** 且通过 **定义良好的接口（well-defined APIs）** 进行通信的 **服务（services）** 。
+## SOA 架构简介
+在 SOA 中，每个服务都执行一个特定的业务功能，并且可以被其他服务或应用程序调用和重用。它不是一种技术，而是一种架构风格，可以通过各种技术（如 SOAP、REST、消息队列等）实现。
+### 核心概念：
+
+* **服务（Service）**：SOA 的基本构建单元。服务是自包含的、模块化的、并且执行特定业务功能的软件组件。它们对外提供接口，隐藏内部实现细节。
+* **松散耦合（Loose Coupling）**：服务之间相互独立，彼此之间的依赖性很小。这意味着一个服务的改变不会直接影响到其他服务，从而提高了系统的灵活性和可维护性。
+* **接口（Interface）**：服务通过明确定义的接口进行通信。这些接口是公共的、标准化的，允许不同技术栈的服务之间进行交互。
+* **可重用性（Reusability）**：由于服务是独立的且功能明确，它们可以在不同的应用程序和业务流程中被重复使用，减少了重复开发的工作。
+* **互操作性（Interoperability）**：服务可以跨越不同的平台、编程语言和操作系统进行通信，因为它们依赖于标准化的通信协议和接口。
+
+### SOA 的优势：
+
+* **模块化和可重用性**：便于开发、测试、部署和维护新功能，并与其他系统集成。
+* **可扩展性**：可以独立扩展单个服务，以满足不断增长的需求，而无需扩展整个系统。
+* **灵活性和敏捷性**：更容易适应业务需求的变化，快速响应市场。
+* **易于维护**：问题定位和修复更简单，降低了维护成本。
+* **异构系统集成**：能够整合不同技术和平台构建的系统。
+
+## SOA 在车载领域的应用
+传统的汽车电子电气（E/E）架构是高度分散的，由数百个独立的电子控制单元（ECU）组成，每个 ECU 负责一个或几个特定功能（如发动机控制、车窗控制、信息娱乐等），它们之间通过 CAN、LIN 等低速总线进行通信。这种**单片式（monolithic）**或**信号导向（signal-oriented）**的架构随着车辆功能（如自动驾驶、智能座舱、车联网）的爆炸式增长，暴露出以下局限性：
+
+* **复杂性高**：ECU 数量过多，布线复杂，系统集成困难。
+* **扩展性差**：添加新功能需要修改多个 ECU 的软件，甚至需要重新设计硬件。
+* **维护困难**：诊断和更新难度大，OTA（Over-The-Air）升级受限。
+* **数据孤岛**：不同 ECU 之间的数据共享不便。
+
+为了应对这些挑战，汽车行业正在向**软件定义汽车（Software-Defined Vehicle, SDV）**的方向发展，而 SOA 正是实现 SDV 的关键使能技术。
+### 1. 架构演进：从分布式到域控/区域控制，再到中央计算
+
+* **域控制器（Domain Controller）**：将传统上分散的 ECU 整合到几个大的域控制器中（如智能座舱域、自动驾驶域、车身控制域等）。
+* **区域控制器（Zonal Controller）**：进一步将功能聚合，将车辆划分为几个物理区域，每个区域有一个区域控制器处理该区域内的传感器、执行器和通信。
+* **中央计算平台（Central Computing Platform）**：最终目标是将大部分计算能力集中到一个或少数几个高性能计算单元中，形成车载“大脑”，负责处理跨域的复杂功能。
+
+在这些新的 E/E 架构中，高速以太网（Ethernet）逐渐取代传统的总线作为主要通信骨干网，为 SOA 提供必要的带宽和低延迟。相比于分布式架构，会有一个处理器作为 **中央网关** ，来综合管理其他各个服务的订阅，数据分发。
+### 2. SOA 如何应用于车载系统
+在车载 SOA 中，车辆的各项功能被抽象为可独立调用和组合的“服务”。例如：
+
+* **传感器数据服务**：提供来自摄像头、雷达、激光雷达等传感器的原始或处理后的数据。
+* **执行器控制服务**：例如“制动服务”、“转向服务”、“车窗控制服务”等。
+* **诊断服务**：提供车辆健康状态、故障码等信息。
+* **信息娱乐服务**：如导航、媒体播放、语音识别等。
+* **互联服务**：与外部云端、移动设备通信的服务。
+
+## SOME/IP协议
+SOME/IP，全称 Scalable Service-Oriented Middleware over IP (基于 IP 的可伸缩面向服务中间件)，它是一种专为汽车域设计的高效通信协议。
+
+起源与目的: 随着现代汽车电子架构的复杂性日益增加，传统的车载网络协议（如 CAN、LIN、FlexRay）在 **带宽、灵活性和可伸缩性** 方面逐渐遇到瓶颈。为了满足信息娱乐、高级驾驶辅助系统 (ADAS) 等对带宽和实时性要求更高的新功能，汽车行业开始引入以太网。SOME/IP 应运而生，旨在为基于 IP 的汽车网络提供一种面向服务的通信机制。
+
+AUTOSAR 整合: SOME/IP 是 AUTOSAR (AUTomotive Open System ARchitecture) 标准的关键组成部分。AUTOSAR 致力于统一汽车软件架构，SOME/IP 作为其通信层的一部分，确保了不同供应商和制造商之间的软件组件兼容性和互操作性。
+### 服务发现(Service Discovery)
+服务发现的通信机制是通过SOME/IP-SD协议实现的，主要是为了实现在车载以太网中告知客户端当前服务实例的可用性及访问方式，可通过Find Service 和Offer Service来实现。
+
+SOME/IP 服务发现流程可以分为以下三大基本步骤：
+
+* Client通过发送Find Service的报文去寻找车载网络中可用的服务实例；
+* Server接收到Client的Find Server后通过UDP发送Offer Service响应；
+* Client通过发送Subcribe Event Group去订阅相关Event；
+* Server检查是否满足Client是否满足订阅条件，如果满足回复ACK，如果不满足，则回复NACK；
+* Client成功订阅相关事件后，Server会按照事件本身属性来实现对已订阅该事件的Client的发布；
+
+![](/assets/img/blog/blogs_someip_find_service.png)
+
+### 远程进程调用(RPC)
+远程进程调用主要可分为四种通信模式：
+#### 1. Request/Response通信模式
+Request-Response模型作为一种最为常见的通信方式，其主要任务就是客户端发送请求信息，服务端接收到请求，进行相关处理之后进行相应的响应。
+#### 2. Fire&Forget通信模式
+该通信模型的主要任务就是客户端向服务端发送请求，服务端无需进行任何响应，有点类似诊断服务中的抑制正响应。
+#### 3. Notification Event通信模式
+该通信模式主要描述了发布 /订阅消息内容，主要任务就是为了实现客户端向服务端订阅相关的事件组，当服务端的事件组发生或者值发生变化时，就需要向已订阅该事件组的客户端发布更新的内容。
+#### 4. 远程进程控制(Field)
+访问进程通信机制主要是为了实现针对对应用程序的数据获取与更改，主要任务就是实现客户端通过Getter获取Server的值，通过Setter设置Server的值。
+
+Field就可理解为一个Service的基本属性，可包含Getter，Setter，Notifier三种方式。其中Getter就是读取Field中某个值的方法，Setter就是一种改变Field值的方法，而Notifier则是一种当Field中的值发生变化的触发事件，发生变化时就通知Client。
+### 错误处理机制
+AUTOSAR为了更为高效的定位到通讯过程中的问题所在，制定了一套检查SOME/IP协议格式内容的错误处理机制。比如版本信息检查，服务ID等，其他故障信息可以在Payload中进行详细定义。目前SOME/IP支持以下两种错误处理机制，这两种uowu处理机制可以根据配置进行选择。
+
+- 消息类型0x80，Response信息，即可以通过Response Message中的Return Code来定位到问题所在；
+
+- 消息类型0x81，显式的错误信息；
+
+主要是校验协议首部结构，对Message Type和Return code进行赋值，通知对端。

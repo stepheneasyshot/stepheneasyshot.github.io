@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_pixel.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 基于Pixel5编译刷写Android车机系统
+# 【AOSP】基于Pixel5编译刷写Android车机系统
 ## Pixel5使用体验
 去年2022年中的时候网购了一台Pixel5的库存机，现在闲置成备用机了。
 

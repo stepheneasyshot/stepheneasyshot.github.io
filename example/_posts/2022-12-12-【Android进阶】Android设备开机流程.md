@@ -1,0 +1,129 @@
+---
+layout: post
+description: > 
+  本文介绍了Android设备开机流程
+image: 
+  path: /assets/img/blog/blogs_android_common_cover.png
+  srcset: 
+    1920w: /assets/img/blog/blogs_android_common_cover.png
+    960w:  /assets/img/blog/blogs_android_common_cover.png
+    480w:  /assets/img/blog/blogs_android_common_cover.png
+accent_image: /assets/img/blog/blogs_android_common_cover.png
+excerpt_separator: <!--more-->
+sitemap: false
+---
+# 【Android进阶】Android设备开机流程
+Android设备的启动过程是一个复杂的多阶段过程，涉及硬件初始化、引导加载、操作系统内核加载、系统服务启动等多个环节。那么从上电开始，到显示出系统桌面，中间经历了哪些关键步骤呢？
+
+## 硬件上电阶段
+设备接通电源后， **电源管理芯片(Power Management IC)** 首先开始工作。PMIC负责为各个硬件组件提供稳定的电压和电流。按照预设顺序依次激活CPU、内存等关键组件。
+
+## CPU初始启动
+CPU从预设的复位向量(Reset Vector)地址开始执行。通常是芯片内部固化的一段非常小的启动代码(BootROM)。这段代码是芯片制造商预先写入的，不可修改
+
+## 执行芯片内部BootROM代码
+BootROM代码执行基本的硬件初始化，验证并加载下一阶段的引导程序(通常是从特定存储区域)，实现安全验证(如验证Bootloader签名)
+
+## 安全启动(Secure Boot)验证
+现代Android设备都支持安全启动机制，BootROM会验证Bootloader的数字签名，只有签名验证通过的Bootloader才能被加载执行
+
+## Bootloader阶段
+**第一阶段Bootloader(Primary Bootloader)**
+
+通常存储在设备的只读存储区域(如eMMC的boot分区)
+
+负责初始化基本硬件(如内存控制器、时钟等)
+
+加载并验证第二阶段Bootloader
+
+**第二阶段Bootloader(Secondary Bootloader)**
+
+更复杂的引导程序(如U-Boot)
+
+初始化更多硬件设备
+
+提供基本的命令行交互界面(在开发模式下)
+
+加载Linux内核和初始RAM磁盘(initrd)
+
+> Bootloader模式。设备启动时按特定组合键(如Volume+Power)可进入Bootloader模式。支持刷写新系统(fastboot模式)，恢复出厂设置(recovery模式)，选择启动分区(多系统切换)
+
+## Linux内核启动阶段
+**内核加载与初始化**
+Bootloader将压缩的Linux内核加载到内存，解压并跳转到内核入口点(start_kernel函数)
+
+内核开始初始化：
+* 设置内存管理
+* 初始化中断控制器
+* 设置进程调度器
+* 初始化设备驱动
+
+## 设备树(Device Tree)解析
+ARM架构设备使用设备树(Device Tree)描述硬件配置，内核解析设备树文件(.dtb)，了解设备硬件配置，根据设备树初始化相应硬件驱动
+
+## init进程启动
+内核启动的第一个用户空间进程是init(pid=1)
+
+init进程负责：
+* 解析init.rc脚本
+* 创建系统关键目录
+* 启动ueventd、logd等基础服务
+* 挂载文件系统
+
+## Android系统启动阶段
+解析并执行init.rc和设备相关的 `init.<device>.rc` 脚本。
+
+启动关键守护进程：
+* ueventd：处理设备事件
+* logd：日志服务
+* servald：SELinux相关服务
+* healthd：电池健康监控
+* debuggerd：调试服务
+
+## Zygote进程启动
+init进程最终会启动Zygote进程，Zygote是Android应用的基础进程，特点：
+* 预加载常用Java类和资源
+* 包含一个Dalvik/ART虚拟机实例
+* 监听socket等待孵化新应用进程
+
+## System Server启动
+Zygote会孵化出System Server进程。System Server是Android框架的核心，负责启动几乎所有系统服务：
+* ActivityManagerService(AMS)
+* PackageManagerService(PMS)
+* WindowManagerService(WMS)
+* PowerManagerService
+* 等等...
+
+**服务启动顺序**
+
+System Server按特定顺序启动服务：
+* 引导服务(Bootstrap Services)：
+    * ActivityManagerService
+    * PowerManagerService
+    * PackageManagerService
+    *  ...
+* 核心服务(Core Services)：
+    * BatteryService
+    * UsageStatsService
+    * ...
+* 其他服务(Other Services)：
+    * StatusBarManagerService
+    * InputMethodManagerService
+    * ...
+
+## 桌面环境启动阶段
+System Server启动完成后，AMS会启动Launcher应用。Launcher是设备的桌面环境，负责：
+* 显示应用图标
+* 处理应用启动请求
+* 管理小部件和壁纸
+
+Launcher加载并显示：
+* 主屏幕布局
+* 应用抽屉
+* 小部件
+* 壁纸
+
+同时，还需要从PackageManager获取已安装应用列表，为每个应用创建快捷方式图标
+
+## 最终用户界面
+所有系统服务和桌面组件初始化完成后，设备显示完整的桌面环境，用户可以开始与设备交互

@@ -25,28 +25,28 @@ sitemap: false
 手指按下后，硬件到驱动到系统侧链路暂且不看。
 
 #### System部分
-Android 系统是由事件驱动的，而 input 是最常见的事件之一，用户的点击、滑动、长按等操作，都属于 input 事件驱动，其中的核心就是 ```InputReader``` 和 ```InputDispatcher``` 。InputReader 和 InputDispatcher 是跑在 SystemServer进程中的两个 native 循环线程，负责读取和分发 Input 事件。
+Android 系统是由事件驱动的，而 input 是最常见的事件之一，用户的点击、滑动、长按等操作，都属于 input 事件驱动，其中的核心就是 `InputReader` 和 `InputDispatcher` 。 `InputReader` 和 `InputDispatcher` 是跑在 SystemServer进程中的两个 native 循环线程，负责读取和分发 Input 事件。
 
-* InputReader负责从EventHub里面把Input事件读取出来，然后交给 InputDispatcher 进行事件分发；
-* InputDispatcher在拿到 InputReader获取的事件之后，对事件进行包装后，寻找并分发到目标窗口;
+* `InputReader` 负责从 `EventHub` 里面把 **Input事件** 读取出来，然后交给 `InputDispatcher` 进行**事件分发**；
+* `InputDispatcher` 在拿到 `InputReader` 获取的事件之后，对事件进行包装后，寻找并分发到目标窗口;
 
-system_server的native线程 InputReader 读取到了一个触控事件。它会唤醒 InputDispatcher 去进行事件分发，先放入InboundQueue 队列中，再去寻找处理事件的窗口，找到窗口后就会放入OutboundQueue队列，等待通过socket通信发送到launcher应用的窗口中，此时事件处于 ```WaitQueue``` 中，等待事件被处理，若5s内没有处理，就会向systemserver报ANR异常。
+`system_server` 的native线程 `InputReader` 读取到了一个触控事件。它会唤醒 InputDispatcher 去进行事件分发，先放入 `InboundQueue` 队列中，再去寻找处理事件的窗口，找到窗口后就会放入 `OutboundQueue` 队列，等待通过socket通信发送到 **launcher应用** 的窗口中，此时事件处于 `WaitQueue` 中，等待事件被处理，若5s内没有处理，就会向 `systemserver` 报ANR异常。
 
 ![input_event](/assets/img/blog/blogs_input_event.jpg)
 
 #### Launcher部分
-Launcher进程接收到之后，通过enqueueInputEvent函数放入“aq”本地待处理队列中，唤醒UI线程的deliverInputEvent流程进行事件分发处理，具体交给界面window里的类型来处理。
+Launcher进程接收到之后，通过 `enqueueInputEvent` 函数放入 **“aq”** 本地待处理队列中，唤醒 **UI线程** 的 `deliverInputEvent` 流程进行事件分发处理，具体交给界面window里的类型来处理。
 
 从View布局树的根节点DecorView开始遍历整个View树上的每一个子View或ViewGroup界面进行事件的分发、拦截、处理的逻辑。
 
-这次的触摸事件被消耗后，Launcher及时调用finishInputEvent结束应用的处理逻辑，再通过JNI调用到native层InputConsumer的 ```sendFinishedSignal``` 函数通知 ```InputDispatcher``` 事件处理完成，及时从waitqueue里移除待处理事件，避免ANR异常。
+这次的触摸事件被消耗后，Launcher及时调用 `finishInputEvent` 结束应用的处理逻辑，再通过JNI调用到native层InputConsumer的 `sendFinishedSignal` 函数通知 `InputDispatcher` 事件处理完成，及时从 waitqueue 里移除待处理事件，避免ANR异常。
 
 **整个处理流程是按照责任链的设计模式进行**
 
 ### Launcher到AMS的binder调用
-上一轮Input事件传到图标view后，通过一个ACTION_DOWN的TouchEvent触控事件和多个ACTION_MOVE，直到最后出现一个ACTION_UP的TouchEvent事件后，去判断是click点击事件。
+上一轮 **Input事件** 传到图标view后，通过一个 `ACTION_DOWN` 的 `TouchEvent` 触控事件和多个 `ACTION_MOVE` 事件，直到最后出现一个 `ACTION_UP` 的 `TouchEvent` 事件后，去判断是 `click` 点击事件。
 
-就开始通过 ```ActivityManager Binder``` 调用AMS的 ```startActivity``` 服务接口准备启动应用。
+就开始通过 `ActivityManager Binder` 调用AMS的 `startActivity` 服务接口准备启动应用。
 
 ```java
 private int startActivityUnchecked(final ActivityRecord r, ActivityRecord sourceRecord,
@@ -69,7 +69,7 @@ private int startActivityUnchecked(final ActivityRecord r, ActivityRecord source
     }
 ```
 
-上面AMS的startActivityUnchecked函数，开始和结尾都会添加traceTAG记录时间，中间则是调用 startActivityInner 方法来启动应用。这个方法首先检查当前Activity栈里处于resume状态的Activity，如果当前不是目标Activity，就通知这个Activity进入Pause状态。
+上面AMS的 `startActivityUnchecked` 函数，开始和结尾都会添加traceTAG记录时间，中间则是调用 `startActivityInner` 方法来启动应用。这个方法首 **先检查当前Activity栈里处于resume状态的Activity** ，如果当前 `mResumedActivity` 不是目标Activity，就通知这个Activity **进入Pause状态** 。
 
 ```java
 /*frameworks/base/services/core/java/com/android/server/wm/ActivityStack.java*/
@@ -102,16 +102,17 @@ final boolean startPausingLocked(boolean userLeaving, boolean uiSleeping,
      ...
 }
 ```
-Launcher进程把其Activity的 pause 操作执行完毕后，执行 ```ActivityTaskManager.getService().activityPaused(token)``` 
-会将pause完成的结果通知到AMS。
+
+Launcher进程把其Activity的 pause 操作执行完毕后，执行 `ActivityTaskManager.getService().activityPaused(token)` 会将pause完成的结果通知到AMS。
 
 AMS通知Launcher暂停自己的之后，会继续启动应用的逻辑，不等待Launcher进程的pause处理结果。
 
-先判断需要启动应用进程如果存在，调用realStartActivityLocked，如果进程不存在，就会startProcessAsync创建进程。
+* 先判断需要启动应用进程如果存在，调用 `realStartActivityLocked`
+* 如果进程不存在，就会先调用 `startProcessAsync` 创建进程。
 
-拉起一个应用进程，具体是AMS通过Socket连接到Zygote进程，后者在开机时会创建好一个服务端，通知Zygote进程去fork一个新进程，即ZygoteProcess.start(...)方法。
+拉起一个应用进程，具体是AMS通过Socket连接到Zygote进程，后者在开机时会创建好一个服务端。AMS通知Zygote进程去fork一个新进程，即 `ZygoteProcess.start(...)` 方法。
 
-Zygote开机时就会创建ZygoteServer对象，调用runSelectLoop进入死循环等待AMS的请求。
+Zygote开机时就会创建 `ZygoteServer` 对象，调用 `runSelectLoop` 进入死循环等待AMS的请求。
 
 ```java
 /*frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java*/  
@@ -160,23 +161,21 @@ Zygote开机时就会创建ZygoteServer对象，调用runSelectLoop进入死循�
     }
 ```
 
-在ZygoteProcess#startViaZygote函数中，拿到创建进程的参数，返回一个列表，里面含有pid等信息。
+在 `ZygoteProcess#startViaZygote` 函数中，拿到创建进程的参数，返回一个列表，里面含有pid等信息。
 
-```startProcess``` 中会封装相关进程信息请求参数，连接发送到zygote进程的socket服务端最后阻塞等待进程创建的结果。startProcess的阻塞工作线程,最终被711线程也就是zygote进程的主线程唤醒
-
-
+`startProcess` 中会封装相关进程信息请求参数，连接发送到zygote进程的socket服务端最后阻塞等待进程创建的结果。 `startProcess` 的阻塞工作线程，最终被711线程也就是zygote进程的主线程唤醒。
 ### Zygote进程fork应用进程
 
 ![fork_process](/assets/img/blog/blogs_fork_process.png)
 
-ZygoteServer接收到请求后，去fork一个进程，fork采用copy-on-write技术，这是linux创建进程的标准方法，调用一次，返回两次，返回值有3种类型，父进程里是新的子进程的pid，子进程返回的是0，为负数则表示出错了。
+`ZygoteServer` 接收到请求后，去fork一个进程，fork采用 **copy-on-write技术**，这是linux创建进程的标准方法，调用一次，返回两次，返回值有3种类型，父进程里是新的子进程的pid，子进程返回的是0，为负数则表示出错了。
 
-父进程去把pid通过socket发送到AMS，子进程通过调用handleChildProc函数，关闭父进程继承来的服务地址，再做一些通用的初始化工作，比如启用Binder机制，执行应用程序的入口函数。
+父进程去把pid通过socket发送到AMS，子进程通过调用 `handleChildProc` 函数，关闭父进程继承来的服务地址，再做一些通用的初始化工作，比如启用Binder机制，执行应用程序的入口函数。
 
 子进程里有三个重要方法：
 1. 应用进程默认的java异常处理机制（可以实现监听、拦截应用进程所有的Java crash的逻辑）；
 1. JNI调用启动进程的binder线程池（注意应用进程的binder线程池资源是自己创建的并非从zygote父进程继承的）；
-1. 最后通过RuntimeInit#applicationInit中反射创建ActivityThread对象并调用其“main”入口方法。进入到子进程内部逻辑。
+1. 最后通过 `RuntimeInit#applicationInit` 中 **反射创建ActivityThread对象** 并调用其“main”入口方法。进入到子进程内部逻辑。
 
 ```java
 /*frameworks/base/core/java/com/android/internal/os/ZygoteInit.java*/
@@ -199,11 +198,11 @@ public static Runnable zygoteInit(int targetSdkVersion, long[] disabledCompatCha
 
 ### 目标APP的内部逻辑
 #### 建立消息机制
-ActivityThread对象的main方法，里面主要分两步。
+`ActivityThread` 对象的 `main()` 方法，里面主要分两步。
+* 一是创建主线程并 `prepare()` 来启动消息循环;
+* 二是通过binder调用AMS的 `attachApplication` 接口，将自己注册到AMS中。
 
-一是创建主线程并prepare来启动消息循环，二是通过binder调用AMS的attachApplication接口，将自己注册到AMS中。
-
-继续分析主线程消息循环机制的建立，Looper.prepareMainLooper()，通过prepare，创建MassageQueue队列，准备主线程的Looper，通过ThreadLocal机制实现与主线程的一对一绑定。
+继续分析主线程消息循环机制的建立， `Looper.prepareMainLooper()` ，通过prepare，创建MassageQueue队列，准备主线程的Looper，通过ThreadLocal机制实现与主线程的一对一绑定。
 
 ```java
 /*frameworks/base/core/java/android/app/ActivityThread.java*/
@@ -255,12 +254,14 @@ private Looper(boolean quitAllowed) {
 
 主线程的初始化完成后，主线程就进入阻塞状态，等待 Message，一旦有 Message 发过来，主线程就会被唤醒，处理 Message，处理完成之后，如果没有其他的 Message 需要处理，那么主线程就会进入休眠阻塞状态继续等待。
 
-包括 Application、Activity、ContentProvider、Service、Broadcast 等组件的生命周期函数，都会以 Message 的形式，在主线程按照顺序处理。
+**包括 Application、Activity、ContentProvider、Service、Broadcast 等组件的生命周期函数，都会以 Message 的形式，在主线程按照顺序处理。**
 
-Looper循环器，其loop方法开启后，不断地从MessageQueue中获取Message；MessageQueue 就是一个 Message 管理器，队列中是 Message，在没有 Message 的时候，MessageQueue借助Linux的ePoll机制，阻塞休眠等待，直到有Message进入队列将其唤醒。Message 是传递消息的对象，其内部包含了要传递的内容，最常用的包括 what、arg、callback 等。
+Looper循环器，其loop方法开启后，不断地从MessageQueue中获取Message；MessageQueue 就是一个 Message 管理器，队列中是 Message，在没有 Message 的时候，MessageQueue借助Linux的ePoll机制，阻塞休眠等待，直到有Message进入队列将其唤醒。
+
+Message 是传递消息的对象，其内部包含了要传递的内容，最常用的包括 what、arg、callback 等。
 
 #### 将自己的进程注册到AMS
-上面是应用内的消息机制建立和初始化，看看AMS怎么处理这个进程的attach注册请求的。AMS接收到请求后，通过oneway类型的binder调用此进程的bindApplication 接口，里面会往主线程的消息队列中post一个BIND_APPLICATION的消息，触发主线程的handleBindApplication。
+上面是应用内的消息机制建立和初始化，看看AMS怎么处理这个进程的 `attach` 注册请求的。AMS接收到请求后，通过 **oneway类型** 的binder调用此进程的 `bindApplication` 接口，里面会往主线程的消息队列中post一个 `BIND_APPLICATION` 的消息，触发主线程的 `handleBindApplication` 。
 
 ```java
 /*frameworks/base/core/java/android/app/ActivityThread.java*/
@@ -282,7 +283,7 @@ private void handleBindApplication(AppBindData data) {
 }
 ```
 
-这个方法里通过AMS发过来的ApplicationInfo，创建LoadedApk对象；创建Application的Context；触发Art虚拟机加载应用APK的Dex文件到内存中；通过LoadedApk 加载应用的Resource资源；LoadedApk的makeApplication方法创建Application对象；
+这个方法里通过AMS发过来的 `ApplicationInfo` ，创建LoadedApk对象；创建 `Application` 的 `Context` ；触发Art虚拟机加载应用APK的Dex文件到内存中；通过 `LoadedApk` 加载应用的Resource资源；`LoadedApk` 的 `makeApplication` 方法创建 `Application` 对象；
 
 ```java
 // /frameworks/base/core/java/android/app/Instrumentation.java
@@ -296,7 +297,7 @@ public Application newApplication(ClassLoader cl, String className, Context cont
 }
 ```
 
-然后执行Application的 attachBaseContext 方法，通过installContentProviders创建ContentProvider，执行其onCreate方法，随后执行Application的onCreate方法。
+然后执行 `Application` 的 `attachBaseContext` 方法，通过 `installContentProviders` 创建 `ContentProvider` ，执行其 `onCreate` 方法，随后执行 `Application` 的 `onCreate` 方法。
 
 #### Dex文件加载
 背景：Java代码在JVM被编译成字节码，再翻译成机器语言来运行。而DVM即Dalvik虚拟机不能和JVM一样能直接运行Java字节码，它只能运行.dex文件。dex文件是由Java的字节码通过Android的dx生成工具来生成的，这个过程就是打包apk的流程。
@@ -404,7 +405,7 @@ public static ClassLoader createClassLoader(...) {
 }
 ```
 
-上一轮的Context对象创建后，通过packageInfo.getResources()去加载加载APK的Resource资源赋给context，这个方法中需要getClassLoader获取类加载器，触发ART虚拟机加载dex文件。
+上一轮的Context对象创建后，通过 `packageInfo.getResources()` 去加载加载APK的 `Resource` 资源赋给 `context` ，这个方法中需要 `getClassLoader` 获取类加载器，触发ART虚拟机加载dex文件。
 
 #### 资源文件加载
 
@@ -505,18 +506,18 @@ private ApkAssets(@FormatType int format, @NonNull String path, @PropertyFlags i
 }
 ```
 
-系统对于应用APK文件资源的加载过程其实就是创建应用进程中的Resources资源对象的过程，其中真正实现APK资源文件的I/O解析作，最终是借助于AssetManager中通过JNI调用系统Native层的相关C函数实现。
+系统对于应用APK文件资源的加载过程其实就是创建应用进程中的 `Resources` 资源对象的过程，其中真正实现APK资源文件的I/O解析作，最终是借助于 `AssetManager` 中通过JNI调用系统Native层的相关C函数实现。
 
-加载应用的Resource。上面getResources方法里，创建ResourcesImpl时，会调用到 createAssetManager 方法，AssetManager这是实际加载解析apk的类，通过路径去加载
+加载应用的 `Resource` 。上面 `getResources()` 方法里，创建 `ResourcesImpl` 时，会调用到 `createAssetManager` 方法， `AssetManager` 这是实际加载解析apk的类，通过路径去加载APK文件压缩包。
 
 ```java
 ApkAssets.loadFromPath(key.path, key.sharedLib ? ApkAssets.PROPERTY_DYNAMIC : 0)
 ```
 
-通过JNI调用Native层的系统system/lib/libandroidfw.so库中的相关C函数实现对APK文件压缩包的解析与加载。
+通过JNI调用Native层的系统 `system/lib/libandroidfw.so` 库中的相关C函数实现对APK文件压缩包的解析与加载。
 
 #### 创建Activity
-上面AMS接收到新进程的Application绑定请求之后，反馈其bindApplication接口后，立即开始执行启动Activity的流程。简要流程是框架 system_server 进程最终是通过ActivityStackSupervisor#realStartActivityLocked函数中，通过LaunchActivityItem和ResumeActivityItem两个类的封装，依次实现binder调用通知应用进程这边执行Activity的Launch和Resume动作。
+上面 AMS 接收到新进程的 `Application` 绑定请求之后，反馈其 `bindApplication` 接口后，立即开始执行启动Activity的流程。简要流程是框架 `system_server` 进程最终是通过 `ActivityStackSupervisor#realStartActivityLocked` 函数中，通过 `LaunchActivityItem` 和 `ResumeActivityItem` 两个类的封装，依次实现 **binder调用** 通知应用进程这边执行 `Activity` 的 Launch 和 Resume 动作。
 
 ```java
 /*frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java*/
@@ -604,11 +605,11 @@ boolean realStartActivityLocked(ActivityRecord r, WindowProcessController proc,
 }
 ```
 
-主线程调用到ActivityThread的handleLaunchActivity函数在主线程执行应用Activity的Launch创建动作，这个方法里会执行performLaunchActivity(r, customIntent)，其中创建Activity的Context，通过反射创建activity对象，再调用其attach方法，创建应用窗口的PhoneWindow对象，并配置WindowManager。然后通过mInstrumentation.callActivityOnCreate(activity, r.state)执行其onCreate周期，在setContentView调用中创建DecorView对象。
+主线程调用到 `ActivityThread` 的 `handleLaunchActivity` 函数在主线程执行应用 `Activity` 的 `Launch` 创建动作，这个方法里会执行 `performLaunchActivity(r, customIntent)` ，其中创建 `Activity` 的 `Context` ，通过反射创建 `activity` 对象，再调用其 `attach` 方法，创建 `应用窗口` 的 `PhoneWindow` 对象，并配置 `WindowManager` 。然后通过 `mInstrumentation.callActivityOnCreate(activity, r.state)` 执行其 `onCreate()` 周期，在 `setContentView` 调用中创建DecorView对象。
 
-Activity和窗口创建完成后，ActivityThread调用handleResumeActivity来执行其onResume流程，在Activity的onResume周期回调之后，执行makeVisible()。
+Activity和窗口创建完成后， `ActivityThread` 调用 `handleResumeActivity` 来执行其 `onResume()` 流程，在 `Activity` 的 `onResume()` 周期回调之后，执行 `makeVisible()` 。
 
-然后WindowManager执行addView动作，开启视图绘制逻辑，创建ViewRootImpl对象，并调用其setView方法。
+然后 `WindowManager` 执行 `addView` 动作，开启视图绘制逻辑，创建 `ViewRootImpl` 对象，并调用其 `setView` 方法。
 
 ```java
 /*frameworks/base/core/java/android/app/servertransaction/ResumeActivityItem.java*/
@@ -665,7 +666,7 @@ public void addView(...) {
 }
 ```
 
-setView内部会开启硬件加速，调用 ```requestLayout``` 来触发界面绘制（measure、layout、draw）动作。通过Binder调用WMS的addView操作，注册应用窗口，创建WindowInputEventReceiver对象，传入本地创建inputChannel对象用于后续接收系统的触控事件。最后将DocorView的parent设置为自己，所以ViewRootImpl不是一个View,但它是所有View的顶层Parent。
+`setView()` 内部会开启硬件加速，调用 `requestLayout` 来触发界面绘制（measure、layout、draw）动作。通过 `Binder` 调用 `WMS` 的 `addView` 操作，注册应用窗口，创建 `WindowInputEventReceiver` 对象，传入本地创建 `inputChannel` 对象用于后续接收系统的触控事件。最后将 `DocorView` 的 `parent` 设置为自己，所以 `ViewRootImpl` 不是一个View，但它是所有 `View` 的顶层 `Parent` 。
 
 ```java
 /*frameworks/base/core/java/android/view/ViewRootImpl.java*/
@@ -702,22 +703,20 @@ public void setView(View view, WindowManager.LayoutParams attrs, View panelParen
 }
 ```
 
-#### 插入，Activity层级结构和相关概念
+#### 插入 Activity层级结构和相关概念
 ![activity_window](/assets/img/blog/blogs_activity_window.png)
 
-* Window是一个抽象类，通过控制DecorView提供了一些标准的UI方案，比如背景、标题、虚拟按键等，而PhoneWindow是Window的唯一实现类，在Activity创建后的attach流程中创建，应用启动显示的内容装载到其内部的mDecor（DecorView）；
-* DecorView是整个界面布局View控件树的根节点，通过它可以遍历访问到整个View控件树上的任意节点；
-* WindowManager是一个接口，继承自ViewManager接口，提供了View的基本操作方法；WindowManagerImp实现了WindowManager接口，内部通过组合方式持有WindowManagerGlobal，用来操作View；WindowManagerGlobal是一个全局单例，内部可以通过ViewRootImpl将View添加至窗口中；
-* ViewRootImpl是所有View的Parent，用来总体管理View的绘制以及与系统WMS窗口管理服务的IPC交互从而实现窗口的开辟；ViewRootImpl是应用进程运转的发动机，可以看到ViewRootImpl内部包含mView（就是DecorView）、mSurface、Choregrapher，mView代表整个控件树，mSurfacce代表画布，应用的UI渲染会直接放到mSurface中，Choregorapher使得应用请求vsync信号，接收信号后开始渲染流程；
+* Window是一个抽象类，通过控制DecorView提供了一些标准的UI方案，比如背景、标题、虚拟按键等，而 `PhoneWindow` 是Window的唯一实现类，在Activity创建后的attach流程中创建，应用启动显示的内容装载到其内部的 `mDecor(DecorView)` ；
+* `DecorView` 是整个界面布局View控件树的根节点，通过它可以遍历访问到整个View控件树上的任意节点；
+* `WindowManager` 是一个接口，继承自 `ViewManager` 接口，提供了View的基本操作方法； `WindowManagerImp` 实现了 `WindowManager` 接口，内部通过组合方式持有 `WindowManagerGlobal`，用来操作View； `WindowManagerGlobal` 是一个全局单例，内部可以通过 `ViewRootImpl` 将 `View` 添加至窗口中；
+* `ViewRootImpl` 是所有View的Parent，用来总体管理View的绘制以及与系统WMS窗口管理服务的IPC交互从而实现窗口的开辟； `ViewRootImpl` 是应用进程运转的发动机，可以看到 `ViewRootImpl` 内部包含 mView（DecorView）、mSurface、Choregrapher，mView 代表整个控件树，mSurfacce代表画布，应用的UI渲染会直接放到mSurface中，Choregorapher使得应用请求vsync信号，接收信号后开始渲染流程；
 
 #### View绘制流程
-我们的手机屏幕刷新频率有不同的类型，60Hz、120Hz等。60Hz表示屏幕在一秒内刷新60次，也就是**每隔16.6ms刷新一次**。屏幕会在每次刷新的时候发出一个 VSYNC 信号，通知CPU进行绘制计算。具体到我们的代码中，可以认为就是执行onMesure()、onLayout()、onDraw()这些方法。好了，大概了解这么多就可以了。
-
-
+我们的手机屏幕刷新频率有不同的类型，60Hz、120Hz等。60Hz表示屏幕在一秒内刷新60次，也就是**每隔16.6ms刷新一次**。屏幕会在每次刷新的时候发出一个 VSYNC 信号，通知CPU进行绘制计算。具体到我们的代码中，可以认为就是执行`onMesure()`、`onLayout()`、`onDraw()`这些方法。
 ##### 同步栏删
-requestLayout()首先进行线程检查，然后给主线程MessageQueue队列里增加同步栏删，保证卡住同步消息，只让异步消息通过，直到ASYNC信号到来才会执行绘制任务并移除同步屏障。这样可以使绘制消息属于高优先级。
+`requestLayout()` 首先进行线程检查，然后给主线程 `MessageQueue` 队列里增加同步栏删，保证卡住同步消息，只让异步消息通过，直到 `VSYNC` 信号到来才会执行绘制任务并移除同步屏障。这样可以使绘制消息属于高优先级。
 
-这样在等待ASYNC信号的时候主线程什么事都没干？是的。这样的好处是：保证在ASYNC信号到来之时，绘制任务可以被及时执行，不会造成界面卡顿。但这样也带来了相对应的代价：
+这样在等待 `VSYNC` 信号的时候主线程什么事都没干？是的。这样的好处是：保证在 `VSYNC` 信号到来之时，绘制任务可以被及时执行，不会造成界面卡顿。但这样也带来了相对应的代价：
 
 * 我们的同步消息最多可能被延迟一帧的时间，也就是16ms，才会被执行
 
@@ -737,7 +736,7 @@ requestLayout()首先进行线程检查，然后给主线程MessageQueue队列�
 
 最后建议的使用方案为，**如果需要保证与绘制任务的顺序，使用同步Handler；其他，使用异步Handler。**
 
-继续看requestLayout的源码：
+继续看 `requestLayout()` 的源码：
 
 ```java
 /*frameworks/base/core/java/android/view/ViewRootImpl.java*/
@@ -765,10 +764,10 @@ void scheduleTraversals() {
 }
 ```
 
-通过 ```mChoreographer.postCallback``` ，往主线程消息队列添加CALLBACK_TRAVERSAL绘制类型的待执行消息，用于触发后续UI线程真正实现绘制动作。
+通过 `mChoreographer.postCallback` ，往主线程消息队列添加 `CALLBACK_TRAVERSAL` 绘制类型的待执行消息，用于触发后续UI线程真正实现绘制动作。
 
 ##### Choreographer背景
-配合系统的VSync垂直同步机制，每次VSync信号到来，就绘制一帧，给app的渲染提供一个稳定的Message处理时机。其在渲染链路中承上启下，统筹处理app的消息和回调，输入事件，动画，Traversal等，到下一次Vsync信号来的时候统一处理，对下他负责接收和请求VSync信号。ViewRootImpl推送待执行的消息之后，Choreographer向系统申请APP的VSync信号，等待信号到来之后，调用到doTraversal方法去执行真正的绘制操作。
+Choreographer，编舞者，配合系统的VSync垂直同步机制，每次VSync信号到来，就绘制一帧，给app的渲染提供一个稳定的Message处理时机。其在渲染链路中承上启下，统筹处理app的消息和回调，输入事件，动画，Traversal等，到下一次Vsync信号来的时候统一处理，对下他负责接收和请求VSync信号。ViewRootImpl推送待执行的消息之后，Choreographer向系统申请APP的VSync信号，等待信号到来之后，调用到 doTraversal 方法去执行真正的绘制操作。
 
 ##### Vysnc垂直同步
 是Android在“黄油计划”中引入的一个重要机制，本质上是为了协调BufferQueue的应用生产者生成UI数据动作和SurfaceFlinger消费者的合成消费动作，避免出现画面撕裂的Tearing现象。Vysnc信号分为两种类型：
@@ -875,27 +874,28 @@ View绘制三大步，测量，布局，绘制。
 #### 绘制三大步
 ##### Measure 测量流程
 
-在Measure测量的时候，会用到一个MeasureSpec类，这个类内部的一个32位的int值，其中高2位代表了SpecMode，低30位则代表SpecSize。SpecMode指的是测量模式，SpecSize指的是测量大小
-通过位运算来给这个常量的高2位赋值，有三个情况：
+在Measure测量的时候，会用到一个 **MeasureSpec** 类，这个类内部的一个32位的int值，其中高2位代表了 `SpecMode` ，低30位则代表 `SpecSize` 。 `SpecMode` 指的是测量模式， `SpecSize` 指的是测量大小。通过位运算来给这个常量的高2位赋值， `SpecMode` 有三种情况：
 
 * 00---UNSPECIFIED：未指定模式，View想多大就多大，父容器不做限制，一般用于系统内部的测量。
-* 11---- AT_MOST：最大模式，对应于wrap_comtent属性，子View的最终大小是父View指定的SpecSize值，并且子View的大小不能大于这个值。
-* 01-----EXACTLY：精确模式，对应于 match_parent 属性和具体的数值，父容器测量出 View所需要的大小，也就是SpecSize的值。
+* 11---- AT_MOST：最大模式，对应于 wrap_content` 属性，子View的最终大小是父View指定的SpecSize值，并且子View的大小不能大于这个值。
+* 01-----EXACTLY：精确模式，对应于 `match_parent` 属性和具体的数值，父容器测量出 View所需要的大小，也就是SpecSize的值。
 
 每一个普通View都有一个MeasureSpec属性来对其进行测量。而对于DecorView来说，它的MeasureSpec由自身的LayoutParams和窗口的尺寸决定。
 
-performMeasure这个方法里，会对一众的子ViewGroup和子View进行测量。
-View的onMeasure方法，实际是看getDefaultSize()来解析其宽高的，注意对于View基类来说，为了扩展性，它的两个MeasureSpec，AT_MOST和EXACTLY处理是一样的，即其宽高直接取决于所设置的specSize，所以自定义View直接继承于View的情况下，要想实现wrap_content属性，就需要重写onMeasure方法，自己设置一个默认宽高值。
+View 根据传入的 MeasureSpec 约束和自身的 `layout_width/layout_height` 属性，计算出自己理想的尺寸。最后必须调用 `setMeasuredDimension(int measuredWidth, int measuredHeight)` 来保存最终确定的测量结果。
+
+`performMeasure` 这个方法里，会对一众的 `子ViewGroup` 和 `子View` 进行测量。
+View的onMeasure方法，实际是看 `getDefaultSize()` 来解析其宽高的，注意对于View基类来说，为了扩展性，它的两个MeasureSpec，AT_MOST和EXACTLY处理是一样的，即其宽高直接取决于所设置的specSize，所以自定义View直接继承于View的情况下，要想实现 `wrap_content` 属性，就需要重写onMeasure方法，自己设置一个默认宽高值。
 
 ##### ViewGroup的onMeasure
 每个View的本身的onMeasure并不复杂，只需要关注好本身的尺寸就好了。
 
-ViewGroup的Measure方法，它没有onMeasure，有一个measureChildren（）方法：简单来说就是根据自身的MeasureSpec和子元素的的LayoutParams属性来得出的子元素的MeasureSpec 属性。它除了需要测量自己的宽与高之外，还需要逐个遍历子view以measure子view。
+ViewGroup的Measure方法，它没有onMeasure，有一个 `measureChildre()` 方法：简单来说就是根据自身的 MeasureSpec和子元素的的 LayoutParams 属性来得出的子元素的 MeasureSpec 属性。它除了需要测量自己的宽与高之外，还需要逐个遍历子 view 以 measure 子 view。
 
-如果ViewGroup自身是EACTLY的，那么onMeasure过程就会简单不少，因为它自身的宽与高是确定的，只需要挨个measure子View就可了，而且子View并不影响它本身。当然，要把padding和margin考虑进来。
+如果 `ViewGroup` 自身是 `EACTLY` 的，那么 `onMeasure` 过程就会简单不少，因为它自身的宽与高是确定的，只需要挨个 `measure` 子View就可了，而且子View并不影响它本身。当然，要把 `padding` 和 `margin` 考虑进来。
 
-最为复杂的就是AT_MOST，ViewGroup自身的宽与高是由其所有子View决定的，这才是最复杂的，也是各个ViewGroup子类布局器需要重点解决的，而且过程各不相同，因为每个布局器的特点不一样，所以过程并不相同，下面来各自讨论一下。
-##### LinearLayout
+最为复杂的就是 `AT_MOST` ， `ViewGroup` 自身的宽与高是由其所有子View决定的，这才是最复杂的，也是各个ViewGroup子类布局器需要重点解决的，而且过程各不相同，因为每个布局器的特点不一样，所以过程并不相同，下面来各自讨论一下。
+##### LinearLayout 的测量
 它的方向只有两个，可以只分析一个方向，另外一个方向是差不多的，我们就看看垂直布局的measureVertical。
 
 * 当height mode是EXACTLY的时候，这个时候LinearLayout布局本身的高度是已知的，挨个遍历子view然后measure一下就可以。
@@ -904,9 +904,8 @@ ViewGroup的Measure方法，它没有onMeasure，有一个measureChildren（）�
 
 * 最为复杂的情况是处理weight，这需要很多复杂处理，要把剩余所有的空间按weight来分配，具体比较复杂，有兴趣的可以具体去看源码。这也说明了，为何在线性布局中使用weight会影响性能，代码中就可以看出当有weight要处理的时候，至少多遍历一遍子view以进行相关的计算。
 
-虽然方向是VERTICAL时，重点只处理垂直方向，但是width也是需要计算的，但width的处理就要简单得多，如果其是EXACTLY的，那么就已知了；如果是AT_MOST的，就要找子view中width的最大值。
-
-##### FrameLayout
+虽然方向是 VERTICAL 时，重点只处理垂直方向，但是width也是需要计算的，但width的处理就要简单得多，如果其是EXACTLY的，那么就已知了；如果是AT_MOST的，就要找子view中width的最大值。
+##### FrameLayout 的测量
 其实是最简单的一个布局管理器，因为它对子view是没有约束的，无论水平方向还是垂直方向，对子view都是没有约束，所以它的measure过程最简单。
 
 * 如果是EXACTLY的，它本身的高度与宽度是确定的，那么就遍历子view，measure一下就可以了，最后再把margin和padding加一下就完事了。
@@ -914,18 +913,16 @@ ViewGroup的Measure方法，它没有onMeasure，有一个measureChildren（）�
 * 如果是AT_MOST的，那么也不难，遍历子View并measure，然后取子view中最大宽为它的宽度，取最大的高为其高度，再加上margin和padding，基本上就做完了。
 
 因为，FrameLayout的measure过程最为简单，因此系统里很多地方默认用的就是FrameLayout，比如窗口里的root view。
-
 ##### RelativeLayout
 这个是最为复杂的，从设计的目的来看，RelativeLayout要解决的问题也是提供了长与宽两个维度来约束子view。
 
 总体过的过程就是要 **分别从vertical方向和horizontal方向，来进行两遍的measure** ，同时还要计算具体的坐标，实际上RelativeLayout的measure过程是把measure和layout一起做了。
-
 #### Layout 布局流程
+`onLayout()` 这是 ViewGroup 需要重写的核心方法，对于 View 不需要重写 onLayout()。ViewGroup中的 `layout()` 方法用来确定子元素的位置，View中的 `layout()` 方法则用来确定自身的位置。所以是ViewGroup来计算子View的参数，并调用子控件的layout方法。
 
-ViewGroup中的layout方法用来确定子元素的位置，View中的layout方法则用来确定自身的位置。所以是ViewGroup来计算子View的参数，并调用子控件的layout方法。
+layout() 方法接收四个参数：左边界 (l)、上边界 (t)、右边界 (r)、下边界 (b)。这些坐标都是相对于 父 View 的坐标系 而言的。
 
-View的layout方法，其中分别传入left,top,right,bottom四个参数，表示其距离父布局的四个距离，再走到setFrame，最后到onLayout，这是一个空方法，由继承的类自己实现。
-
+View的layout方法，其中分别传入 `left,top,right,bottom` 四个参数，表示其距离父布局的四个距离，再走到setFrame，最后到onLayout，这是一个空方法，由继承的类自己实现。
 ##### LinearLayout
 依然是两个方向，因为LinearLayout的目的就是在某一个方向上对子view进行约束。看layoutVertical就可以了，水平方向上逻辑是一样的。
 
@@ -940,26 +937,28 @@ FrameLayout对子view的排列其实是没有约束的，所以layout过程也�
 前面提到过RelativeLayout是在measure的时候就把坐标都计算好了，它的layout就是把坐标设置给子view，其余啥也没有。
 
 
->热门八股问题：onresume获取不到View的宽高，而View.post就可以拿到：1. onCreate和onResume中无法获取View的宽高，是因为还没执行View的绘制流程。2. view.post之所以能够拿到宽高，是因为在绘制之前，会将获取宽高的任务放到Handler的消息队列，等到View的绘制结束之后，便会执行。
+##### 热门八股问题：为什么onResume获取不到View的宽高，而View.post就可以拿到?
+1. onCreate和onResume中无法获取View的宽高，是因为还没执行View的绘制流程。
+2. view.post之所以能够拿到宽高，是因为在绘制之前，会将获取宽高的任务放到Handler的消息队列，等到View的绘制结束之后，便会执行。
 
 #### Draw 绘制流程
 #### 触发逻辑
 从上面的讨论中可以看出draw的触发逻辑有两条路：
 
-一是，没有启用硬件加速时，走的软件draw流程，也是一条比较好理解的简单流程：performTraversal->performDraw->draw->drawSoftware->View#draw。
+一是，没有启用硬件加速时，走的软件draw流程，也是一条比较好理解的简单流程： `performTraversal->performDraw->draw->drawSoftware->View#draw` 。
 
-二是，启用了硬件加速时，走的是performTraversal->performDraw->draw->ThreadedRenderer#draw，到这里就走进了硬件加速相关的逻辑了。
+二是，启用了硬件加速时，走的是 `performTraversal->performDraw->draw->ThreadedRenderer#draw` ，到这里就走进了硬件加速相关的逻辑了。
 
 ##### 硬件加速的绘制流程
-遍历DecorView树，递归调用每个子View节点的updateDisplayListIfDirty函数，最终完成绘制树的创建。再通过JNI调用到Native层的RenderThread渲染线程，并唤醒渲染线程利用OpenGL执行渲染任务。
+遍历 `DecorView` 树，递归调用每个子View节点的 `updateDisplayListIfDirty` 函数，最终完成绘制树的创建。再通过JNI调用到Native层的RenderThread渲染线程，并唤醒渲染线程利用OpenGL执行渲染任务。
 
 ##### 软件绘制
-ViewRootImpl是直接调用根节点的draw方法，那么这里便是整个view tree的入口。可先从 ```View#draw(canvas）``` 方法看起。
+`ViewRootImpl` 是直接调用根节点的 `draw()` 方法，那么这里便是整个view tree的入口。可先从 `View#draw(canvas)` 方法看起。
 
 主要分为四步：
-1. 画背景drawBackground；
+1. 画背景 `drawBackground()`；
 1. 画自己的内容通过onDraw来委派，具体的内容是在onDraw里面做的；
-1. 画子view，通过dispatchDraw方法；
+1. 画子view，通过 `dispatchDraw()` 方法；
 1. 画其他的东西，如scroll bar或者focus highlight等。
 
 可以重点关注一下这些操作的顺序，先画背景，然后画自己，然后画子view，最后画scroll bar和focus之类的东西。
@@ -968,8 +967,7 @@ ViewRootImpl是直接调用根节点的draw方法，那么这里便是整个view
 
 **ViewGroup#dispatchDraw**
 
-这个方法做一些准备工作，如把padding考虑进来并进行clip，后会遍历子View，针对 每个子view调用drawChild方法，这实际上就 是调用回了View#draw(canvas，parent，drawingTime)方法，注意这个方法是package scope的，也就是说只能供view框架内部调用。这个方法并没有做具体的渲染工作（因为每个View的具体渲染都是在onDraw里面做的），这个方法里面做了大量与动画相关的各种变换。
-
+这个方法做一些准备工作，如把 `padding` 考虑进来并进行clip，后会遍历子View，针对 每个子view调用 `drawChild` 方法，这实际上就 是调用回了 `View#draw(canvas，parent，drawingTime)` 方法，注意这个方法是package scope的，也就是说只能供view框架内部调用。这个方法并没有做具体的渲染工作（因为每个View的具体渲染都是在onDraw里面做的），这个方法里面做了大量与动画相关的各种变换。
 ##### Canvas对象是从哪里来的
 View的渲染过程其实大都是 **GUI框架内部的逻辑流程控制** ，真正涉及graphics方面的具体的图形如何画出来，其实都是由Canvas对象来做的，比如如何画点，如何画线，如何画文字，如何画图片等等。
 
@@ -979,13 +977,11 @@ View的渲染过程其实大都是 **GUI框架内部的逻辑流程控制** ，�
 
 从上面的逻辑可以看到Canvas对象有二个来源：
 
-一是在ViewRootImpl中创建的，当走软件渲染时，会用Surface创建出一个Canvas对象，然后传给view tree。从ViewRootImpl的代码来看，它本身就会持有一个Surface对象，大概的逻辑就是每一个Window对象内，都会有一个用来渲染的Surface；
-
-另外一个来源就是走硬件加速时，会由hwui创建出Canvas对象。
+* 一是在 `ViewRootImpl` 中创建的，当走软件渲染时，会用 `Surface` 创建出一个 `Canvas` 对象，然后传给view tree。从 `ViewRootImpl` 的代码来看，它本身就会持有一个 `Surface` 对象，大概的逻辑就是每一个Window对象内，都会有一个用来渲染的 `Surface` ；
+* 另外一个来源就是走硬件加速时，会由 `hwui` 创建出Canvas对象。
 
 #### 合成送显
-
-这三大步走完之后，应用界面的内容用户依然还不可见，需要由RenderThread线程的渲染处理，渲染完成后，还需要通过Binder调用“上帧”交给surfaceflinger进程中进行合成后送显才能最终显示到屏幕上。
+这三大步走完之后，应用界面的内容用户依然还不可见，需要由 `RenderThread` 线程的渲染处理，渲染完成后，还需要通过Binder调用 **“上帧”** 交给 `surfaceflinger` 进程中进行合成后送显才能最终显示到屏幕上。
 
 总结，应用在UI线程中从根节点DecorView出发，递归遍历每个子View节点，搜集其drawXXX绘制动作并转换成DisplayListOp命令，将其记录到DisplayListData并填充到RenderNode中，最终完成整个View绘制命令树的构建。从此UI线程的绘制任务就完成了。
 
@@ -994,4 +990,4 @@ syncFrameState中遍历View树上每一个RenderNode，执行prepareTreeImpl函�
 
 SurfaceFlinger作为系统中独立运行的一个Native进程，借用Android官网的描述，其为承上启下的角色，就是通过Surface与不同的应用进程建立联系，接收它们写入Surface中的绘制缓冲数据，对它们进行统一合成。然后对下层，通过屏幕的后缓存区与屏幕建立联系，发送合成好的数据到屏幕显示设备。
 
-图形载体为Buffer，Surface为Buffer封装，管理了多个Buffer，内部是通过BufferQueue来管理的。这是一个生产者消费者模型，应用进程为生产者，SurfaceFlinger为消费者。应用进程开始界面渲染之前，通过Binder向SurfaceFlinger申请一张可用的buffer，使用CPU或者GPU渲染之后，将缓存数据返回给进程对应的BufferQueue，等其可用时申请sf类型的VSync信号，通知SurfaceFlinger去消费合成。SurfaceFlinger拿取buffer合成结束之后，再度将其置为free状态，返回对应BufferQueue中。
+图形载体为Buffer，Surface为Buffer封装，管理了多个Buffer，内部是通过BufferQueue来管理的。这是一个生产者消费者模型， **应用进程为生产者，SurfaceFlinger为消费者** 。应用进程开始界面渲染之前，通过Binder向 `SurfaceFlinger` 申请一张可用的buffer，使用CPU或者GPU渲染之后，将缓存数据返回给进程对应的 `BufferQueue` ，等其可用时申请sf类型的VSync信号，通知 `SurfaceFlinger` 去消费合成。 `SurfaceFlinger` 拿取buffer合成结束之后，再度将其置为free状态，返回对应 `BufferQueue` 中。

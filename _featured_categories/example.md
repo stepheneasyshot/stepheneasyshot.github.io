@@ -10,7 +10,7 @@ slug: example
 
 # (Optional) Write a short (~150 characters) description of this featured tag.
 description: >
-  这是我的博客目录，以时间线排好序了。
+  欢迎光临，这是我的博客网站，按照不同的方向以文件名区分展示。
 
 # (Optional) You can disable grouping posts by date.
 # no_groups: true

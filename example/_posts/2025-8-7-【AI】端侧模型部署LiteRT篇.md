@@ -3,12 +3,12 @@ layout: post
 description: > 
   本文介绍了借助Google的LiteRT框架在Android平台上运行端侧AI模型的流程
 image: 
-  path: /assets/img/blog/blogs_ai_litert_cover.png
+  path: /assets/img/blog/blogs_google_edge_ai_cover.png
   srcset: 
-    1920w: /assets/img/blog/blogs_ai_litert_cover.png
-    960w:  /assets/img/blog/blogs_ai_litert_cover.png
-    480w:  /assets/img/blog/blogs_ai_litert_cover.png
-accent_image: /assets/img/blog/blogs_ai_litert_cover.png
+    1920w: /assets/img/blog/blogs_google_edge_ai_cover.png
+    960w:  /assets/img/blog/blogs_google_edge_ai_cover.png
+    480w:  /assets/img/blog/blogs_google_edge_ai_cover.png
+accent_image: /assets/img/blog/blogs_google_edge_ai_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
@@ -16,7 +16,15 @@ sitemap: false
 ## LiteRT简介
 LiteRT（Lite Runtime 的缩写，前身为 **TensorFlow Lite**）是 Google 推出的一款**轻量级**、**高性能**的深度学习推理框架。它专门设计用于在**资源受限**的设备上（如移动设备、嵌入式系统和边缘计算设备）高效地部署和运行机器学习模型。
 
-LiteRT 的核心价值在于提供一个**快速**、**小巧**且**高效**的运行时环境，使训练好的机器学习模型能够在设备上本地执行推理。可以直接在设备上运行，无需网络往返。数据保留在本地设备上，隐私安全。它通过优化和硬件加速，减少资源消耗。在部署到设备上之前，通过量化、剪枝等技术减小模型体积。
+![](/assets/img/blog/blogs_ai_litert_cover.png){:width="400" height="200"}
+
+LiteRT 的核心价值在于提供一个**快速**、**小巧**且**高效**的运行时环境，使训练好的机器学习模型能够在设备上本地执行推理。主要特性：
+
+* 针对设备端机器学习进行了优化：LiteRT 解决了五项关键的 ODML 约束条件：延迟时间（无需往返服务器）、隐私性（没有个人数据离开设备）、连接性（无需连接到互联网）、大小（缩减了模型和二进制文件大小）和功耗（高效推理和缺少网络连接）。
+* 支持多平台：与 Android 和 iOS 设备、嵌入式 Linux 和微控制器兼容。
+* 多框架模型选项：AI Edge 提供了一些工具，可将 TensorFlow、PyTorch 和 JAX 模型转换为 FlatBuffers 格式 (.tflite)，让您能够在 LiteRT 上使用各种先进的模型。您还可以使用可处理量化和元数据的模型优化工具。
+* 支持多种语言：包括适用于 Java/Kotlin、Swift、Objective-C、C++ 和 Python 的 SDK。
+* 高性能：通过 GPU 和 iOS Core ML 等专用代理实现硬件加速。
 
 LiteRT 将模型打包成一种名为 **FlatBuffers** 的高效可移植格式，文件扩展名为 **.tflite**。
 
@@ -86,6 +94,16 @@ LiteRT 主要支持多平台：与 Android 和 iOS 设备、嵌入式 Linux 和�
 ![](/assets/img/blog/blogs_ai_google_dege_gallery.png)
 
 ### 架构解析
+在 Android 应用中运行的 `LiteRT` 模型会获取数据、处理数据，并根据模型的逻辑生成预测结果。
+
+`LiteRT` 模型需要特殊的运行时环境才能执行，并且传入模型的数据必须采用特定的数据格式（称为张量）。当模型处理数据（称为运行推理）时，它会将预测结果生成为新的张量，并将其传递给 Android 应用，以便应用执行操作，例如向用户显示结果或执行其他业务逻辑。
+
+在功能设计层面，您的 Android 应用需要以下元素才能运行 `LiteRT` 模型：
+* 用于执行模型的 `LiteRT` 运行时环境
+* 模型输入处理程序，用于将数据转换为张量
+* 模型输出处理脚本，用于接收输出结果张量并将其解读为预测结果
+
+![](/assets/img/blog/blogs_ai_litert_framework.png)
 
 ### 集成流程
 

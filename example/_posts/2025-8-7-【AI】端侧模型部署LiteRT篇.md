@@ -14,11 +14,46 @@ sitemap: false
 ---
 # 【AI】端侧模型部署LiteRT篇
 ## LiteRT简介
-样板Demo来自Google官方的开源项目：
+LiteRT（Lite Runtime 的缩写，前身为 **TensorFlow Lite**）是 Google 推出的一款**轻量级**、**高性能**的深度学习推理框架。它专门设计用于在**资源受限**的设备上（如移动设备、嵌入式系统和边缘计算设备）高效地部署和运行机器学习模型。
 
-[google-ai-edge gallery](https://github.com/google-ai-edge/gallery)
+LiteRT 的核心价值在于提供一个**快速**、**小巧**且**高效**的运行时环境，使训练好的机器学习模型能够在设备上本地执行推理。可以直接在设备上运行，无需网络往返。数据保留在本地设备上，隐私安全。它通过优化和硬件加速，减少资源消耗。在部署到设备上之前，通过量化、剪枝等技术减小模型体积。
 
-首先介绍下几个基础框架：
+LiteRT 将模型打包成一种名为 **FlatBuffers** 的高效可移植格式，文件扩展名为 **.tflite**。
+
+### LiteRT 的部署运行流程
+#### 1. 模型加载
+第一步，将 **.tflite** 文件（包含模型的执行图、权重和偏差）加载到内存中。
+
+LiteRT 模型采用 **FlatBuffers** 格式，这种格式允许直接映射到内存，避免了传统序列化/反序列化所需的额外解析和内存复制，从而加快加载速度。
+#### 2. 构建解释器 (Interpreter)
+**LiteRT Interpreter** 解释器是执行模型的核心组件。它使用**静态图排序**和**自定义（非动态）内存分配器**。
+
+在内存分配方面， `Interpreter` 在运行时根据模型图预先分配好所需的张量内存，避免了推理过程中的动态内存分配开销，确保推理延迟稳定且较低。
+#### 3. 设置硬件加速器（Delegate/委派）
+这一步是 LiteRT 实现高性能的关键。LiteRT 引入了 **Delegate（委派）** 机制，这是一个 API 接口，用于将模型的部分或全部操作卸载到设备上的特定 **硬件加速器** 上执行，而不是仅仅依赖 CPU。
+
+常见的加速器：
+* **GPU**：通过 **MLDrift**（新的 GPU 加速实现）或旧的 GPU Delegate 进行加速。
+* **NPU/DSP**：通过 **NNAPI**（Android 上的神经网络 API）或高通、联发科等供应商特定的 SDK 来利用神经处理单元。
+* **Edge TPU**：Google 专用的边缘张量处理单元。
+* **XNNPack**：一个高度优化的 CPU 浮点运算库。
+
+Delegate 会检查模型中的哪些操作可以在加速器上运行，并将它们打包交给加速器执行。
+#### 4. 数据预处理与运行推理 (Invoke)
+数据预处理截断会将输入数据（如图像、音频）转换为模型期望的格式和维度。通过调用 **`Interpreter::Invoke()`**（或 LiteRT Next 中的 **`CompiledModel::Run()`**）方法，LiteRT 解释器执行模型图中的操作。如果设置了 Delegate，相应的操作将在硬件加速器上执行。
+#### 5. 解释输出
+获取输出张量的值，并将其转换为对应用有意义的结果（例如，将概率列表映射到具体的类别标签，或绘制目标检测的边界框）。
+### 支持的 AI 模型
+LiteRT 主要用于**推理**（Inference），它可以运行各种类型的经过优化的机器学习模型，特别是那些针对**视觉**、**音频**和**自然语言处理 (NLP)** 任务的模型：
+
+| 模型类型 | 常见应用 | 优化特点 |
+| :--- | :--- | :--- |
+| **计算机视觉 (CV)** | 图像分类、目标检测、图像分割、姿态估计、面部识别。 | **CNN** (如 MobileNet, EfficientNet) 经过量化和剪枝，利用 GPU 和 NPU 加速。 |
+| **自然语言处理 (NLP)** | 文本分类、命名实体识别、问答系统、**小规模 LLM** (轻量级大语言模型) 推理。 | **Transformer** 模型（如 BERT 变体）经过优化，注重模型大小和低延迟。 |
+| **音频处理** | 语音识别、关键词唤醒、声纹识别、环境声分类。 | 各种序列模型和特定设计的声学模型。 |
+| **通用机器学习** | 分类、回归、时间序列预测。 | 各种通用的 ML 模型，通常通过 **TensorFlow**、**PyTorch** 等框架训练后转换为 `.tflite` 格式。 |
+
+下面章节介绍下几个下游的基础框架
 ### TensorFlow & TensorFlowLite
 **TensorFlow** 是 Google 开发并开源的一个端到端的机器学习平台。它是一个功能强大且高度灵活的软件库，主要用于构建和训练各种机器学习模型，特别是深度学习模型。
 
@@ -40,50 +75,83 @@ TensorFlow 的核心概念之一是数据流图。它将计算表示为图中的
 
 **TensorFlowLite在24年9月已经更名为LiteRT。** 之所以更名，是因为 TensorFlow Lite 在发展过程中**已经超越了最初仅支持 TensorFlow 模型的范畴**。它现在能够高效支持从 PyTorch、JAX 和 Keras 等其他主流机器学习框架导出的模型。为了更好地体现这种“多框架”的愿景，并强调其作为设备端高性能运行时的通用性，Google 决定将其更名为 LiteRT。
 
-主要特性
-* 针对设备端机器学习进行了优化：LiteRT 解决了五项关键的 ODML 约束条件：延迟时间（无需往返服务器）、隐私性（没有个人数据离开设备）、连接性（无需连接到互联网）、大小（缩减了模型和二进制文件大小）和功耗（高效推理和缺少网络连接）。
-* 支持多平台：与 Android 和 iOS 设备、嵌入式 Linux 和微控制器兼容。
-* 多框架模型选项：AI Edge 提供了一些工具，可将 TensorFlow、PyTorch 和 JAX 模型转换为 FlatBuffers 格式 (.tflite)，让您能够在 LiteRT 上使用各种先进的模型。您还可以使用可处理量化和元数据的模型优化工具。
-* 支持多种语言：包括适用于 Java/Kotlin、Swift、Objective-C、C++ 和 Python 的 SDK。
-* 高性能：通过 GPU 和 iOS Core ML 等专用代理实现硬件加速。
-
-### LiteRT集成的运行流程
-本节介绍了在设备上运行 `LiteRT`（简称 Lite Runtime）模型以根据输入数据进行预测的过程。这是 使用 `LiteRT` 解释器来实现，该解释器使用静态图排序和 自定义（非动态）内存分配器，以确保将负载、初始化 和执行延迟时间
-
-`LiteRT` 推理通常遵循以下步骤：
-* 加载模型：将 `.tflite` 模型加载到内存中，其中包含模型的执行图。
-* 转换数据：将输入数据转换为预期格式并 维度。模型的原始输入数据通常与模型预期的输入数据格式不匹配。例如，您可能需要调整图片大小或更改图片格式，以使其与模型兼容。
-* 运行推理：执行 `LiteRT` 模型以进行预测。这个 这个步骤涉及使用 `LiteRT API` 执行模型。它涉及 例如构建解释器和分配张量等步骤。
-* 解释输出：以有意义的方式解释输出张量 对您的应用非常有用例如，一个模型可能只返回 概率列表。您可以将概率映射到相关类别并设置输出格式。
-
-`TensorFlow` 推理 API 适用于最常见的移动设备和嵌入式设备 Android、iOS 和 Linux 等平台，支持多种编程语言。
-
-在大多数情况下，API 设计反映的是性能优先于易用性。LiteRT 专为在小型设备上快速推理而设计，因此 API 会避免不必要的复制，但会牺牲便捷性。在所有库中，LiteRT API 可让您加载模型、提供输入并检索推理输出。
-
-在 **Android** 上，可以使用 Java 或 C++ API 执行 LiteRT 推理。通过 Java API 提供了便利，可以直接在 Android 应用中使用 activity 类。C++ API 提供了更高的灵活性和速度，但可能需要 编写 JNI 封装容器以在 Java 层和 C++ 层之间移动数据。
-
-在 **iOS** 上，LiteRT 可在 Swift 和 Objective-C iOS 库中使用。您也可以使用 C API 编写代码。
-
-在 **Linux** 平台上，您可以使用 C++ 中提供的 LiteRT API 运行推理。
-
-加载和运行 LiteRT 模型涉及以下步骤：
-* 将模型加载到内存中。
-* 根据现有模型构建 Interpreter。
-* 设置输入张量值。
-* 调用推理。
-* 输出张量值。
-
+LiteRT 主要支持多平台：与 Android 和 iOS 设备、嵌入式 Linux 和微控制器兼容。
 ## 使用 LiteRT 来运行本地模型
-这个在Google开源项目中有已经体现：
+应用层的集成，在 **Google** 自己的开源项目中有已经体现：
 
 [google-ai-edge gallery](https://github.com/google-ai-edge/gallery)
 
-项目截图：
+该应用也同步上架了Play Store，项目截图：
 
 ![](/assets/img/blog/blogs_ai_google_dege_gallery.png)
-
-从官方Github仓库介绍页面可以看到，Google的LiteRT是支持多模态的，可以进行图片交互。
 
 ### 架构解析
 
 ### 集成流程
+
+### MediaPipe Tasks 
+底层依然基于 `LiteRT` 的运行时来运行端侧AI模型，只是在应用层进行了封装，提供了更方便的接口。
+
+### AI Core 应用进行IPC通信
+这个比较前两个方式更近了一步，直接将模型的下载，加载，推理都封装在 `AI Core` 中，应用层只需要调用AIDL接口和 `AI Core` 进行通信即可。
+
+需要注意，目前带Gemini Nano测试版的 **AI Core** 只有 **Pixel 9** 及以上的设备支持。
+
+![](/assets/img/blog/blogs_google_ai_core_play_store.png){:width="250" height="600" loading="lazy"}
+
+[Google官方文档](https://developer.android.com/ai/gemini-nano?hl=zh-cn)
+
+使用步骤非常简单。首先加入依赖：
+
+```groovy
+implementation("com.google.ai.edge.aicore:aicore:0.0.1-exp01")
+```
+
+注意最低SDK需要31及以上。
+
+在此仅做最小功能验证，直接在Composable组合项中观察一个顶变量 `aiCoreOutput` 这个 `StateFlow` 的状态变化：
+
+```kotlin
+val aiCoreOutput = MutableStateFlow("")
+
+@SuppressLint("StaticFieldLeak")
+val generationConfig = generationConfig {
+    context = appContext
+    temperature = 0.2f
+    topK = 16
+    maxOutputTokens = 256
+}
+
+val downloadCallback = object : DownloadCallback {
+    override fun onDownloadProgress(totalBytesDownloaded: Long) {
+        super.onDownloadProgress(totalBytesDownloaded)
+        println("Download progress: $totalBytesDownloaded")
+    }
+
+    override fun onDownloadCompleted() {
+        super.onDownloadCompleted()
+        println("Download completed")
+    }
+}
+
+val downloadConfig = DownloadConfig(downloadCallback)
+val generativeModel = GenerativeModel(
+    generationConfig = generationConfig,
+    downloadConfig = downloadConfig
+)
+
+suspend fun startChat(input: String) {
+    runCatching {
+        val response = generativeModel.generateContent(input)
+        print(response.text)
+        aiCoreOutput.value = response.text.toString()
+    }.onFailure { e ->
+        e.printStackTrace()
+    }
+}
+
+fun closeChatResponse() {
+    println("Closing chat response")
+    generativeModel.close()
+}
+```

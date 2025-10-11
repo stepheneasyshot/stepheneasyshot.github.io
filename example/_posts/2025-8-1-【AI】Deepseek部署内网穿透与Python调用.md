@@ -447,3 +447,78 @@ asyncio.run(chat())
 ```
 
 以上就是对 ```ollama-python``` 库的简要使用介绍。
+
+## 云端服务 API 参数含义
+在使用Deepseek和Kimi等厂商提供的云端大模型服务时，在api文档中，可以看到请求的参数有很多。这些常见的参数代表什么含义呢？
+
+举例：
+
+```bash
+curl -L -X POST 'https://api.deepseek.com/chat/completions' \
+-H 'Content-Type: application/json' \
+-H 'Accept: application/json' \
+-H 'Authorization: Bearer <TOKEN>' \
+--data-raw '{
+  "messages": [
+    {
+      "content": "You are a helpful assistant",
+      "role": "system"
+    },
+    {
+      "content": "Hi",
+      "role": "user"
+    }
+  ],
+  "model": "deepseek-chat",
+  "frequency_penalty": 0,
+  "max_tokens": 4096,
+  "presence_penalty": 0,
+  "response_format": {
+    "type": "text"
+  },
+  "stop": null,
+  "stream": false,
+  "stream_options": null,
+  "temperature": 1,
+  "top_p": 1,
+  "tools": null,
+  "tool_choice": "none",
+  "logprobs": false,
+  "top_logprobs": null
+}'
+```
+
+* **messages** - 消息列表，每个消息包含角色（role）和内容（content）。角色可以是 "system"、"user" 或 "assistant"。
+* **model** - 模型名称，例如 "deepseek-chat"。
+* **frequency_penalty** - 频率惩罚，用于控制模型生成重复内容的程度。介于 -2.0 和 2.0 之间的数字。如果该值为正，那么新 token 会根据其在已有文本中的出现频率受到相应的惩罚，降低模型重复相同内容的可能性。即值越高，模型越倾向于生成不同的内容。
+* **max_tokens** - 最大的token数量，用于限制模型生成的响应长度。
+* **presence_penalty** - 存在惩罚，用于控制模型生成新内容的程度。值越高，模型越倾向于生成新的内容。
+* **response_format** - 响应格式，例如 "text" 或 "json"。
+* **stop** - 停止序列，用于指定模型在生成响应时何时停止。可以是一个字符串或字符串列表。
+* **stream** - 是否流式输出，默认为 false。如果设置为 True，将会以 SSE（server-sent events）的形式以流式发送消息增量。消息流以 `data: [DONE]` 结尾。
+* **temperature** - 采样温度，介于 0 和 2 之间。更高的值，如 0.8，会使输出更随机，而更低的值，如 0.2，会使其更加集中和确定。 我们通常建议可以更改这个值或者更改 top_p，但不建议同时对两者进行修改。
+* **top_p** -  nucleus sampling 概率阈值，介于 0 和 1 之间。模型会根据其概率分布生成下一个 token，而 top_p 则会限制模型只考虑概率最高的前 p% 的 token。例如设置为 0.1 就意味着只有包括在最高 10% 概率中的 token 会被考虑。 
+* **tools** - 工具列表，用于指定模型可能会调用的 tool 的列表。目前，仅支持 function 作为工具。使用此参数来提供以 JSON 作为输入参数的 function 列表。最多支持 128 个 function。
+* **tool_choice** - 工具选择，用于指定模型应该使用哪个工具。可以是 "none"、"auto" 或工具名称。
+* **logprobs** - logprobs 参数让你可以查看模型在生成每个词（token）时，它认为各个候选词的“可能性”有多大，并以一种数学上更优的形式——对数概率——返回给你。如果为 true，则在 message 的 content 中返回每个输出 token 的对数概率。
+
+### temperature和top_p实现调控的区别
+#### temperature
+`temperature` 像一个“**软化剂**”或“**锐化剂**”，它直接作用于所有词语的概率分布。
+* **值越高 (比如 1.0)：** 它会**“软化”**概率分布，让那些本来概率很低的词语（比如“桌子”的 5%）的权重提高，变得更有可能被选中。这样模型的选择范围就扩大了，输出会更加随机和有创意。
+* **值越低 (比如 0.2)：** 它会**“锐化”**概率分布，让高概率的词语（比如“苹果”的 50%）的权重更加突出。模型会更倾向于选择最安全、最确定的词语，输出会更保守、更重复。
+
+改变 `temperature` 就像是在**调整整个概率曲线的形状**，影响了所有词语被选中的相对可能性。
+#### top_p
+`top_p` 则是一个“**概率预算**”，它通过**限制可选词语的数量**来控制随机性。
+
+模型会按概率从高到低排序，然后选择一个最小的词语集合，使得这些词语的累积概率达到你设置的 `top_p` 值。模型后续的选择只会从这个被“裁剪”的集合中进行。如果你设置 `top_p=0.9`，模型会选出那些加起来概率达到 90% 的词语，将完全排除概率很低的词语。
+* **值越高 (比如 0.9)：** 预算更大，模型可选的词语更多，输出更多样。
+* **值越低 (比如 0.1)：** 预算很小，模型只能选择最有可能的少数几个词，输出更保守。
+
+改变 `top_p` 就像是**在概率列表上画一条线**，直接淘汰掉那些累积概率达不到预算的词语。
+
+#### 调参的经验法则
+对于需要**事实准确、代码或总结**的严谨任务，将 **`temperature` 设置为 0.0 到 0.5 左右**，或将 **`top_p` 设置为 0.95 或更高**（基本上只依赖概率）。
+
+对于需要**创意、故事或头脑风暴**的任务，将 **`temperature` 设置为 0.7 到 1.0 左右**，或将 **`top_p` 设置为 0.8 到 0.9**。

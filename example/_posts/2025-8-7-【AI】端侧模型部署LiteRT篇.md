@@ -110,16 +110,28 @@ LiteRT 主要支持多平台：与 Android 和 iOS 设备、嵌入式 Linux 和�
 ### MediaPipe Tasks 
 底层依然基于 `LiteRT` 的运行时来运行端侧AI模型，只是在应用层进行了封装，提供了更方便的接口。
 
+![](/assets/img/blog/blogs_ai_mediapipes_framework.png)
+
 ### AI Core 应用进行IPC通信
 这个方法，便利性上较前两种方式更进了一步。Google 直接将Gemini Nano模型的下载，加载，推理都封装在 `AI Core` 中，应用层只需要调用AIDL接口和 `AI Core` 进行通信即可。
+
+> Google介绍：Gemini Nano 是我们专为设备端任务打造的最高效模型，它直接在移动芯片上运行，从而支持一系列重要用例。设备端运行支持数据无需离开设备的功能，例如在端到端加密消息应用中提供消息回复建议。它还能通过确定性延迟实现一致的体验，即使在没有网络的情况下也能始终使用各项功能。
+
+![](/assets/img/blog/blogs_ai_google_aicore_framework.png)
+
+**图中的Lora是什么呢？**
+
+LoRA (Low-Rank Adaptation) 是一种用于微调（fine-tuning）大型预训练模型的技术，比如大型语言模型 (LLMs) 或图像生成模型 (如 Stable Diffusion)。
+
+简单来说，LoRA 的核心思想是：在不修改原始大模型参数的情况下，通过向模型中注入少量可训练的层（或称为适配器）来适应新的任务或数据。
+
+可以类比 **Kotlin的扩展函数** 来理解。
 
 需要注意，目前测试版的 **AI Core** 只有 **Pixel 9** 及以上的设备支持。
 
 ![](/assets/img/blog/blogs_google_ai_core_play_store.png){:width="250" height="600" loading="lazy"}
 
-[Google官方文档](https://developer.android.com/ai/gemini-nano?hl=zh-cn)
-
-使用步骤非常简单。首先加入依赖：
+使用AICore来和Genimi Nano模型进行通信的步骤非常简单。首先加入gradle依赖：
 
 ```groovy
 implementation("com.google.ai.edge.aicore:aicore:0.0.1-exp01")

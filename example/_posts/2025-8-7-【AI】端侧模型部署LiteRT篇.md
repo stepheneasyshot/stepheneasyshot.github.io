@@ -93,6 +93,18 @@ LiteRT 主要支持多平台：与 Android 和 iOS 设备、嵌入式 Linux 和�
 
 ![](/assets/img/blog/blogs_ai_google_dege_gallery.png)
 
+进入首页可以看到主要有四种使用主题，分别是图片分析，音频描述，提示词试验，以及AI模型对话。
+
+![](/assets/img/blog/blogs_ai_gallery_main_page.png){:width="250" height="600" loading="lazy"}
+
+选择其中一个主题进入之后，通过 `Chrome` 浏览器授权 `Hugging face` 账号，就可以在 `Gallery` 中直接下载模型到其英应用到内部存储中。
+
+![](/assets/img/blog/blogs_ai_gallery_download_gemma.png){:width="250" height="600" loading="lazy"}
+
+下图是音频识别到效果，做语言翻译，物种识别效果还不错，歌曲识别准确率不高。
+
+![](/assets/img/blog/blogs_ai_gallery_gemma_audio_scribe.png){:width="250" height="600" loading="lazy"}
+
 ### 架构解析
 在 Android 应用中运行的 `LiteRT` 模型会获取数据、处理数据，并根据模型的逻辑生成预测结果。
 

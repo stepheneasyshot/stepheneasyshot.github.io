@@ -173,3 +173,38 @@ fun closeChatResponse() {
     generativeModel.close()
 }
 ```
+
+UI界面的实现：
+
+```kotlin
+@Composable
+fun AiCoreChatDemo(paddingValues: PaddingValues) {
+
+    val input = remember {
+        mutableStateOf(
+            "What is Quantum Physics?"
+        )
+    }
+
+    val outputState = aiCoreOutput.collectAsState()
+
+    LaunchedEffect(Unit) {
+        startChat(input.value)
+    }
+
+    LazyColumn(modifier = Modifier.padding(paddingValues)) {
+        item {
+            Text(text = "Input: ${input.value}")
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(text = "Output: ${outputState.value}")
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            aiCoreOutput.value = ""
+            closeChatResponse()
+        }
+    }
+}
+```

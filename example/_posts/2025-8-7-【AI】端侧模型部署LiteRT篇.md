@@ -111,9 +111,9 @@ LiteRT 主要支持多平台：与 Android 和 iOS 设备、嵌入式 Linux 和�
 底层依然基于 `LiteRT` 的运行时来运行端侧AI模型，只是在应用层进行了封装，提供了更方便的接口。
 
 ### AI Core 应用进行IPC通信
-这个比较前两个方式更近了一步，直接将模型的下载，加载，推理都封装在 `AI Core` 中，应用层只需要调用AIDL接口和 `AI Core` 进行通信即可。
+这个方法，便利性上较前两种方式更进了一步。Google 直接将Gemini Nano模型的下载，加载，推理都封装在 `AI Core` 中，应用层只需要调用AIDL接口和 `AI Core` 进行通信即可。
 
-需要注意，目前带Gemini Nano测试版的 **AI Core** 只有 **Pixel 9** 及以上的设备支持。
+需要注意，目前测试版的 **AI Core** 只有 **Pixel 9** 及以上的设备支持。
 
 ![](/assets/img/blog/blogs_google_ai_core_play_store.png){:width="250" height="600" loading="lazy"}
 
@@ -127,7 +127,7 @@ implementation("com.google.ai.edge.aicore:aicore:0.0.1-exp01")
 
 注意最低SDK需要31及以上。
 
-在此仅做最小功能验证，直接在Composable组合项中观察一个顶变量 `aiCoreOutput` 这个 `StateFlow` 的状态变化：
+在此仅做最小功能验证，直接在Composable组合项中观察一个顶层变量 `aiCoreOutput` 这个 `StateFlow` 的状态变化，在顶层方法中出发通信逻辑，结果会更新到 `aiCoreOutput` 中。
 
 ```kotlin
 val aiCoreOutput = MutableStateFlow("")

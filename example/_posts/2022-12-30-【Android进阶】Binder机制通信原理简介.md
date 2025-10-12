@@ -25,7 +25,7 @@ Android系统是基于Linux系统而开发的，也继承了Linux的 **进程隔
 
 在 Linux 系统中，常见的 IPC 方式有**管道、消息队列、共享内存、信号量和Socket**等。然而，Android 并没有直接使用这些机制作为主要的 IPC 方式，而是选择了 Binder。这主要是出于以下几点考虑：
 
-* **性能优化：** Binder 机制在设计上针对移动设备进行了优化，相比 Socket 等方式，其**数据拷贝次数更少，效率更高**。传统的 IPC 方式（如管道、消息队列）通常需要**两次内存复制**，而 **Binder只需要一次复制** （从用户空间写到内核空间，再复制到目标用户空间）。
+* **性能优化：** Binder 机制在设计上针对移动设备进行了优化，相比 Socket 等方式，其**数据拷贝次数更少，效率更高**。传统的 IPC 方式（如管道、消息队列）通常需要**两次内存复制**，而 **Binder只需要一次复制** （从用户空间写到内核空间，目标用户空间可以直接通过内核缓冲区读取）。
 * **安全性：** Binder 机制从底层提供 UID/PID 认证，可以方便地进行权限控制，确保通信的安全性。这对于 Android 这种多应用、多用户环境非常重要。
 * **架构优势：** Binder 机制基于 C/S (Client/Server) 架构，使得服务提供者和使用者之间解耦，更容易进行系统设计和扩展。
 * **内存管理：** Binder 机制在内核层实现了内存的映射和管理，能够更好地处理大块数据的传输。
@@ -35,18 +35,18 @@ Android系统是基于Linux系统而开发的，也继承了Linux的 **进程隔
 
 ![](/assets/img/blog/blogs_binder_mem_share.png)
 
-进程B通过 `copy_from_user` 往内核地址空间里写值，进程A通过 `copy_to_user` 来获取这个值。可以看出为了共享这个数据，需要两个进程拷贝两次数据。
+进程 B 通过 `copy_from_user` 往内核地址空间里写值，进程 A 通过 `copy_to_user` 来获取这个值。可以看出为了共享这个数据，需要两个进程拷贝两次数据。
 
 我们可以通过 mmap 将 **进程 A 的用户地址空间与内核地址空间进行映射** ，让他们指向相同的物理地址空间，这样就只需要进行一次拷贝。
 
 ![](/assets/img/blog/blogs_binder_mem_share_mmap.png)
 
-当B进程调用一次 `copy_from_user` 时，会将数据从用户空间拷贝到内核空间，而进程A和这个内核空间映射了同一个物理地址，故进程A可以直接使用这个数据，而无需再次拷贝。
+当进程 B 调用一次 `copy_from_user` 时，会将数据从用户空间拷贝到内核空间，而进程 A 和这个内核空间映射了同一个物理地址，故进程 A 可以直接使用这个数据，而无需再次拷贝。
 
 ### Binder通信的内存映射机制
-Binder 驱动程序会为每个使用 Binder 的进程（包括客户端和服务端）分配**一块共享的内核缓冲区**。
+每个使用 `Binder` 的进程在启动时，会通过 `mmap()` 系统调用，向 `Binder` 驱动申请一块内存映射区域。驱动响应这个调用， **在内核空间分配一块物理页面，同时将其映射到该进程的用户空间和内核空间** 。这样，每个进程都有自己对应的 `Binder` 映射缓冲区。
 
-这块内核缓冲区会被 `mmap()` 映射到 **该进程（无论是客户端还是服务端）** 的用户空间地址。
+这块内核缓冲区会被 `mmap()` 映射到该进程的用户空间地址。
 
 通信开始时，客户端进程将要发送的数据（Parcel）写入其用户空间中映射的这块共享内存区域（实际是写入到 Binder 驱动分配的内核缓冲区）。数据从客户端的用户空间拷贝到Binder 驱动的内核缓冲区，这是第一次拷贝。
 
@@ -76,8 +76,7 @@ Binder 驱动在通信过程中主要扮演了以下几个关键角色：
 
 当客户端通过 `ioctl()` 系统调用向驱动发送请求时，它会携带一个表示目标服务对象的**句柄 (Handle)**。驱动程序根据这个句柄，查询内部映射表，精确地找到对应的**目标服务端进程**和目标 **Binder 实体（Stub）**，然后将请求数据转发给该进程。
 
-第三是**线程管理和调度**，每个服务端进程都会向 Binder 驱动“注册”一组专用于处理 IPC 请求的线程（即 Binder 线程池）。
-当驱动程序接收到发往某个服务端的请求时，它会唤醒服务端进程中**空闲的** Binder 线程，让它去处理这个请求。如果所有 Binder 线程都在忙碌，驱动可能会指示服务端**创建**一个新的 Binder 线程来处理请求（直到达到最大线程数限制）。驱动确保每个传入的请求都能被服务端的某个 Binder 线程**排队和处理**。
+第三是**线程管理和调度**，每个服务端进程都会向 Binder 驱动“注册”一组专用于处理 IPC 请求的线程（即 Binder 线程池）。当驱动程序接收到发往某个服务端的请求时，它会唤醒服务端进程中**空闲的** Binder 线程，让它去处理这个请求。如果所有 Binder 线程都在忙碌，驱动可能会指示服务端**创建**一个新的 Binder 线程来处理请求（直到达到最大线程数限制）。驱动确保每个传入的请求都能被服务端的某个 Binder 线程**排队和处理**。
 
 最后一点为**安全管理**，驱动程序在处理事务时，会记录并传递**调用进程的 UID/PID** 等身份信息。这为上层（如 Android Framework）进行权限检查（例如，判断调用者是否有权限调用某个服务）提供了底层信任的基础数据。
 ### 两个关键自动生成类 Stub 和 Proxy
@@ -86,7 +85,7 @@ aidl接口声明示例文件：
 ```java
 package com.stephen.commondebugdemo;
 
-interface CalculateTest {
+interface ICalculateTest {
     void setRemoteValue(int value);
     int getRemoteValue();
 }
@@ -254,9 +253,9 @@ private static class Proxy implements com.stephen.commondebugdemo.ICalculateTest
 它的核心工作可以分为以下几个方面：
 
 ##### 结构与初始化：持有远程引用
-实现 `ICalculateTest` 接口，** 这使得 `Proxy` 实例可以被客户端代码当作真正的 AIDL 接口对象来调用，从而实现了**透明代理**。
+实现 `ICalculateTest` 接口，这使得 `Proxy` 实例可以被客户端代码当作真正的 AIDL 接口对象来调用，从而实现了**透明代理**。
 
-**持有 `IBinder` 对象 (`mRemote`)：** 这是 `Proxy` 的核心。这个 `IBinder` 对象是客户端通过 `ServiceConnection` 类，在服务连接成功后，调用 `asInterface()` 传入构造函数的。它代表了服务端的那个真正的 `Stub` 实体在客户端进程中的**引用（Binder Token）**。所有的 IPC 通信都是通过这个 `mRemote` 对象进行的。
+`Proxy` 持有 `IBinder` 对象 (`mRemote`字段)。这个 `IBinder` 对象是客户端通过 `ServiceConnection` 类，在服务连接成功后，调用 `asInterface()` 传入构造函数的。它代表了服务端的那个真正的 `Stub` 实体在客户端进程中的**引用（Binder Token）**。所有的 IPC 通信都是通过这个 `mRemote` 对象进行的。
 
 #### 核心工作：发起远程调用（`transact` 方法）
 `Proxy` 类实现了 AIDL 接口中定义的所有方法，但这些实现方法的内部是**统一的 IPC 封装逻辑**，直接调用 `transact()` 方法。
@@ -386,10 +385,11 @@ Binder 中寻址分为两种情况：
 * Server 寻址，即 Client 怎么找到 Server，对应于内核，就是找到 Server 对应的 `binder_proc` 结构体实例
 
 #### 如何找到ServiceManager
-Service Manager 启动并注册自身
+系统启动时，Service Manager 启动并注册自身:
+
 * 在 Android 系统启动初期，servicemanager 进程（一个守护进程）会首先启动。
 * 它会打开 `/dev/binder` 设备文件，获取一个文件描述符 (fd)。
-*然后，它会通过一个特殊的 ioctl 系统调用：BINDER_SET_CONTEXT_MGR，将自己注册为 Binder 驱动的“上下文管理器”。这个操作会告诉 Binder 驱动，Service Manager 是那个负责管理所有其他 Binder 服务的特殊实体。
+*然后，它会通过一个特殊的 ioctl 系统调用 `BINDER_SET_CONTEXT_MGR` 将自己注册为 Binder 驱动的 **“上下文管理器”** 。这个操作会告诉 Binder 驱动，Service Manager 是那个负责管理所有其他 Binder 服务的特殊实体。
 * 在这个注册过程中，Binder 驱动会为 Service Manager 分配句柄 0。从此以后，**Service Manager 就成为了 Binder 驱动中唯一拥有句柄 0 的实体**。
 
 每个使用 binder 的进程，在初始化时，会在内核中将 `binder_device` 的 context 成员赋值给 `binder_proc->context` 。
@@ -409,19 +409,19 @@ binder_proc->context = binder_device->context;
 它们可以直接通过 Binder 框架提供的 API **获取一个代表 Service Manager 的 IBinder 代理对象**。 这个代理对象内部封装的 Binder 句柄值就是 0。
 #### 如何找到Server
 ##### **服务注册阶段**
-Server 端向 ServiceManager 发起**注册服务请求**时(svcmgr_publish)，会陷入内核，首先通过 ServiceManager 寻址方式找到 ServiceManager 对应的 binder_proc 结构体，然后在内核中**构建一个**代表待注册服务的 binder_node 结构体**实例**，并**插入服务端对应的 binder_proc->nodes 红黑树中**。
+Server 端向 ServiceManager 发起**注册服务请求**时(svcmgr_publish)，会陷入内核，首先通过 ServiceManager 寻址方式找到 ServiceManager 对应的 binder_proc 结构体，然后在内核中构建一个代表待注册服务的 `binder_node` 结构体实例，并**插入服务端对应的 binder_proc->nodes 红黑树中**。
 
-接着会**构建一个 binder_ref 结构体** ，binder_ref 会引用到上一阶段构建的 **binder_node** ，并插入到 ServiceManager 对应的 **binder_proc->refs_by_desc 红黑树** 中，同时会计算出一个 desc 值（1，2，3 ....依次赋值）保存在 binder_ref 中。
+接着会**构建一个 binder_ref 结构体** ， `binder_ref` 会引用到上一阶段构建的 **binder_node** ，并插入到 `ServiceManager` 对应的 **binder_proc->refs_by_desc 红黑树** 中，同时会计算出一个 desc 值（1，2，3 ....依次赋值）保存在 `binder_ref` 中。
 
-最后服务相关的信息（主要是名字和 desc 值）会传递给 ServiceManager 应用层，应用层通过一个链表将这些信息保存起来
+最后服务相关的信息（主要是名字和 desc 值）会传递给 ServiceManager 应用层，应用层通过一个链表将这些信息保存起来。
 ##### **服务获取阶段**
-Client 端向 `ServiceManager` 发起获取服务请求时(svcmgr_lookup，请求的数据中包含服务的名字)，会陷入内核， 通过 `binder_proc->context->binder_context_mgr_node` 寻址到 ServiceManager，接着通过分配映射内存，拷贝数据后，将 **"获取服务请求"** 的数据发送给 ServiceManager。
+`Client` 端向 `ServiceManager` 发起获取服务请求时(svcmgr_lookup，请求的数据中包含服务的名字)，会陷入内核， 通过 `binder_proc->context->binder_context_mgr_node` 寻址到 ServiceManager，接着通过分配映射内存，拷贝数据后，将 **"获取服务请求"** 的数据发送给 `ServiceManager` 。
 
-**ServiceManager** 应用层收到数据后，会**遍历内部的链表**，通过传递过来的 name 参数，找到对应的 handle，然后将数据返回给 Client 端，接着陷入内核，通过 handle 值在 ServiceManager 对应的 `binder_proc->refs_by_desc` 红黑树中**查找到服务对应 binder_ref**，接着通过 binder_ref 内部指针找到服务对应的 binder_node 结构。
+**ServiceManager** 应用层收到数据后，会**遍历内部的链表**，通过传递过来的 name 参数，找到对应的 handle，然后将数据返回给 Client 端，接着陷入内核，通过 handle 值在 `ServiceManager` 对应的 `binder_proc->refs_by_desc` 红黑树中**查找到服务对应 binder_ref**，接着通过 `binder_ref` 内部指针找到服务对应的 `binder_node` 结构。
 
-接着 **创建出一个新的 binder_ref 结构体**实例，内部 node 指针指向刚刚找到的服务端的 binder_node，接着再将 binder_ref 插入到 Client 端的 `binder_proc->refs_by_desc`，并计算出一个 desc 值（1，2，3 ....依次赋值），保存到 binder_ref 中。desc 值也会返回给 Client 的应用层。
+接着 **创建出一个新的 `binder_ref` 结构体**实例，内部 node 指针指向刚刚找到的服务端的 binder_node，接着再 **将 binder_ref 插入到 Client 端的 `binder_proc->refs_by_desc`** ，并计算出一个 desc 值（1，2，3 ....依次赋值），保存到 binder_ref 中。desc 值也会返回给 Client 的应用层。
 
-Client 应用层收到内核返回的这个 desc 值，改名为 `handle` ，接着向 Server 发起远程调用，远程调用的数据包中包含有 handle 值，接着陷入内核，在内核中首先根据 handle 值在 Client 的 `binder_proc->refs_by_desc` 获取到 binder_ref，通过 binder_ref 内部 node 指针找到目标服务对应的 binder_node，然后通过 binder_node 内部的 proc 指针找到目标进程的 binder_proc，这样就完成了整个寻址过程。
+Client 应用层收到内核返回的这个 desc 值，改名为 `handle` ，接着向 Server 发起远程调用，远程调用的数据包中包含有 handle 值，接着陷入内核，在内核中首先根据 `handle` 值在 Client 的 `binder_proc->refs_by_desc` 获取到 `binder_ref` ，通过 `binder_ref` 内部 node 指针找到目标服务对应的 binder_node，然后通过 `binder_node` 内部的 proc 指针找到目标进程的 `binder_proc` ，这样就完成了整个寻址过程。
 
 ## oneway机制
 简单来说，oneway 是一种异步调用机制。当你通过Binder调用远程进程中的方法时，如果该方法被标记为 oneway，那么：

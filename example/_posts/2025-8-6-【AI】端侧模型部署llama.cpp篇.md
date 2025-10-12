@@ -487,13 +487,11 @@ else:
 
 下面这种方案就是比较符合 `Android` 设备上运行的直观预期，通过一个APP页面来承载功能，在一个应用中，以用户友好的 `UX交互` 来和本地模型进行通信。使用JNI开发接口和llama.cpp交互。
 
-![](/assets/img/blog/blogs_ai_llamacpp_smollchat.png){:width="300" height="620" loading="lazy"}
+![](/assets/img/blog/blogs_ai_llamacpp_smollchat.png){:width="250" height="580" loading="lazy"}
 
-底层依然是使用 `llama.cpp` 加载和执行 GGUF 模型。
-
-由于 llama.cpp 是用纯 C/C++ 编写的，因此很容易利用 AndroidStudio 的NDK工具，和应用app一起编译运行。
-
-首先，定义JNI函数，第一步需要加载 `gguf` 文件。在 Android 应用中，需要使用 Kotlin 语言来定义页面需要用到的接口，再到 Native 层使用 `llama.cpp` 的能力，来编写 C++ 的桥接代码。
+底层依然是使用 `llama.cpp` 加载和执行 GGUF 模型。由于 llama.cpp 是用纯 C/C++ 编写的，因此很容易在apk编译阶段利用 AndroidStudio 的NDK工具，打包为 `.so` 动态库，在端侧运行。
+#### GGUF文件读取
+首先，定义JNI函数，第一步需要加载 `gguf` 文件。在 `Android` 应用中，需要使用 `Kotlin` 语言来定义页面需要用到的接口，再到 `Native` 层使用 `llama.cpp` 的能力，来编写 C++ 的桥接代码。
 
 ```kotlin
 class GGUFReader {
@@ -556,17 +554,6 @@ class GGUFReader {
 #include <jni.h>
 #include <string>
 
-/**
- * @brief 获取 GGUF 上下文的本地句柄。
- *
- * 该函数通过 Java Native Interface (JNI) 从 Java 层调用，用于根据给定的模型文件路径
- * 初始化 GGUF 上下文，并返回其本地句柄。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPath 包含 GGUF 模型文件路径的 Java 字符串对象。
- * @return 指向初始化后的 GGUF 上下文的 jlong 类型句柄，若初始化失败可能为 nullptr 对应的 jlong 值。
- */
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_stephen_llamacppbridge_GgufFileReader_getGGUFContextNativeHandle(JNIEnv *env, jobject thiz,
                                                                           jstring modelPath) {
@@ -580,21 +567,9 @@ Java_com_stephen_llamacppbridge_GgufFileReader_getGGUFContextNativeHandle(JNIEnv
     return reinterpret_cast<jlong>(ggufContext);
 }
 
-/**
- * @brief 获取 GGUF 模型的上下文大小。
- *
- * 该函数通过 JNI 从 Java 层调用，根据给定的 GGUF 上下文本地句柄，
- * 查找并返回模型的上下文大小。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param nativeHandle 指向 GGUF 上下文的本地句柄。
- * @return 模型的上下文大小，若查找失败则返回 -1。
- */
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_stephen_llamacppbridge_GgufFileReader_getContextSize(JNIEnv *env, jobject thiz,
                                                               jlong nativeHandle) {
-    // 将 jlong 类型的本地句柄转换为 gguf_context 指针
     gguf_context *ggufContext = reinterpret_cast<gguf_context *>(nativeHandle);
     // 查找模型架构信息对应的键 ID
     int64_t architectureKeyId = gguf_find_key(ggufContext, "general.architecture");
@@ -614,21 +589,9 @@ Java_com_stephen_llamacppbridge_GgufFileReader_getContextSize(JNIEnv *env, jobje
     return contextLength;
 }
 
-/**
- * @brief 获取 GGUF 模型的聊天模板。
- *
- * 该函数通过 JNI 从 Java 层调用，根据给定的 GGUF 上下文本地句柄，
- * 查找并返回模型的聊天模板。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param nativeHandle 指向 GGUF 上下文的本地句柄。
- * @return 包含聊天模板的 Java 字符串对象，若未找到则返回空字符串对应的 Java 字符串。
- */
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_stephen_llamacppbridge_GgufFileReader_getChatTemplate(JNIEnv *env, jobject thiz,
                                                                jlong nativeHandle) {
-    // 将 jlong 类型的本地句柄转换为 gguf_context 指针
     gguf_context *ggufContext = reinterpret_cast<gguf_context *>(nativeHandle);
     // 查找聊天模板信息对应的键 ID
     int64_t chatTemplateKeyId = gguf_find_key(ggufContext, "tokenizer.chat_template");
@@ -641,690 +604,252 @@ Java_com_stephen_llamacppbridge_GgufFileReader_getChatTemplate(JNIEnv *env, jobj
         // 若找到聊天模板信息键 ID，获取聊天模板信息
         chatTemplate = gguf_get_val_str(ggufContext, chatTemplateKeyId);
     }
-    // 将 C++ 字符串转换为 Java 字符串并返回
     return env->NewStringUTF(chatTemplate.c_str());
 }
 ```
 
-然后根据 `llama.cpp` 的几个核心的方法，如加载，对话等功能，来编写对接的接口 `C++` 类。
+#### 模型的加载与对话
+`gguf` 文件成功读取和加载后，就可以运行LLM的推理功能了。
 
-头文件定义如下：
+根据 `llama.cpp` 的几个核心的方法，如加载，对话等功能，来编写对接的接口 `C++` 类。
+
+关于第一步加载模型 `load_1model` ，官方例程的JNI接口编写如下：
 
 ```cpp
-/**
-管理大语言模型（LLM）的推理过程，包括模型加载、聊天消息处理、推理循环等功能
- */
-class LLMInference {
-    // llama.cpp 特定类型的成员变量
-    /// llama 上下文指针，用于管理模型的运行时状态
-    llama_context *_ctx;
-    /// llama 模型指针，指向加载的大语言模型
-    llama_model *_model;
-    /// llama 采样器指针，用于从模型输出中采样生成下一个 token
-    llama_sampler *_sampler;
-    /// 当前采样得到的 llama token
-    llama_token _currToken;
-    /// llama 批处理结构，用于批量处理输入 token
-    llama_batch _batch;
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_android_llama_cpp_LLamaAndroid_load_1model(JNIEnv *env, jobject, jstring filename) {
+    // 获取模型的默认参数
+    llama_model_params model_params = llama_model_default_params();
 
-    // 存储聊天中用户/助手消息的容器
-    /// 存储聊天过程中用户和助手的消息列表
-    std::vector<llama_chat_message> _messages;
-    // 存储将聊天模板应用到 `_messages` 中所有消息后生成的字符串
-    /// 存储应用聊天模板后的格式化消息
-    std::vector<char> _formattedMessages;
-    // 存储追加到 `_messages` 中的最后一个查询的 token
-    /// 存储最后一次查询的 token 列表
-    std::vector<llama_token> _promptTokens;
-    /// 上一次格式化消息的长度
-    int _prevLen = 0;
-    /// 聊天模板字符串指针
-    const char *_chatTemplate;
+    // 将 Java String 转换为 C 风格字符串
+    auto path_to_model = env->GetStringUTFChars(filename, 0);
+    LOGi("Loading model from %s", path_to_model);
 
-    // 存储给定查询的完整响应
-    /// 存储当前查询的完整响应内容
-    std::string _response;
-    /// 缓存响应的 token 片段
-    std::string _cacheResponseTokens;
-    // 是否在 `_messages` 中缓存先前的消息
-    /// 是否存储聊天历史消息的标志
-    bool _storeChats;
+    // 调用 llama.cpp 核心函数加载模型
+    auto model = llama_model_load_from_file(path_to_model, model_params);
+    // 释放 C 风格字符串，防止内存泄漏
+    env->ReleaseStringUTFChars(filename, path_to_model);
 
-    // 响应生成指标
-    /// 记录响应生成所花费的总时间（微秒）
-    int64_t _responseGenerationTime = 0;
-    /// 记录生成的 token 总数
-    long _responseNumTokens = 0;
+    if (!model) {
+        LOGe("load_model() failed");
+        // 如果加载失败，抛出 Java 异常
+        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), "load_model() failed");
+        return 0;
+    }
 
-    // 对话过程中消耗的上下文窗口长度
-    /// 记录对话过程中已使用的上下文大小
-    int _nCtxUsed = 0;
+    // 将 C++ 指针转换为 jlong 返回给 Java
+    return reinterpret_cast<jlong>(model);
+}
+```
 
-    bool _isValidUtf8(const char *response);
+返回的是一个指向结构体 `llama_model` 的指针，这是 `llama.cpp` 库中最核心的结构体之一，它代表了加载到内存中的整个大语言模型 (LLM)。
 
-public:
-    void loadModel(const char *modelPath, float minP, float temperature, bool storeChats,
-                   long contextSize,
-                   const char *chatTemplate, int nThreads, bool useMmap, bool useMlock);
+这个 `llama_model` 结构体中包含了 **模型的元数据、超参数、词汇表、所有权重张量以及硬件配置信息** 。
 
-    void addChatMessage(const char *message, const char *role);
+```cpp
+struct llama_model {
+    // 模型的类型（例如 LLaMA, Falcon, Mixtral 等）
+    llm_type type = LLM_TYPE_UNKNOWN;
+    // 模型的架构（llm_arch 是 llama.cpp 内部用于区分不同模型结构的枚举）
+    llm_arch arch = LLM_ARCH_UNKNOWN;
 
-    float getResponseGenerationTime() const;
+    // 模型的名称或描述
+    std::string name = "n/a";
 
-    int getContextSizeUsed() const;
+    // 模型超参数：包含模型的固定配置，如层数、注意力头数、KV 缓存上下文长度等
+    llama_hparams hparams = {};
+    // 模型的词汇表（Vocabulary）：包含 Token 列表及其与 ID 的映射关系
+    llama_vocab   vocab;
 
-    void startCompletion(const char *query);
+    // 用于分类器模型（如 Sentiments Analysis）的标签列表
+    std::vector<std::string> classifier_labels;
 
-    std::string completionLoop();
+    // ggml_tensor* 是 ggml 库中的张量指针，存储模型的权重数据。
+    // 这部分包含了不同模型架构共有的或用于输入处理的权重。
 
-    void stopCompletion();
+    // Token 嵌入层权重 (Token Embeddings)
+    struct ggml_tensor * tok_embd   = nullptr;
+    // Token 类型嵌入层权重（例如用于 BERT 风格模型区分句子 A 和 B）
+    struct ggml_tensor * type_embd  = nullptr;
+    // 位置嵌入层权重 (Positional Embeddings)
+    
+    ...
 
-    ~LLMInference();
+    // -------------------------------------------------------------------------
+    // 3. 特殊张量 (Specialized Tensors)
+    // -------------------------------------------------------------------------
+
+    // **分类器张量 (Classifier Tensors)**
+    struct ggml_tensor * cls       = nullptr; // 分类器权重
+    struct ggml_tensor * cls_b     = nullptr; // 分类器偏置
+    struct ggml_tensor * cls_out   = nullptr; // 分类器输出层权重
+    struct ggml_tensor * cls_out_b = nullptr; // 分类器输出层偏置
+
+    // **1D 卷积张量 (用于某些早期模型如 GPT-2 或特殊层)**
+    struct ggml_tensor * conv1d   = nullptr;
+    struct ggml_tensor * conv1d_b = nullptr;
+
+    ...
+
+    // 4. 配置与运行状态 (Configuration and Runtime State)
+
+    ...
+
+    // 创建上下文内存结构体（KV 缓存等）
+    // note: can mutate `cparams`
+    // TODO: move this to new llm_arch_model_i interface
+    llama_memory_i * create_memory(const llama_memory_params & params, llama_cparams & cparams) const;
+
+    // 构建 ggml 计算图：将模型计算逻辑转化为可执行的计算图
+    // TODO: move this to new llm_arch_model_i interface
+    ggml_cgraph * build_graph(const llm_graph_params & params) const;
 };
 ```
 
-cpp实现：
+`llama_model_load_from_file` 函数最终调用到了 `llama_model_load_from_file_impl` 函数，看看这里面做了哪些工作：
 
 ```cpp
-#include "LLMInference.h"
-#include "llama.h"
-#include "gguf.h"
-#include <android/log.h>
-#include <cstring>
-#include <iostream>
-
-// 定义日志标签，用于在 Android 日志系统中标识本模块的日志
-#define TAG "[SmolLMAndroid-Cpp]"
-// 定义信息日志宏，方便打印信息级别的日志
-#define LOGi(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
-// 定义错误日志宏，方便打印错误级别的日志
-#define LOGe(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
-
-// 函数声明：对输入文本进行分词处理
-// vocab: 指向 llama 词表的指针
-// text: 待分词的字符串
-// add_special: 是否添加特殊标记
-// parse_special: 是否解析特殊标记，默认值为 false
-std::vector<llama_token> common_tokenize(
-        const struct llama_vocab *vocab,
-        const std::string &text,
-        bool add_special,
-        bool parse_special = false);
-
-// 函数声明：将 llama 标记转换为对应的词块
-// ctx: 指向 llama 上下文的指针
-// token: llama 标记
-// special: 是否为特殊标记，默认值为 true
-std::string common_token_to_piece(
-        const struct llama_context *ctx,
-        llama_token token,
-        bool special = true);
-
 /**
- * @brief 加载 LLM 模型并初始化相关参数
- *
- * 该函数负责根据传入的参数加载 LLM 模型，创建模型上下文、采样器等，
- * 并对这些组件进行初始化配置。
- *
- * @param model_path 模型文件的路径
- * @param minP 采样时使用的最小概率阈值
- * @param temperature 采样时使用的温度参数
- * @param storeChats 是否存储聊天记录
- * @param contextSize 模型的上下文大小
- * @param chatTemplate 聊天模板字符串
- * @param nThreads 推理时使用的线程数量
- * @param useMmap 是否使用内存映射来加载模型
- * @param useMlock 是否使用内存锁定
+ * @brief 核心实现函数：从文件加载 LLM 模型到 llama_model 结构体中。
+ * @param path_model 模型文件的主要路径。
+ * @param splits 如果模型被分割成多个文件，包含其余文件路径的向量。
+ * @param params 模型加载参数，如设备选择、KV 缓存大小等。
+ * @return 成功加载的 llama_model 指针，失败返回 nullptr。
  */
-void
-LLMInference::loadModel(const char *model_path, float minP, float temperature, bool storeChats,
-                        long contextSize,
-                        const char *chatTemplate, int nThreads, bool useMmap, bool useMlock) {
-    // 打印加载模型时使用的各项参数，方便调试和日志记录
-    LOGi("loading model with"
-         "\n\tmodel_path = %s"
-         "\n\tminP = %f"
-         "\n\ttemperature = %f"
-         "\n\tstoreChats = %d"
-         "\n\tcontextSize = %li"
-         "\n\tchatTemplate = %s"
-         "\n\tnThreads = %d"
-         "\n\tuseMmap = %d"
-         "\n\tuseMlock = %d",
-         model_path, minP, temperature, storeChats, contextSize, chatTemplate, nThreads, useMmap,
-         useMlock);
-
-    // 创建一个 llama_model_params 实例，并使用默认参数初始化
-    llama_model_params model_params = llama_model_default_params();
-    // 设置是否使用内存映射加载模型
-    model_params.use_mmap = useMmap;
-    // 设置是否使用内存锁定
-    model_params.use_mlock = useMlock;
-    // 从指定路径加载模型
-    _model = llama_model_load_from_file(model_path, model_params);
-
-    // 检查模型是否加载成功
-    if (!_model) {
-        // 若加载失败，打印错误日志
-        LOGe("failed to load model from %s", model_path);
-        // 抛出运行时错误异常
-        throw std::runtime_error("loadModel() failed");
+static struct llama_model * llama_model_load_from_file_impl(
+        const std::string & path_model,
+        std::vector<std::string> & splits,
+        struct llama_model_params params) {
+    
+    // 初始化 ggml 库的计时器
+    ggml_time_init();
+    // 1. 后端检查 (Backend Check)
+    // 如果不是只加载词汇表，并且没有注册任何计算后端，则报错。
+    // 第二个条件是为了确保 llama.cpp 运行时环境中有可用的硬件（或软件）模块来执行模型的实际计算。
+    if (!params.vocab_only && ggml_backend_reg_count() == 0) {
+        LLAMA_LOG_ERROR("%s: no backends are loaded. hint: use ggml_backend_load() or ggml_backend_load_all() to load a backend before calling this function\n", __func__);
+        return nullptr;
     }
 
-    // 创建一个 llama_context_params 实例，并使用默认参数初始化
-    llama_context_params ctx_params = llama_context_default_params();
-    // 设置模型的上下文大小
-    ctx_params.n_ctx = contextSize;
-    // 设置推理时使用的线程数量
-    ctx_params.n_threads = nThreads;
-    // 禁用性能指标统计
-    ctx_params.no_perf = true;
-    // 基于加载的模型初始化 llama 上下文
-    _ctx = llama_init_from_model(_model, ctx_params);
+    // 2. 进度回调设置 略
 
-    // 检查上下文是否创建成功
-    if (!_ctx) {
-        // 若创建失败，打印错误日志
-        LOGe("llama_new_context_with_model() returned null)");
-        // 抛出运行时错误异常
-        throw std::runtime_error("llama_new_context_with_model() returned null");
-    }
+    // 在堆上创建 llama_model 实例，保存模型参数
+    llama_model * model = new llama_model(params);
 
-    // 初始化采样器参数，使用默认参数
-    llama_sampler_chain_params sampler_params = llama_sampler_chain_default_params();
-    // 禁用采样器的性能指标统计
-    sampler_params.no_perf = true;
-    // 初始化采样器链
-    _sampler = llama_sampler_chain_init(sampler_params);
-    // 向采样器链中添加最小概率采样器
-    llama_sampler_chain_add(_sampler, llama_sampler_init_min_p(minP, 1));
-    // 向采样器链中添加温度采样器
-    llama_sampler_chain_add(_sampler, llama_sampler_init_temp(temperature));
-    // 向采样器链中添加分布采样器，使用默认种子
-    llama_sampler_chain_add(_sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
-
-    // 初始化格式化消息缓冲区，大小为模型的上下文大小
-    _formattedMessages = std::vector<char>(llama_n_ctx(_ctx));
-    // 清空消息列表
-    _messages.clear();
-    // 复制聊天模板字符串
-    _chatTemplate = strdup(chatTemplate);
-    // 设置是否存储聊天记录
-    this->_storeChats = storeChats;
-}
-
-/**
- * @brief 向聊天消息列表中添加一条消息
- *
- * @param message 消息内容
- * @param role 消息角色，如 "user" 或 "assistant"
- */
-void
-LLMInference::addChatMessage(const char *message, const char *role) {
-    // 将消息角色和内容复制后添加到消息列表中
-    _messages.push_back({strdup(role), strdup(message)});
-}
-
-/**
- * @brief 获取响应生成的速度
- *
- * 计算方式为生成的 token 数量除以生成所用的总时间（秒）
- *
- * @return float 响应生成速度，单位为 token/秒
- */
-float
-LLMInference::getResponseGenerationTime() const {
-    return (float) _responseNumTokens / (_responseGenerationTime / 1e6);
-}
-
-/**
- * @brief 获取当前已使用的上下文大小
- *
- * @return int 当前已使用的上下文大小
- */
-int
-LLMInference::getContextSizeUsed() const {
-    return _nCtxUsed;
-}
-
-/**
- * @brief 开始完成任务，处理用户输入并准备推理
- *
- * @param query 用户输入的查询内容
- */
-void
-LLMInference::startCompletion(const char *query) {
-    // 如果不存储聊天记录，则重置相关状态
-    if (!_storeChats) {
-        _prevLen = 0;
-        _formattedMessages.clear();
-        _formattedMessages = std::vector<char>(llama_n_ctx(_ctx));
-    }
-    // 重置响应生成时间和生成的 token 数量
-    _responseGenerationTime = 0;
-    _responseNumTokens = 0;
-    // 将用户查询添加到聊天消息列表中
-    addChatMessage(query, "user");
-    // 应用聊天模板，格式化聊天消息
-    int newLen = llama_chat_apply_template(_chatTemplate, _messages.data(), _messages.size(), true,
-                                           _formattedMessages.data(), _formattedMessages.size());
-    // 检查格式化后的消息长度是否超过缓冲区大小
-    if (newLen > (int) _formattedMessages.size()) {
-        // 若超过，则调整缓冲区大小
-        _formattedMessages.resize(newLen);
-        // 重新应用聊天模板
-        newLen = llama_chat_apply_template(_chatTemplate, _messages.data(), _messages.size(), true,
-                                           _formattedMessages.data(), _formattedMessages.size());
-    }
-    // 检查聊天模板应用是否失败
-    if (newLen < 0) {
-        // 若失败，抛出运行时错误异常
-        throw std::runtime_error(
-                "llama_chat_apply_template() in LLMInference::startCompletion() failed");
-    }
-    // 提取格式化后的提示信息
-    std::string prompt(_formattedMessages.begin() + _prevLen, _formattedMessages.begin() + newLen);
-    // 对提示信息进行分词处理
-    _promptTokens = common_tokenize(llama_model_get_vocab(_model), prompt, true, true);
-
-    // 创建一个 llama_batch 实例，包含单个序列
-    // 详情可参考 llama_batch_init 函数
-    _batch.token = _promptTokens.data();
-    _batch.n_tokens = _promptTokens.size();
-}
-
-// 代码来源：
-// https://github.com/ggerganov/llama.cpp/blob/master/examples/llama.android/llama/src/main/cpp/llama-android.cpp#L38
-/**
- * @brief 检查输入的字符串是否为有效的 UTF-8 编码
- *
- * @param response 待检查的字符串
- * @return bool 若为有效 UTF-8 编码返回 true，否则返回 false
- */
-bool
-LLMInference::_isValidUtf8(const char *response) {
-    // 若输入为空指针，认为是有效的 UTF-8 编码
-    if (!response) {
-        return true;
-    }
-    // 将输入字符串转换为无符号字符指针
-    const unsigned char *bytes = (const unsigned char *) response;
-    int num;
-    // 遍历字符串中的每个字节
-    while (*bytes != 0x00) {
-        if ((*bytes & 0x80) == 0x00) {
-            // U+0000 到 U+007F 的单字节编码
-            num = 1;
-        } else if ((*bytes & 0xE0) == 0xC0) {
-            // U+0080 到 U+07FF 的双字节编码
-            num = 2;
-        } else if ((*bytes & 0xF0) == 0xE0) {
-            // U+0800 到 U+FFFF 的三字节编码
-            num = 3;
-        } else if ((*bytes & 0xF8) == 0xF0) {
-            // U+10000 到 U+10FFFF 的四字节编码
-            num = 4;
+    // 3. 计算设备选择 (Device Selection)
+    // 这一段决定了模型中的权重和计算将在哪些设备上（如 GPU、集成 GPU 或远程服务器）运行，而不是完全依赖 CPU。根据用户参数和系统环境，构建一个最优的计算设备列表（model->devices），用于模型权重和计算的分配。
+    // 4. 单 GPU 模式调整 (Single GPU Mode Adjustment)
+    // 如果是单设备模式 (LLAMA_SPLIT_MODE_NONE)，则只保留主设备
+    if (params.split_mode == LLAMA_SPLIT_MODE_NONE) {
+        if (params.main_gpu < 0) {
+            // main_gpu < 0 表示强制在 CPU 上运行
+            model->devices.clear();
         } else {
-            // 不符合 UTF-8 编码规则，返回 false
-            return false;
-        }
-
-        bytes += 1;
-        // 检查后续的续字节是否符合 UTF-8 编码规则
-        for (int i = 1; i < num; ++i) {
-            if ((*bytes & 0xC0) != 0x80) {
-                // 续字节不符合规则，返回 false
-                return false;
+            // 检查指定的 main_gpu 索引是否有效
+            if (params.main_gpu >= (int)model->devices.size()) {
+                LLAMA_LOG_ERROR("%s: invalid value for main_gpu: %d (available devices: %zu)\n", __func__, params.main_gpu, model->devices.size());
+                llama_model_free(model);
+                return nullptr;
             }
-            bytes += 1;
+            // 仅保留指定的主 GPU
+            ggml_backend_dev_t main_gpu = model->devices[params.main_gpu];
+            model->devices.clear();
+            model->devices.push_back(main_gpu);
         }
     }
-    // 所有字节都符合 UTF-8 编码规则，返回 true
-    return true;
-}
 
-/**
- * @brief 完成任务的循环函数，进行模型推理和响应生成
- *
- * @return std::string 生成的有效 UTF-8 词块，若无效则返回空字符串，若生成结束则返回 "[EOG]"
- */
-std::string
-LLMInference::completionLoop() {
-    // 检查输入的长度是否超过模型的上下文大小
-    uint32_t contextSize = llama_n_ctx(_ctx);
-    _nCtxUsed = llama_kv_self_used_cells(_ctx);
-    if (_nCtxUsed + _batch.n_tokens > contextSize) {
-        // 若超过，抛出运行时错误异常
-        throw std::runtime_error("context size reached");
-    }
-
-    // 记录模型推理开始时间
-    auto start = ggml_time_us();
-    // 运行模型进行解码
-    if (llama_decode(_ctx, _batch) < 0) {
-        // 若解码失败，抛出运行时错误异常
-        throw std::runtime_error("llama_decode() failed");
-    }
-
-    // 采样一个 token，并检查是否为生成结束标记
-    _currToken = llama_sampler_sample(_sampler, _ctx, -1);
-    if (llama_vocab_is_eog(llama_model_get_vocab(_model), _currToken)) {
-        // 若为生成结束标记，将响应添加到聊天消息列表中
-        addChatMessage(strdup(_response.data()), "assistant");
-        // 清空响应缓冲区
-        _response.clear();
-        // 返回生成结束标记
-        return "[EOG]";
-    }
-    // 将采样的 token 转换为对应的词块
-    std::string piece = common_token_to_piece(_ctx, _currToken, true);
-    // 打印转换后的词块信息
-    LOGi("common_token_to_piece: %s", piece.c_str());
-    // 记录模型推理结束时间
-    auto end = ggml_time_us();
-    // 累加响应生成时间
-    _responseGenerationTime += (end - start);
-    // 累加生成的 token 数量
-    _responseNumTokens += 1;
-    // 将生成的词块添加到缓存中
-    _cacheResponseTokens += piece;
-
-    // 重新初始化 batch，使用新生成的 token
-    _batch.token = &_currToken;
-    _batch.n_tokens = 1;
-
-    // 检查缓存中的词块是否为有效的 UTF-8 编码
-    if (_isValidUtf8(_cacheResponseTokens.c_str())) {
-        // 若有效，将其添加到响应缓冲区中
-        _response += _cacheResponseTokens;
-        std::string valid_utf8_piece = _cacheResponseTokens;
-        // 清空缓存
-        _cacheResponseTokens.clear();
-        // 返回有效的 UTF-8 词块
-        return valid_utf8_piece;
-    }
-
-    // 若无效，返回空字符串
-    return "";
-}
-
-/**
- * @brief 停止完成任务，处理收尾工作
- */
-void
-LLMInference::stopCompletion() {
-    // 如果存储聊天记录，将响应添加到聊天消息列表中
-    if (_storeChats) {
-        addChatMessage(_response.c_str(), "assistant");
-    }
-    // 清空响应缓冲区
-    _response.clear();
-    // 获取模型的聊天模板
-    const char *tmpl = llama_model_chat_template(_model, nullptr);
-    // 应用聊天模板，计算格式化后的消息长度
-    _prevLen = llama_chat_apply_template(tmpl, _messages.data(), _messages.size(), false, nullptr,
-                                         0);
-    // 检查聊天模板应用是否失败
-    if (_prevLen < 0) {
-        // 若失败，抛出运行时错误异常
-        throw std::runtime_error(
-                "llama_chat_apply_template() in LLMInference::stopCompletion() failed");
-    }
-}
-
-/**
- * @brief LLMInference 类的析构函数，释放相关资源
- */
-LLMInference::~LLMInference() {
-    // 打印析构信息
-    LOGi("deallocating LLMInference instance");
-    // 释放聊天消息列表中动态分配的内存
-    for (llama_chat_message &message: _messages) {
-        free(const_cast<char *>(message.role));
-        free(const_cast<char *>(message.content));
-    }
-    // 释放聊天模板动态分配的内存
-    free(const_cast<char *>(_chatTemplate));
-    // 释放采样器资源
-    llama_sampler_free(_sampler);
-    // 释放 llama 上下文资源
-    llama_free(_ctx);
-    // 释放 llama 模型资源
-    llama_model_free(_model);
+    // 5. 实际模型加载 (Actual Model Loading)
+    // 调用 llama.cpp 库的底层函数来执行实际的文件读取和权重加载
+    const int status = llama_model_load(path_model, splits, *model, params);
+    GGML_ASSERT(status <= 0); // 确认 status <= 0 (成功或取消/失败)
+    
+    // 检查加载状态，如果加载失败，释放已分配的 llama_model 内存
+    // 并返回空指针
+        // llama_model_free(model);
+        // return nullptr;
+    
+    // 6. 返回load的结果
+    return model;
 }
 ```
 
-接下来还要定义外部封装的方法，类似GGUFReader，获取一个模型的指针，以此来访问：
-
-```kotlin
-  /**
-     * 加载模型
-     */
-    private external fun loadModel(
-        modelPath: String,
-        minP: Float,
-        temperature: Float,
-        storeChats: Boolean,
-        contextSize: Long,
-        chatTemplate: String,
-        nThreads: Int,
-        useMmap: Boolean,
-        useMlock: Boolean,
-    ): Long
-
-    /**
-     * 添加聊天消息
-     */
-    private external fun addChatMessage(
-        modelPtr: Long,
-        message: String,
-        role: String,
-    )
-
-    /**
-     * 获取响应生成速度
-     */
-    private external fun getResponseGenerationSpeed(modelPtr: Long): Float
-
-    /**
-     * 获取上下文使用大小
-     */
-    private external fun getContextSizeUsed(modelPtr: Long): Int
-
-    /**
-     * 关闭模型
-     */
-    private external fun close(modelPtr: Long)
-
-    /**
-     * 开始完成任务
-     */
-    private external fun startCompletion(
-        modelPtr: Long,
-        prompt: String,
-    )
-
-    /**
-     * 完成循环
-     */
-    private external fun completionLoop(modelPtr: Long): String
-
-    /**
-     * 停止完成任务
-     */
-    private external fun stopCompletion(modelPtr: Long)
-```
-
-本地实现：
+可以看到，这个方法基本是确定运行设备环境，除CPU之外，是否有GPU和远程设备可以使用。实际的加载函数为：
 
 ```cpp
-#include "LLMInference.h"
-#include <jni.h>
+const int status = llama_model_load(path_model, splits, *model, params);
 
+//    void load_stats  (llama_model_loader & ml);
+//    void load_arch   (llama_model_loader & ml);
+//    void load_hparams(llama_model_loader & ml);
+//    void load_vocab  (llama_model_loader & ml);
+//    bool load_tensors(llama_model_loader & ml);
+```
+
+如备注，其中会调用如下几个函数：
+* **`load_stats`**，读取模型的**元数据**和**统计信息**。包括模型的创建时间、上次修改时间、版本号等非关键但有用的信息。在 GGUF 格式中，这些信息通常存储在头部或元数据区。
+* **`load_arch`** ，负责识别和设置模型的**核心架构信息**。它读取模型文件中的架构类型（如 LLaMA、Gemma、Mixtral 等），并设置 `llama_model` 结构体中的 `arch` 和 `type` 字段，为后续的超参数和张量加载做准备。
+* **`load_hparams`**，负责加载模型的**超参数 (Hyperparameters)**。这些参数定义了模型的结构和大小，包括：**层数** (`n_layer`)、**嵌入维度** (`n_embd`)、**注意力头数** (`n_head`)、**上下文窗口大小** (`n_ctx`) 等。这些参数是构建模型计算图和分配 KV 缓存所必需的。
+* **`load_vocab`** ， 负责加载模型的**词汇表 (Vocabulary)**。词汇表包含所有 Token 及其对应的 ID。这个步骤确保模型知道如何将输入的文本**分词 (tokenize)** 成数字 ID，以及如何将输出的数字 ID 转换回可读的文本。它填充了 `llama_model` 中的 `vocab` 结构体。
+* **`load_tensors`**，最关键的步骤。负责将模型的**所有权重张量**（如 `tok_embd`, `wq`, `wk`, `wv`, `wo` 等）从磁盘读取到内存或分配给选定的硬件设备（GPU）。这个过程通常涉及大量的数据传输和内存分配。**它返回一个布尔值，用于指示加载是否被用户的进度回调函数取消。** 
+
+##### 数据预处理：添加系统提示和用户提示
+模型加载完毕之后，我们可以单独提前加入系统prompt提示语：
+
+```cpp
+// 存储聊天过程中用户和助手的消息列表
+std::vector<llama_chat_message> _messages;
+```
+
+后续用户的聊天消息也会被添加进这个数组里，一起作为推理输入。
+
+当用户输入一个请求，会在 `startCompletion` 函数中对所有的数据进行预处理，这个函数完成了所有开始推理前的准备工作，为后续的推理调用铺平了道路。使用 llama_chat_apply_template 将用户消息 (query) 格式化为 LLM 模型能够理解的、带有特殊标记（如 `[INST]` , `<<SYS>>` ）的完整 Prompt 字符串。调用 common_tokenize 将格式化后的 Prompt 字符串转换成模型需要的数字 ID 序列（_promptTokens）。创建并填充 llama_batch 结构体，将 Token ID 序列和数量赋值给它。
+
+```cpp
+void
+LLMInference::startCompletion(const char *query) 
+```
+
+第一步会把最新的用户请求也添加进 _messages 数组中。
+
+```cpp
+// 添加用户类型的prompt
+addChatMessage(query, "user");
+```
+
+接着调用 `llama_chat_apply_template` 函数，将内部消息列表 (_messages) 格式化为模型可接受的 Prompt 字符串 (_formattedMessages)
+
+```cpp
+int newLen = llama_chat_apply_template(_chatTemplate,       // 聊天模板句柄
+                                           _messages.data(),    // 输入消息列表
+                                           _messages.size(),    // 消息数量
+                                           true,                // 强制添加 BOS（开始标记）
+                                           _formattedMessages.data(), // 输出缓冲区
+                                           _formattedMessages.size());// 输出缓冲区大小
+    
+```
+
+然后会对这个prompt进行分词和解码。
+
+```cpp
+std::string prompt(_formattedMessages.begin() + _prevLen, _formattedMessages.begin() + newLen);
+_promptTokens = common_tokenize(llama_model_get_vocab(_model), prompt, true, true);
+
+// create a llama_batch containing a single sequence
+// see llama_batch_init for more details
+_batch = new llama_batch();
+_batch->token = _promptTokens.data();
+_batch->n_tokens = _promptTokens.size();
+```
+
+一个序列的所有 Prompt Token 会被打包进一个 `llama_batch` ，其中只有最后一个 Token 的 `logits` 字段会被设为 true，以预测下一个 Token。以批量（Batch）的方式将一个或多个序列的 Token 喂给模型准备进行一次前向计算。
+
+##### 推理的触发
+数据准备好之后，就会循环调用 `completionLoop` 函数：
+
+```cpp
 /**
- * @brief 加载 LLM 模型。
- *
- * 该函数通过 JNI 从 Java 层调用，用于加载指定路径的 LLM 模型，并返回指向模型实例的指针。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPath 包含模型文件路径的 Java 字符串对象。
- * @param minP 令牌被考虑的最小概率，即核采样（top-P sampling）的阈值。
- * @param temperature 采样温度，控制输出的随机性。
- * @param storeChats 是否存储聊天记录。
- * @param contextSize 模型的上下文大小。
- * @param chatTemplate 包含聊天模板的 Java 字符串对象。
- * @param nThreads 用于推理的线程数。
- * @param useMmap 是否使用内存映射加载模型。
- * @param useMlock 是否锁定模型内存。
- * @return 指向 LLMInference 实例的 jlong 类型指针，若加载失败可能抛出 Java 异常。
- */
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_stephen_llamacppbridge_LlamaCppBridge_loadModel(JNIEnv* env, jobject thiz, jstring modelPath, jfloat minP,
-                                                         jfloat temperature, jboolean storeChats, jlong contextSize,
-                                                         jstring chatTemplate, jint nThreads, jboolean useMmap, jboolean useMlock) {
-    // 标识是否复制字符串内容的标志
-    jboolean    isCopy           = true;
-    // 将 Java 字符串转换为 C 风格的 UTF-8 字符串，获取模型路径
-    const char* modelPathCstr    = env->GetStringUTFChars(modelPath, &isCopy);
-    // 创建一个新的 LLMInference 实例
-    auto*       llmInference     = new LLMInference();
-    // 将 Java 字符串转换为 C 风格的 UTF-8 字符串，获取聊天模板
-    const char* chatTemplateCstr = env->GetStringUTFChars(chatTemplate, &isCopy);
-
-    try {
-        // 调用 LLMInference 实例的 loadModel 方法加载模型
-        llmInference->loadModel(modelPathCstr, minP, temperature, storeChats, contextSize, chatTemplateCstr, nThreads,
-                                useMmap, useMlock);
-    } catch (std::runtime_error& error) {
-        // 若加载过程中抛出异常，在 Java 层抛出 IllegalStateException 异常
-        env->ThrowNew(env->FindClass("java/lang/IllegalStateException"), error.what());
-    }
-
-    // 释放之前获取的 C 风格的模型路径字符串
-    env->ReleaseStringUTFChars(modelPath, modelPathCstr);
-    // 释放之前获取的 C 风格的聊天模板字符串
-    env->ReleaseStringUTFChars(chatTemplate, chatTemplateCstr);
-    // 将 LLMInference 实例指针转换为 jlong 类型并返回
-    return reinterpret_cast<jlong>(llmInference);
-}
-
-/**
- * @brief 向聊天记录中添加消息。
- *
- * 该函数通过 JNI 从 Java 层调用，用于向已加载的 LLM 模型的聊天记录中添加消息。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPtr 指向 LLMInference 实例的 jlong 类型指针。
- * @param message 包含要添加消息内容的 Java 字符串对象。
- * @param role 包含消息角色（如 "user", "system" 等）的 Java 字符串对象。
- */
-extern "C" JNIEXPORT void JNICALL
-Java_com_stephen_llamacppbridge_LlamaCppBridge_addChatMessage(JNIEnv* env, jobject thiz, jlong modelPtr, jstring message,
-                                                              jstring role) {
-    // 标识是否复制字符串内容的标志
-    jboolean    isCopy       = true;
-    // 将 Java 字符串转换为 C 风格的 UTF-8 字符串，获取消息内容
-    const char* messageCstr  = env->GetStringUTFChars(message, &isCopy);
-    // 将 Java 字符串转换为 C 风格的 UTF-8 字符串，获取消息角色
-    const char* roleCstr     = env->GetStringUTFChars(role, &isCopy);
-    // 将 jlong 类型的指针转换为 LLMInference 实例指针
-    auto*       llmInference = reinterpret_cast<LLMInference*>(modelPtr);
-    // 调用 LLMInference 实例的 addChatMessage 方法添加消息
-    llmInference->addChatMessage(messageCstr, roleCstr);
-    // 释放之前获取的 C 风格的消息内容字符串
-    env->ReleaseStringUTFChars(message, messageCstr);
-    // 释放之前获取的 C 风格的消息角色字符串
-    env->ReleaseStringUTFChars(role, roleCstr);
-}
-
-/**
- * @brief 获取响应生成速度。
- *
- * 该函数通过 JNI 从 Java 层调用，用于获取已加载的 LLM 模型生成响应的速度。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPtr 指向 LLMInference 实例的 jlong 类型指针。
- * @return 响应生成速度，单位可能因实现而异。
- */
-extern "C" JNIEXPORT jfloat JNICALL
-Java_com_stephen_llamacppbridge_LlamaCppBridge_getResponseGenerationSpeed(JNIEnv* env, jobject thiz, jlong modelPtr) {
-    // 将 jlong 类型的指针转换为 LLMInference 实例指针
-    auto* llmInference = reinterpret_cast<LLMInference*>(modelPtr);
-    // ... 已有代码 ...
-    return llmInference->getResponseGenerationTime();
-}
-
-/**
- * @brief 获取已使用的上下文大小。
- *
- * 该函数通过 JNI 从 Java 层调用，用于获取已加载的 LLM 模型当前已使用的上下文大小。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPtr 指向 LLMInference 实例的 jlong 类型指针。
- * @return 已使用的上下文大小，单位可能因实现而异。
- */
-extern "C" JNIEXPORT jint JNICALL
-Java_com_stephen_llamacppbridge_LlamaCppBridge_getContextSizeUsed(JNIEnv* env, jobject thiz, jlong modelPtr) {
-    // 将 jlong 类型的指针转换为 LLMInference 实例指针
-    auto* llmInference = reinterpret_cast<LLMInference*>(modelPtr);
-    // 调用 LLMInference 实例的 getContextSizeUsed 方法获取已使用的上下文大小
-    return llmInference->getContextSizeUsed();
-}
-
-/**
- * @brief 关闭 LLM 模型并释放资源。
- *
- * 该函数通过 JNI 从 Java 层调用，用于关闭已加载的 LLM 模型并释放相关资源。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPtr 指向 LLMInference 实例的 jlong 类型指针。
- */
-extern "C" JNIEXPORT void JNICALL
-Java_com_stephen_llamacppbridge_LlamaCppBridge_close(JNIEnv* env, jobject thiz, jlong modelPtr) {
-    // 将 jlong 类型的指针转换为 LLMInference 实例指针
-    auto* llmInference = reinterpret_cast<LLMInference*>(modelPtr);
-    // 删除 LLMInference 实例，释放资源
-    delete llmInference;
-}
-
-/**
- * @brief 启动响应生成过程。
- *
- * 该函数通过 JNI 从 Java 层调用，用于启动已加载的 LLM 模型根据给定提示生成响应的过程。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPtr 指向 LLMInference 实例的 jlong 类型指针。
- * @param prompt 包含生成响应所需提示的 Java 字符串对象。
- */
-extern "C" JNIEXPORT void JNICALL
-Java_com_stephen_llamacppbridge_LlamaCppBridge_startCompletion(JNIEnv* env, jobject thiz, jlong modelPtr, jstring prompt) {
-    // 标识是否复制字符串内容的标志
-    jboolean    isCopy       = true;
-    // 将 Java 字符串转换为 C 风格的 UTF-8 字符串，获取提示内容
-    const char* promptCstr   = env->GetStringUTFChars(prompt, &isCopy);
-    // 将 jlong 类型的指针转换为 LLMInference 实例指针
-    auto*       llmInference = reinterpret_cast<LLMInference*>(modelPtr);
-    // 调用 LLMInference 实例的 startCompletion 方法启动响应生成过程
-    llmInference->startCompletion(promptCstr);
-    // 释放之前获取的 C 风格的提示内容字符串
-    env->ReleaseStringUTFChars(prompt, promptCstr);
-}
-
-/**
- * @brief 循环生成响应片段。
- *
- * 该函数通过 JNI 从 Java 层调用，用于在已启动响应生成过程后，循环获取 LLM 模型生成的响应片段。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPtr 指向 LLMInference 实例的 jlong 类型指针。
- * @return 包含生成响应片段的 Java 字符串对象，若出现异常则返回 nullptr。
+ * 循环获取 LLM 模型生成的响应片段。
  */
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_stephen_llamacppbridge_LlamaCppBridge_completionLoop(JNIEnv* env, jobject thiz, jlong modelPtr) {
@@ -1341,25 +866,181 @@ Java_com_stephen_llamacppbridge_LlamaCppBridge_completionLoop(JNIEnv* env, jobje
         return nullptr;
     }
 }
+```
 
+调用到 `llama.cpp` 框架的 `completionLoop` 函数，它负责在模型已经处理完初始 Prompt 之后，每调用一次就生成并处理下一个 Token。
+
+```cpp
 /**
- * @brief 停止响应生成过程。
- *
- * 该函数通过 JNI 从 Java 层调用，用于停止已启动的 LLM 模型响应生成过程。
- *
- * @param env JNI 环境指针，用于与 Java 虚拟机交互。
- * @param thiz 调用该本地方法的 Java 对象引用。
- * @param modelPtr 指向 LLMInference 实例的 jlong 类型指针。
+ * 执行一次模型推理，采样下一个 Token，并处理输出。
  */
-extern "C" JNIEXPORT void JNICALL
-Java_com_stephen_llamacppbridge_LlamaCppBridge_stopCompletion(JNIEnv* env, jobject thiz, jlong modelPtr) {
-    // 将 jlong 类型的指针转换为 LLMInference 实例指针
-    auto* llmInference = reinterpret_cast<LLMInference*>(modelPtr);
-    // 调用 LLMInference 实例的 stopCompletion 方法停止响应生成过程
-    llmInference->stopCompletion();
+std::string
+LLMInference::completionLoop() {
+    // 1. 上下文大小检查
+
+    // 获取模型的最大上下文大小
+    uint32_t contextSize = llama_n_ctx(_ctx);
+    
+    // 获取当前 KV 缓存中已使用的位置（即已处理的 Token 数量）
+    // llama_memory_seq_pos_max(..., 0) 获取序列 0 的最大位置
+    _nCtxUsed = llama_memory_seq_pos_max(llama_get_memory(_ctx), 0) + 1;
+    
+    // 检查：当前已使用的上下文长度 + 批次中的 Token 数是否超过模型最大上下文
+    // 如果超过，则抛出运行时错误，停止生成
+    if (_nCtxUsed + _batch->n_tokens > contextSize) {
+        throw std::runtime_error("context size reached");
+    }
+
+    // 2. 模型推理
+    auto start = ggml_time_us(); // 计时开始
+    
+    // 运行模型解码：执行前向传播，计算当前批次中 Token 的 Logits
+    // 此时 _batch 中应该只包含上一步采样出的新 Token，并且已设置好位置等信息。
+    if (llama_decode(_ctx, *_batch) < 0) {
+        throw std::runtime_error("llama_decode() failed"); // 解码失败
+    }
+    // 3. Token 采样和生成结束检查 (Sampling and EOG Check)
+    // 从最新的 Logits 中采样下一个 Token ID
+    // -1 表示使用批次中最后一个 Token 的 Logits 进行采样
+    _currToken = llama_sampler_sample(_sampler, _ctx, -1);
+    
+    // 检查采样出的 Token 是否是 EOG (End of Generation) 标记
+    if (llama_vocab_is_eog(llama_model_get_vocab(_model), _currToken)) {
+        // 如果是 EOG，则将完整的回复添加到聊天记录中
+        addChatMessage(strdup(_response.data()), "assistant");
+        _response.clear();
+        return "[EOG]"; // 返回特殊标记表示生成结束
+    }
+    
+    // 将 Token ID 转换为可读的文本片段 (word-piece)
+    std::string piece = common_token_to_piece(_ctx, _currToken, true);
+
+    // 4. 性能记录和缓存 略
+    ...
+
+    // 5. 为下一轮循环准备
+    // 重新初始化批次：为下一次 llama_decode 准备输入数据
+    // 下一次解码只需要处理这一个新生成的 Token
+    _batch->token = &_currToken; // 将批次的 Token 指针指向新生成的 Token ID
+    _batch->n_tokens = 1;        // 设置批次中只有一个 Token
+
+    // **注意：** 在下一个循环中，这个 `_batch` 中的 Token 将会被 `llama_decode` 处理，
+    // 其位置信息等需要在使用前被更新 (通常由 llama_decode 内部处理或在一个辅助函数中完成)。
+    // 
+    // token有效性检查，检查缓存的 Token 片段是否是一个有效的 UTF-8 序列
+    if (_isValidUtf8(_cacheResponseTokens.c_str())) {
+        // 如果有效, 将有效片段添加到完整的回复中
+        _response += _cacheResponseTokens;             
+        // 拷贝有效片段用于返回
+        std::string valid_utf8_piece = _cacheResponseTokens; 
+        // 清空缓存，等待下一个 Token
+        _cacheResponseTokens.clear();                  
+        // 在这里返回完整的 UTF-8 文本片段
+        return valid_utf8_piece;                       
+    }
+
+    // 如果无效，返回空字符串
+    return "";
 }
 ```
 
+这个函数结合了 模型推理（llama_decode）、Token 采样（llama_sampler_sample）、生成停止检查和 UTF-8 编码处理，是实现流式（Streaming）输出的关键。
+
+下一层核心的方法为 llama_decode 和 llama_sampler_sample 函数。
+
+###### **llama_decode**
+`llama_context::decode` 是 llama.cpp 中负责执行模型前向传播（即推理）的核心函数。它将一个批次的输入 Token（存储在 llama_batch 中）转化为模型的输出（Logits 或嵌入向量），并同时管理模型的 KV 缓存。
+
+```cpp
+/**
+ * @brief 执行模型解码（前向传播）。将输入的 Token 批次通过模型进行计算。
+ * @return 0 成功；-1 失败；-2 内存/计算错误；1 KV 缓存不足但已尝试优化；2 被取消。
+ */
+int llama_context::decode(const llama_batch & batch_inp)
+```
+
+这个函数可以大致分为以下几个核心阶段：
+* 输入验证和初始化： 检查输入批次是否有效，处理特殊情况。
+* KV 缓存管理： 核心步骤，决定如何将批次中的 Token 放入 KV 缓存。
+* 子批次循环 (UBatch Loop)： 如果批次太大，将其分解为适合内存的小块进行处理。
+* 计算图构建与执行： 为每个子批次构建并执行模型计算图（Transformer Layers）。
+* 结果提取： 将计算结果（Logits 和/或嵌入向量）从设备内存异步传输回 CPU 内存。
+* 输出排序与映射： 确保输出结果的顺序与用户的输入顺序一致。
+
+###### **llama_sampler_sample**
+`llama_sampler_sample` 函数是 **`llama.cpp` 中负责从模型输出中选出下一个 Token 的函数**，即执行 **Token 采样** 的过程。
+
+它的作用是将模型计算出的原始概率（Logits）转换为一个具体的、用于文本生成的新 Token ID。
+
+这个函数可以分解为以下几个关键步骤：
+
+```cpp
+llama_token llama_sampler_sample(struct llama_sampler * smpl, struct llama_context * ctx, int32_t idx) {
+    // 1. 获取 Logits 和模型信息
+    // 从上下文中获取指定索引位置的 Logits 数组
+    const auto * logits = llama_get_logits_ith(ctx, idx);
+    const llama_model * model = llama_get_model(ctx);
+    const llama_vocab * vocab = llama_model_get_vocab(model);
+
+    // 获取词汇表大小
+    const int n_vocab = llama_vocab_n_tokens(vocab);
+    // 2. 构建 Token 候选列表
+    // 创建一个临时的 std::vector 用于存储所有 Token 的数据结构
+    // TODO: 考虑优化，避免每次采样都重新分配内存
+    std::vector<llama_token_data> cur;
+    cur.reserve(n_vocab);
+    // 遍历整个词汇表，将每个 Token ID 及其对应的 Logits 值打包成 llama_token_data 结构
+    for (llama_token token_id = 0; token_id < n_vocab; token_id++) {
+        // llama_token_data 结构体包含 ID, Logits 和概率 (prob，这里初始化为 0.0f)
+        cur.emplace_back(llama_token_data{token_id, logits[token_id], 0.0f});
+    }
+    // 将 std::vector 包装成 llama_token_data_array 结构，这是采样链的标准输入格式
+    llama_token_data_array cur_p = {
+        /* .data       = */ cur.data(),  // 指向数据数组
+        /* .size       = */ cur.size(),  // 数组大小 (词汇表大小)
+        /* .selected   = */ -1,          // 初始化为 -1 (未选择)
+        /* .sorted     = */ false,       // 尚未排序
+    };
+    // 3. 应用采样链
+    // 调用核心采样函数：遍历 smpl 中配置的所有采样策略（如 Logits 惩罚、Top-K、Top-P、Temperature）
+    // 这个函数会修改 cur_p.data 中的 Logits 值，并最终在 cur_p.selected 中标记选中的 Token 索引
+    llama_sampler_apply(smpl, &cur_p);
+    // 4. 提取和接受 Token
+    // 断言检查：确保采样器已经成功选择了一个有效的 Token
+    GGML_ASSERT(cur_p.selected >= 0 && cur_p.selected < (int32_t) cur_p.size);
+    // 从选中的索引位置提取最终的 Token ID
+    auto token = cur_p.data[cur_p.selected].id;
+    // 通知采样器：这个 Token 已经被选中并使用。
+    // 这允许采样器更新内部状态，例如：
+    // - 更新上次生成的 Token 列表，以便在下一轮应用重复惩罚 (Repetition Penalty)。
+    llama_sampler_accept(smpl, token);
+    // 返回最终选出的 Token ID
+    return token;
+}
+```
+
+##### 返回阶段性推理结果
+模型的前向推理和采样完成之后，最后一步就是结合模型的词汇表。转换为可读的string数据：
+
+```cpp
+std::string common_token_to_piece(const struct llama_context * ctx, llama_token token, bool special) {
+    const llama_model * model = llama_get_model(ctx);
+    const llama_vocab * vocab = llama_model_get_vocab(model);
+    return common_token_to_piece(vocab, token, special);
+}
+```
+
+对于Java层，可以通过token数量，或者检测返回的token中是否有 **“EOG”** 字符串。即 **End Of Generation** 。当模型采样到一个被词汇表 (`llama_vocab`) 识别为 **EOG** 的 Token ID 时，意味着模型认为它已经完成了对用户 Prompt 的回答。
+
+```cpp
+    // sample a token and check if it is an EOG (end of generation token)
+    _currToken = llama_sampler_sample(_sampler, _ctx, -1);
+    if (llama_vocab_is_eog(llama_model_get_vocab(_model), _currToken)) {
+        // ... 返回 "[EOG]" 停止生成 ...
+    }
+```
+
+#### 运行效果
 将这个模组直接封装成一个aar，也可以直接被其他模组依赖编译。
 
 外部使用时，先将gguf文件从手机下载路径复制到内部目录，也可以直接在线从 `Hugging Face` 上下载到本地内部目录。然后调用 `loadModel()` 、 `getResponseAsFlow()` 等接口来加载模型，获取生成的对话回复。

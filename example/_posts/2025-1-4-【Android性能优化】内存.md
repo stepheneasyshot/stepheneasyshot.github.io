@@ -253,3 +253,88 @@ Live Telemetry 也可以实时查看应用的内存使用情况，包括内存�
 4. 内存泄漏，不再使用的对象仍然被其他对象引用，导致垃圾回收器无法回收它们的内存。随着时间的推移，内存泄漏会积累大量无法回收的内存，最终导致内存溢出。解决方案：及时释放不再使用的资源，避免静态变量持有长生命周期对象的引用，注意 Activity、Service 等组件的生命周期管理，防止内存泄漏的发生。
 
 在 Android 开发中，要避免内存溢出问题，需要注意合理使用内存资源，优化代码结构和算法，及时清理不再需要的资源，并使用合适的工具进行内存分析和优化。
+
+## Low Memory Killer (LMK) 机制
+Low Memory Killer 是 Android 系统为了在内存不足时保持系统响应性和性能而设计的一套进程终止机制。
+
+它预测性地、分级地在**系统内存压力达到某个阈值时**，就主动杀死“不重要”的进程，以释放内存，避免等到系统彻底耗尽内存（OOM）时才触发最后的紧急清理。
+
+Low Memory Killer 的功能由用户空间的守护进程 lmkd (Low Memory Killer Daemon) 来执行，它不再是传统的内核驱动程序，而是通过监听内核的内存压力信号（如 vmpressure 事件或 PSI - 压力失速信息）来工作。
+
+LMK 的决定是基于 Android 系统分配给每个进程的 **“优先级分数”** ，通常称为 oom_adj_score（或简写为 adj 值）。这个分数由 Android 的 ActivityManagerService 动态计算和设置，反映了进程对用户的价值和其生命周期状态。
+
+lmkd 会根据内存压力程度，查看所有运行中的进程，并根据它们的 oom_adj_score 从高到低（即“最不重要”到“最重要”）开始杀死进程，直到释放足够的内存。
+
+
+`oom_adj_score`（在 Android 源码中通常称为 `adj` 或 `oom_adj`）并不是通过一个简单的数学公式计算出来的，而是由 Android 核心组件 **`ActivityManagerService` (AMS)** **动态分配和调整**的。
+
+它的计算逻辑是复杂的，它基于应用程序进程中**运行的组件**及其**与用户的交互状态**。这个分数决定了进程的**重要性**，分数越高，优先级越低，越容易被 Low Memory Killer (LMK) 杀死。
+
+### oom_adj_score 计算
+以下是 `oom_adj_score` 的主要决定因素和计算逻辑：
+
+| 进程状态/组件 | `oom_adj` 值（示例） | 描述 |
+| :--- | :--- | :--- |
+| **前台进程 (Foreground)** | 0 | 进程内有用户当前正在交互的 Activity。**最高优先级，不会被 LMK 杀死。** |
+| **可见进程 (Visible)** | 1-200 | 进程内有可见但非焦点的 Activity（如对话框下的 Activity）。优先级仅次于前台。 |
+| **前台服务进程 (Foreground Service)** | 100-200 | 进程内有通过 `startForeground()` 运行的服务（如音乐播放、GPS）。 |
+| **后台服务进程 (Service)** | 200-400 | 进程内有正常运行的 Service，但没有 Activity。 |
+| **可缓存的空进程 (Cached)** | 900+ | 进程内没有任何活动的组件，仅保留在内存中以便快速重启。**最低优先级，LMK 的主要目标。** |
+
+## Memory Profiler
+使用 `Memory Profiler` 来分析内存是性能优化的重要方式。其中显示的各个区域反映了进程地址空间中不同类型内存的占用情况。
+
+| 区域名称 | 对应内容 (Content) | 内存类型 (Type) | 典型占用 (Typical Occupants) |
+| :--- | :--- | :--- | :--- |
+| **Java Heap** | JVM（Java/Dalvik）虚拟机管理的内存区域。 | 堆 (Heap) | Java 对象实例、Kotlin 对象实例、非压缩的 `Bitmap` 对象引用、应用自定义类实例等。这是最常分析的区域。 |
+| **Native Heap** | C/C++ 代码（或底层系统库）直接通过 `malloc`/`new` 等函数分配的内存区域。 | 堆 (Heap) | **`Bitmap` 的像素数据**、渲染引擎（如 Skia、Vulkan）、JNI 分配的内存、游戏引擎（如 Unity/Cocos）数据。 |
+| **Code** | 应用程序和系统库的可执行机器码（`.dex`、`.so` 文件）以及运行时生成的代码。 | 代码段 (Text Segment) | DEX 文件（包含 Java 字节码）、本地库 (`.so` 文件)、JIT/AOT 编译后的机器码。 |
+| **Stack** | 为每个线程分配的私有内存区域。 | 栈 (Stack) | 函数调用栈、方法参数、局部变量（基本类型、对象引用）。Stack 内存通常很小，不会导致 OOM。 |
+| **Graphics** | 用于处理显示和图形相关的内存。 | 专用内存 (Dedicated) | 图像缓冲区 (Buffers)、纹理、`SurfaceFlinger` 相关的内存。 |
+| **Other** | 未归类到以上任何区域的内存。 | 混合 (Mixed) | 内存映射文件（`mmap`）、文件 I/O 缓冲区、系统内核分配的页表等。 |
+
+## Bitmap 对象的内存体现
+`Bitmap` 是 Android 内存分析中最特殊也最重要的对象之一。很多的泄露问题中，如果是图片加载导致的泄露，现象一般比较明显和严重。
+
+它的内存占用被**分割**到两个不同的内存区域中：
+* Java Heap 是 `Bitmap` 对象的**引用和元数据**存储的地方。存储 `Bitmap` 对象的 Java 引用（`java.lang.Object`）以及它的元信息（如宽度、高度、配置等）。这部分内存很小，通常只有几十字节。
+* Native Heap（原生堆），这是 `Bitmap` 占用的**绝大部分内存**，即**像素数据 (Pixel Data)** 存储的地方。注意在 Android 8.0 之后`Bitmap` 的像素数据是存储在 **Java Heap** 中的。如果使用了 `BitmapFactory.Options.inPreferredConfig = Bitmap.Config.HARDWARE` 或 JNI C/C++ 代码来处理图像，像素数据仍然可能被分配在 Native Heap 或 Graphics 区域。
+
+### 后台更新ImageView的危险操作
+曾经开发过一个悬浮窗式的APP，没有Activity组件，即需要自己管理View和数据的生命周期关系。有一次在后台不断地更新ImageView的帧动画对象，导致了严重的内存问题。
+
+当你通过 `AnimationDrawable`（帧动画的实现类）加载一系列图片帧时，无论 `ImageView` 是否在屏幕上显示，这个过程都会发生以下事情：
+
+1.  **解码成Bitmap：** 每一张图片资源（比如 `R.drawable.frame1`）都会被解码成一个 `Bitmap` 对象。`Bitmap` 是Android中表示位图的类，它包含了图片的像素数据。
+2.  **内存位置：** 这些 `Bitmap` 对象占用的内存位于应用的 **堆内存（Heap Memory）** 中。`Bitmap` 的像素数据也主要分配在应用的堆内存里，由Java/Kotlin的垃圾回收器（GC）管理。
+3.  **持有引用：** `AnimationDrawable` 对象会内部持有一个列表，用来存储每一帧对应的 `Drawable` 对象。这些 `Drawable` 对象最终会持有对 `Bitmap` 对象的强引用。
+
+所以，即使界面没有显示，只要你的代码执行了加载帧动画的逻辑，那些被解码后的图片 `Bitmap` 对象就会被创建并存储在应用的堆内存中。`AnimationDrawable` 实例持有这些 `Bitmap` 的引用，防止它们被垃圾回收器回收。
+
+这个“缓存”其实就是 `AnimationDrawable` 对象自身对所有帧图像`Bitmap`的直接持有。
+
+**如果不断读取新的图片，会使后台的内存占用越来越大**。这是一个非常危险的操作，极有可能导致应用崩溃。**
+
+如果应用在后台（用户看不到UI），还在持续地加载新的图片帧到 `AnimationDrawable` 中，会发生以下情况：
+
+1.  **内存持续增长：** 每加载一张新的图片，就会在堆内存中创建一个新的 `Bitmap` 对象。由于 `AnimationDrawable` 持有它的引用，这块内存就无法被释放。应用的堆内存占用会像滚雪球一样越来越大。
+2.  **触发 OOM (OutOfMemoryError)：** 每个Android应用都有一个固定的堆内存上限（具体大小因设备而异）。当你的应用内存占用超过这个上限时，系统会抛出 `OutOfMemoryError` 异常，导致应用直接崩溃。
+3.  **被系统“杀死”：** 即使没有立刻OOM，一个在后台占用大量内存的应用也会给系统带来很大压力。当系统需要更多内存给前台应用（比如用户正在使用的其他App）时，你的应用会成为被系统强制关闭（kill process）的优先目标。用户下次回到你的App时，会发现它被重启了，体验非常糟糕。
+
+#### 最佳实践与解决方案
+
+核心原则是：**UI资源的加载和释放，必须与UI组件的生命周期严格绑定。**
+
+对于帧动画，正确的处理方式如下：
+
+**1. 不要在后台加载和启动动画**
+
+动画是给用户看的，当UI不可见时，任何动画操作都是在浪费CPU和内存。你应该在界面变为可见时才开始加载和播放动画。
+
+**2. 遵循Activity/Fragment的生命周期**
+
+在 `Activity` 或 `Fragment` 的生命周期回调方法中管理 `AnimationDrawable` 是最标准、最安全的方式。
+
+  * **`onStart()` 或 `onResume()`:** 在这里获取 `AnimationDrawable` 对象并调用 `start()` 方法开始播放。这时UI对用户是可见的。
+  * **`onStop()` 或 `onPause()`:** 在这里必须调用 `stop()` 方法停止动画。这时UI已经不可见或被部分遮挡。停止动画不仅可以节省CPU，更重要的是，系统可以有机会回收 `AnimationDrawable` 内部的 `Bitmap` 资源（如果你也解除了对它的引用）。
+

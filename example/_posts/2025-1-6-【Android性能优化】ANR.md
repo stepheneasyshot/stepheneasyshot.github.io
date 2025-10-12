@@ -110,16 +110,16 @@ Android 的生命周期函数（如 onCreate()、onResume()、onPause()、onDest
 ![](/assets/img/blog/blogs_anr_broadcastreceiver.png)
 
 ##### **goAsync的作用**
-广播接收器goAsync()的用处，简单说就是手动地拖延onReceive执行的时间到子线程结束后。
+广播接收器 `goAsync()` 的用处，简单说就是手动地拖延onReceive执行的时间到子线程结束后。
 
-所以使用的时机就是我们需要在接收到广播之后，开子线程处理耗时任务的时候。广播接收器接收到广播后，开始执行onReceive的方法，这时候进程是前台状态，一旦走完，又会恢复到后台的状态。如果在onReceive回调里直接开子线程，那么onReceive走完后，进程优先级较低，其内的线程优先级也较低，可能任务没有执行完就结束了。分析onReceive源码，可以看到在其结束时，会检查 PendingResult 的状态，如果不为空就表明任务执行完毕。也就恢复到了后台状态。
+所以使用的时机就是我们需要在接收到广播之后，开子线程处理耗时任务的时候。广播接收器接收到广播后，开始执行onReceive的方法，这时候进程是前台状态，一旦走完，又会恢复到后台的状态。如果在onReceive回调里直接开子线程，那么onReceive走完后，进程优先级较低，其内的线程优先级也较低，可能任务没有执行完就结束了。分析onReceive源码，可以看到在其结束时，会检查 `PendingResult` 的状态，如果不为空就表明任务执行完毕。也就恢复到了后台状态。
 
-goAsync方法就是将 PendingResult设置为 null，也就不会马上结束掉当前的广播，相当于 “延长了广播的生命周期”，让广播依然处于活跃状态。在子线程的任务执行完毕，再调用一次 PendingResult.finish()，结束onReceive方法的计时。
+`goAsync()` 方法就是将 PendingResult设置为 null，也就不会马上结束掉当前的广播，相当于 “延长了广播的生命周期”，让广播依然处于活跃状态。在子线程的任务执行完毕，再调用一次 PendingResult.finish()，结束onReceive方法的计时。
 
 所以广播接收器ANR的情况就是onReceive方法超时，或者goAsync方法调用完之后，超时时间内没有调用finish。
 
 ## Service执行超时
-**onCreate()，onStartCommand()，onBind()**等生命周期在20s内没有处理完成，就会发生ANR。
+**onCreate()，onStartCommand()，onBind()** 等生命周期在20s内没有处理完成，就会发生ANR。
 
 ## ANR日志分析
 原生位置一般在 `/data/anr/` 目录下：
@@ -377,9 +377,9 @@ Java的堆栈信息是我们最关心的，它能够定位到具体位置。从�
 
 这是一个典型的主线程被锁阻塞的例子；
 
-其中等待的锁是`<0x01aed1da>`，这个锁的持有者是线程 3。进一步搜索 “tid=3” 找到线程3， 发现它正在TimeWating。
+其中等待的锁是 `<0x01aed1da>` ，这个锁的持有者是线程 3。进一步搜索 “tid=3” 找到线程3， 发现它正在TimeWating。
 
-那么ANR的原因找到了：线程3持有了一把锁，并且自身长时间不释放，主线程等待这把锁发生超时。在线上环境中，常见因锁而ANR的场景是SharePreference写入。
+那么ANR的原因找到了：线程3持有了一把锁，并且自身长时间不释放，主线程等待这把锁发生超时。在线上环境中，常见因锁而ANR的场景是SharePreference写入。比如两个线程都在等待另一个写入完成释放自己需要的锁，导致死锁。
 
 #### CPU被抢占
 ```

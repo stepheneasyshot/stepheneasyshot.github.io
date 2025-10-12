@@ -72,18 +72,16 @@ AndroidUtils.setValue(SourceData.RightMidMove_up2down, y);
 其实在第一版我们项目集成的是上面的Kanzi方案，其性能表现较Unity要差一些。性能还是其次，发起替换的主要原因还是在项目推进的过程中，对方工程师对动效样式的优化达不到评测部门的要求，后来更新迭代就更换了Unity方案。
 
 而本文的重点也是在于Unity3D动效的使用，案例为车载IVI系统空调app的风向调节，交互逻辑比上面举的例子更加复杂，需要实时跟手，在交互热区范围内需要不断变化动效形态，并完成双向通信，保证动效和车载信号的一致性。
-### Android应用对接Unity集成的两种方案
+## Android应用对接Unity集成的两种方案
 以下提到的集成方案均可以在Unity的官方网站进行更加详细的查阅：
 
-```
-https://docs.unity.cn/cn/tuanjiemanual/Manual/hmi-android.html
-```
+[团结引擎 手册](https://docs.unity.cn/cn/tuanjiemanual/Manual/hmi-android.html)
 
-#### 通信协议制定
+### 通信协议制定
 集成的第一步，要提前根据APP产品交互逻辑，来指定和Unity之间的通信协议。有哪些功能是开关，需要调整哪些属性。例如空调app里就涉及几个出风口的打开关闭，可以以0/1来区分。还有风口的方向调节，需要互传x,y坐标值。Android和Unity之间一般是采用JSON字符串来通信的。
 
 而且，两方通信链路和Unity的集成方式还有关，像下面要谈到的第一种进程隔离方案，就是通过集成全量的Unity依赖包，利用aar内部JNI接口来通信的，而第二种Client/Server架构就是通过Android的AIDL接口来和单独的Unity服务端进程通信的。
-#### 进程隔离方案-UAAL(Render As Library)
+### 进程隔离方案-UAAL(Render As Library)
 基于UAAL（Render As Library），支持把渲染服务嵌入原生安卓APP。
 
 * Tuanjie 引擎可作为 Render Service，嵌入原生 Android APP，为原生 Android APP 提供 3D 内容
@@ -97,7 +95,6 @@ UAAL 方案的优势在于，Unity 渲染服务和原生 APP 之间的通信链�
 这种方式集成的话，Unity会将渲染引擎，资源文件，和Android上层的通信代码都打包导出到一个aar中，其体积随动效的复杂程度而变化，同时会使集成方的apk包体积增加。而且项目里有多少方要使用Unity动效，就需要多少份的渲染引擎。这个方案由客户端来负责Unity控件的创建销毁，显示隐藏，一般适用一对一，通信链路简单的，即项目中可能只有一个模块需要使用Unity动效的情况。在多模块需要使用Unity的情况下，进程隔离的方案对性能的占用也比较高。
 
 上层使用到的控件——UnityPlayer，它是一个Unity自定义的FrameLayout，里面有他们自己实现的一系列添加view，显示，和渲染逻辑。资源文件均存在于Unity打的依赖包中，对外不开放。
-
 #### 集成步骤
 第一步，将Unity提供的aar放置于libs文件夹中，并在gradle里添加其编译引用。
 
@@ -122,7 +119,7 @@ ndk {
 有一点需要注意，我们还需要在项目的string.xml资源文件中添加Unity所需的一条 String 资源，否则Unity侧会空指针。
 
 ```xml
- <string name="game_view_content_description">Game view</string>
+<string name="game_view_content_description">Game view</string>
 ```
 
 第三步，将要显示Unity动效的页面 `Activity` 改为继承自 `UnityPlayerActivity` ，Unity的核心显示控件是 `UnityPlayer` ，它的创建销毁，显示隐藏，由 `UnityPlayerActivity` 来统一管理，项目中集成这个 `Activity` 的子类再将 `mUnityPlayer` 通过 `addView()` 添加到自己的根布局 `ViewGroup` 中当背景即可，而且可以在xml上面继续增加其他View控件。
@@ -154,7 +151,6 @@ object UnityMessageHelper {
 
 #### 信号类UnityMessageHelper的优化
 由于我们的目标工程是空调app，在用户调节风向时的回调频率相当高，而自动扫风模式下，底层上传的数据频率也相当高，所以不适合到主线程中操作这么多的数据，我们用协程，配合Default调度器来处理这种CPU密集型的任务。两条链路，用户手指的拖动操作时，Unity反射回调的线程本身都是工作线程了，所以我们在使用自定义的接口回调到View类的时候，使用MainScope.launch包一层，确保是到主线程更新我们的UI。而自动扫风模式从域控制器接收到风口点击的坐标值时，我们拿到数据后给Unity下发信号，更新动效的指向位置。可以使用协程上下文切换，withContext(Dispatcher.Default)将其切到工作线程里发送给Unity。
-
 #### 遇到的问题
 Unity方给的aar里的基类Activity适用与绝大多数的普通应用，但是我这里空调app的定位是一个高层级的悬浮窗，我的工程里压根就没有Activity。
 
@@ -162,37 +158,8 @@ Unity方给的aar里的基类Activity适用与绝大多数的普通应用，但�
 
 所以正确的创建与初始化顺序是先使用WindowManager添加一个xml布局inflate来的ViewGroup，在其onAttachToWindow的方法回调之后，再创建UnityPlayer的实例，并添加到这个ViewGroup的布局中去，调用其resume方法。
 
-```kotlin
-    public void initUnity() {
-        if (mUnityPlayer == null) {
-            LogUtils.i(TAG, "initUnity");
-            unityInitView = (LinearLayout) LayoutInflater.from(mContext).inflate(R.layout.layout_unity_init, null);
-            unityInitView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-                @Override
-                public void onViewAttachedToWindow(@NonNull View v) {
-                    LogUtils.w(TAG, "unityInitView onViewAttachedToWindow");
-                    mUnityPlayer = new UnityPlayer(mContext);
-                    unityInitView.addView(mUnityPlayer);
-                    mUnityPlayer.requestFocus();
-                    mUnityPlayer.resume();
-                    mUnityPlayer.windowFocusChanged(true);
-                }
-
-                @Override
-                public void onViewDetachedFromWindow(@NonNull View v) {
-                    LogUtils.w(TAG, "unityInitView onViewDetachedFromWindow");
-                    // Unityplayer已经成功移除，通知airView将player添加进去
-                    airConditionerView.addUnityToAirView();
-                }
-            });
-
-           mWindowManager.addView(unityInitView, initUnityWindowParams());
-        }
-    }
-```
-
-注意，这样添加的UnityPlayer有一个无法解决的黑屏问题，因为Unity的渲染加载至少都需要4，5秒，期间我们只能在更上层的View里设置静态背景图覆盖上去，等Unity加载完毕，发送ready的回调之后，我们移除掉这个占位的静态图，展示Unity动效的界面。这也是进程隔离的方案的一个很棘手的问题。我的解决方案是在开机的时候往屏幕外添加一个View专门来初始化加载Unity，加载完毕后，再将UnityPlayer给从里面remove掉，重新添加到实际的要展示的窗口中去，这样打开界面的时候可以略去加载的耗时，稍微减少页面僵直的时间。
-#### 单进程-URAS(Render As Service)
+这样添加的UnityPlayer有一个无法解决的黑屏问题，因为Unity的渲染加载至少都需要4，5秒，期间我们只能在更上层的View里设置静态背景图覆盖上去，等Unity加载完毕，发送ready的回调之后，我们移除掉这个占位的静态图，展示Unity动效的界面。这也是进程隔离的方案的一个很棘手的问题。我的解决方案是在开机的时候往屏幕外添加一个View专门来初始化加载Unity，加载完毕后，再将UnityPlayer给从里面remove掉，重新添加到实际的要展示的窗口中去，这样打开界面的时候可以略去加载的耗时，稍微减少页面僵直的时间。
+### 单进程-URAS(Render As Service)
 一个渲染服务 Service 支持多个 Client APP 运行，且每个 Client APP 相互独立、互不干扰、可自更新。
 
 * 仅需一个 Service，多个工程共用同一个 Service，每个工程均正常运行且互不干扰
@@ -207,46 +174,68 @@ Unity Rendering as Service（简称URAS） 的渲染方案是团结引擎特有�
 它是将要显示的几个Unity引擎都打包到同一个Server服务端去统一管控。其实服务端的apk打包也是拿到Unity提供的服务端AAR打进一个空工程，内部逻辑也隐藏到了AAR中。服务端和客户端的通信采用我们熟知的AIDL接口来实现。而且这个服务端我们需要设置为persistent应用，使其能开机自启，自动执行渲染等工作，其他应用有显示需求可以秒开，并且长时间不显示也不会自己回收资源了，客户端的黑屏问题也可以解决了。
 
 相比于UAAL方案，客户端需要集成的是一个体积很小的Client.aar，对于客户端apk的体积控制是有优势的。
-#### 集成与使用方式
+#### URAS渲染原理
+##### **BufferQueue**
+**BufferQueue 机制** 是 Android 图形系统中最核心、最重要的底层机制之一，它实现了图形数据的生产者（Producer）和消费者（Consumer）之间的**高效、零拷贝**的通信。
+
+它可以将一个组件（**生产者**）生成的图形数据缓冲区，安全、高效地传递给另一个组件（**消费者**）以供显示或进一步处理。
+关键点是零拷贝，数据在生产者和消费者之间是通过内存句柄 (Handle) 传递的，而不是通过 CPU 复制实际的像素数据。这对于高性能的图形（如视频、3D）渲染至关重要。
+
+BufferQueue 本质上是一个队列，但它管理的不是数据本身，而是**图形缓冲区 (Graphic Buffers)** 的句柄。
+
+生产者调用 `dequeueBuffer()` 从队列中获取一个**空闲**的缓冲区。将图形数据（例如一帧画面）绘制到这个缓冲区中。调用 `queueBuffer()`：将填充好的缓冲区**排入队列**，通知消费者数据已准备好。
+
+消费者是需要使用图形数据进行显示的组件，调用 `acquireBuffer()`，从队列中**获取**一个生产者刚刚填充好的缓冲区。使用缓冲区中的数据进行合成、显示或进一步处理。调用 `releaseBuffer()` 将缓冲区**释放**回队列，使其再次变为**空闲**，供生产者重复使用。
+
+##### BufferQueue 的工作流程
+1.  **初始化：** 生产者和消费者通过 Binder IPC 建立连接，并协商 BufferQueue 的参数（例如最大缓冲区数量）。`BufferQueue` 会根据需求，通过 **`Gralloc`** 内存分配器分配实际的图形内存（通常在 GPU 可访问的共享内存中）。
+2.  **生产者获取缓冲区：** 生产者调用 `dequeueBuffer()`，从 BufferQueue 中拿到一个空闲的缓冲区句柄（ID = n）。
+3.  **生产者渲染：** 生产者（通常是 GPU）将一帧画面渲染到缓冲区 $n$ 中。
+4.  **生产者入队：** 生产者调用 `queueBuffer()`，将缓冲区 $n$ 放入待消费队列。
+5.  **消费者通知：** BufferQueue 通知消费者（例如 `SurfaceFlinger`），新数据已到达。
+6.  **消费者获取缓冲区：** 消费者调用 `acquireBuffer()`，从队列中取出缓冲区 $n$ 的句柄。
+7.  **消费者处理/显示：** 消费者（例如 `SurfaceFlinger`）使用缓冲区 $n$ 的数据进行合成，最终交给硬件显示。
+8.  **消费者释放：** 消费者完成对缓冲区 $n$ 的使用后，调用 `releaseBuffer()`，将缓冲区 $n$ 返回给空闲列表。
+9.  **循环：** 缓冲区 $n$ 再次变为“空闲”，生产者可以再次获取并重复使用。
+
+##### 跨进程渲染
+使用 `Surface` / `SurfaceTexture` / `SurfaceView`，这是Android中实现跨进程图形数据共享和渲染的最核心机制，尤其适用于高性能的3D渲染（如游戏、AR/VR、视频播放、复杂图形引擎等）。
+
+Android的图形系统基于 **`BufferQueue`** 机制。一个 `Surface` 本质上就是 `BufferQueue` 的生产者（Producer）端。当进程B将渲染好的图形数据（例如，一个OpenGL ES的帧）放入 `BufferQueue` 后，进程A的 `SurfaceView` 或 `TextureView`（它们是 `BufferQueue` 的消费者 Consumer）就可以从队列中取出并直接显示。
+
+当客户端的 `SurfaceView` 创建时，会向系统请求一个 `Surface` 对象，这个 `Surface` 就关联了一个 `BufferQueue`。通过 **Binder IPC** 将 `Surface` 对象的句柄（或一个包装了 `Surface` 的特殊对象）传递给Unity服务端。
+
+服务端在接收到 `Surface` 句柄后，将其作为 **渲染目标**（例如，作为 OpenGL ES 的 EGL 窗口）。将图形数据（如 `glSwapBuffers()`）渲染到这个 `Surface` 关联的 `BufferQueue` 中。一旦服务端将渲染数据提交到 `BufferQueue`，系统会自动将这些数据交给客户端的 `SurfaceView` 进行合成和显示，**绕过了传统的Android View绘制流程**（即 `onDraw`）。
+
+这种渲染方式性能极高，因为数据传输是在底层图形缓冲区级别完成，无需CPU进行像素拷贝，适用于视频流、3D渲染等对帧率要求高的场景。
+
+也可以使用 `TextureView` + `SurfaceTexture` + Binder IPC，这是一种特殊的组合，`TextureView` 将内容渲染到一个 `SurfaceTexture` 上，而 `SurfaceTexture` 也可以跨进程共享，通常用于更灵活的纹理操作（例如对渲染内容进行旋转、缩放等 View 级别的变换）。它的底层原理与 `SurfaceView` 类似，也是基于 `BufferQueue` 。
+#### URAS集成与使用方式
 我们只需要在gradle里引入这个客户端aar。在gradle sync之后，将远程的UnityView添加到自己的布局中去，配置好display参数(用来给服务端区分是哪个引擎的内容)，并指定服务端的包名。承载的View类型有SurfaceView和TextureView两种，而我的应用界面因为是一个悬浮窗口，设计有进出场的渐隐渐出动效，而SurfaceView不可以线性地设置alpha动画，所以选取TextureView来当作容器。
 
 ```xml
 <com.unity3d.renderservice.client.TuanjieView
-        android:id="@+id/unityview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:tuanjieDisplay="2"
-        app:tuanjieServicePkgName="com.tuanjie.renderservice"
-        app:tuanjieViewType="TextureView" />
+    android:id="@+id/unityview"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:tuanjieDisplay="2"
+    app:tuanjieServicePkgName="com.tuanjie.renderservice"
+    app:tuanjieViewType="TextureView" />
 ```
-剩余的代码逻辑仅仅是服务端Service的启动，添加服务连接的回调，消息回调。由于服务端为若干个Client的公共引擎，所以连resume和pause都不需要处理，因为这两个操作会对所有的客户端都生效。我们只需要确保启动服务，并使用正确的display即可，面板退到后台可以使用setVisbility来控制其显示隐藏。除此之外，我们的通信工具类，UnityMessageHelper还需要实现两个接口，一个服务连接状态接口，一个业务数据的消息回调接口，代码如下：
+
+剩余的代码逻辑仅仅是服务端Service的启动，添加服务连接的回调，消息回调。由于服务端为若干个Client的公共引擎，所以连resume和pause都不需要处理，因为这两个操作会对所有的客户端都生效。我们只需要确保启动服务，并使用正确的display即可，面板退到后台可以使用setVisbility来控制其显示隐藏。
+
+除此之外，我们的通信工具类，UnityMessageHelper还需要实现两个接口，一个服务连接状态接口，一个业务数据的消息回调接口，代码如下：
 
 ```kotlin
 object UnityMessageHelper : TuanjieRenderService.Callback, SendMessageCallback {
-
-    fun initUnityService() {
-        LogUtils.i(TAG, "initUnityService")
-        unityRenderService = 
-            TuanjieRenderService.init(appContext,TUANJIE_PACKAGENAME).apply {
-                enableAutoReconnect = true
-                addCallback(this)
-                addSendMessageCallback(this)
-                ensureStarted()
-        }
-    }
-
-
     override fun onServiceConnected() {
         LogUtils.w(TAG, "onUnityRenderServiceConnected")
     }
    
     override fun onServiceDisconnected() {
         LogUtils.w(TAG, "onUnityRenderServiceDisConnected")
-        messageScope.launch {
-            delay(500L)
-            initUnityService()
-            unityRenderService.resume()
-        }
+        ...
     }
    
     override fun onServiceStartRenderView(p0: Int) {
@@ -258,9 +247,7 @@ object UnityMessageHelper : TuanjieRenderService.Callback, SendMessageCallback {
     // 服务端的消息回调
     override fun onClientRecvMessageWithNoRet(msg: String?) {
         // 回调消息的解析
-
     }
-
 }
 ```
 

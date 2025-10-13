@@ -1043,8 +1043,18 @@ std::string common_token_to_piece(const struct llama_context * ctx, llama_token 
 #### 运行效果
 将这个模组直接封装成一个aar，也可以直接被其他模组依赖编译。
 
-外部使用时，先将gguf文件从手机下载路径复制到内部目录，也可以直接在线从 `Hugging Face` 上下载到本地内部目录。然后调用 `loadModel()` 、 `getResponseAsFlow()` 等接口来加载模型，获取生成的对话回复。
+外部使用时，先将 `.gguf` 文件从手机下载路径复制到内部目录，也可以直接在线从 `Hugging Face` 上下载到本地内部目录。然后调用 `loadModel()` 、 `getResponseAsFlow()` 等接口来加载模型，获取生成的对话回复。
 
 运行结果如下，模型加载和对话回复：
 
 ![](/assets/img/blog/blogs_local_llm_load_models.png){:width="600" height="360" loading="lazy"}
+
+打开实时的片段生成和性能追踪对比。推理过程的打印日志如下：
+
+![](/assets/img/blog/blogs_ai_llamacpp_running_log.png)
+
+使用AS的Profiler，实时性能监控：
+
+![](/assets/img/blog/blogs_ai_llamacpp_running_live_telemetry.png)
+
+在加载模型是有一段巨大的爬升，将整个模型包括权重数据都对应读取到了 Native 堆中等待使用。在推理时可以看到CPU是程锯齿状一段一段地起伏，说明LLM正在执行一轮一轮的 **自回归生成** 。

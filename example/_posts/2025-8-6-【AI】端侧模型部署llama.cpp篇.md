@@ -779,7 +779,9 @@ static struct llama_model * llama_model_load_from_file_impl(
 }
 ```
 
-可以看到，这个方法基本是确定运行设备环境，除CPU之外，是否有GPU和远程设备可以使用。实际的加载函数为：
+可以看到， `llama_model_load_from_file_impl` 方法是确定运行的设备环境是否符合要求，除CPU之外，是否有GPU和远程设备可以使用。
+
+实际的模型初始化加载函数为 `llama_model_load` ，其中有5个核心的加载步骤：
 
 ```cpp
 const int status = llama_model_load(path_model, splits, *model, params);
@@ -808,21 +810,21 @@ std::vector<llama_chat_message> _messages;
 
 后续用户的聊天消息也会被添加进这个数组里，一起作为推理输入。
 
-当用户输入一个请求，会在 `startCompletion` 函数中对所有的数据进行预处理，这个函数完成了所有开始推理前的准备工作，为后续的推理调用铺平了道路。使用 llama_chat_apply_template 将用户消息 (query) 格式化为 LLM 模型能够理解的、带有特殊标记（如 `[INST]` , `<<SYS>>` ）的完整 Prompt 字符串。调用 common_tokenize 将格式化后的 Prompt 字符串转换成模型需要的数字 ID 序列（_promptTokens）。创建并填充 llama_batch 结构体，将 Token ID 序列和数量赋值给它。
+当用户输入一个请求，会在 `startCompletion` 函数中对所有的数据进行预处理，这个函数完成了所有开始推理前的准备工作，为后续的推理调用铺平了道路。使用 `llama_chat_apply_template` 将用户消息 (query) 格式化为 `LLM` 模型能够理解的、带有特殊标记（如 `[INST]` , `<<SYS>>` ）的完整 `Prompt` 字符串。调用 `common_tokenize` 将格式化后的 `Prompt` 字符串转换成模型需要的数字 `ID` 序列（_promptTokens）。创建并填充 `llama_batch` 结构体，将 `Token ID` 序列和数量赋值给它。
 
 ```cpp
 void
 LLMInference::startCompletion(const char *query) 
 ```
 
-第一步会把最新的用户请求也添加进 _messages 数组中。
+第一步会把最新的用户请求也添加进 `_messages` 数组中。
 
 ```cpp
 // 添加用户类型的prompt
 addChatMessage(query, "user");
 ```
 
-接着调用 `llama_chat_apply_template` 函数，将内部消息列表 (_messages) 格式化为模型可接受的 Prompt 字符串 (_formattedMessages)
+接着调用 `llama_chat_apply_template` 函数，将内部消息列表 (_messages) 格式化为模型可接受的 `Prompt` 字符串 (_formattedMessages)
 
 ```cpp
 int newLen = llama_chat_apply_template(_chatTemplate,       // 聊天模板句柄
@@ -834,7 +836,7 @@ int newLen = llama_chat_apply_template(_chatTemplate,       // 聊天模板句�
     
 ```
 
-然后会对这个prompt进行分词和解码。
+然后会对这个 `prompt` 进行分词和解码。
 
 ```cpp
 std::string prompt(_formattedMessages.begin() + _prevLen, _formattedMessages.begin() + newLen);
@@ -847,10 +849,10 @@ _batch->token = _promptTokens.data();
 _batch->n_tokens = _promptTokens.size();
 ```
 
-一个序列的所有 Prompt Token 会被打包进一个 `llama_batch` ，其中只有最后一个 Token 的 `logits` 字段会被设为 true，以预测下一个 Token。以批量（Batch）的方式将一个或多个序列的 Token 喂给模型准备进行一次前向计算。
+一个序列的所有 `Prompt` 会被打包进一个 `llama_batch` ，其中只有最后一个 `Token` 的 `logits` 字段会被设为 true，以预测下一个 Token。以批量（Batch）的方式将一个或多个序列的 `Token` 输入给模型准备进行一次前向计算。
 
 ##### 推理的触发
-数据准备好之后，就会循环调用 `completionLoop` 函数：
+数据准备好之后，就可以循环调用 `completionLoop` 函数来进行对话补全推理：
 
 ```cpp
 /**
@@ -873,7 +875,7 @@ Java_com_stephen_llamacppbridge_LlamaCppBridge_completionLoop(JNIEnv* env, jobje
 }
 ```
 
-调用到 `llama.cpp` 框架的 `completionLoop` 函数，它负责在模型已经处理完初始 Prompt 之后，每调用一次就生成并处理下一个 Token。
+调用到 `llama.cpp` 框架的 `completionLoop` 函数，它负责在模型已经处理完初始 `Prompt` 之后，每调用一次就生成并处理下一个 `Token` 。
 
 ```cpp
 /**
@@ -949,12 +951,11 @@ LLMInference::completionLoop() {
 }
 ```
 
-这个函数结合了 模型推理（llama_decode）、Token 采样（llama_sampler_sample）、生成停止检查和 UTF-8 编码处理，是实现流式（Streaming）输出的关键。
+这个函数结合了 **模型推理（llama_decode）、Token 采样（llama_sampler_sample）、生成停止检查和 UTF-8 编码处理** ，是实现流式输出的关键。
 
-下一层核心的方法为 llama_decode 和 llama_sampler_sample 函数。
-
+下一层核心的方法为 `llama_decode` 和 `llama_sampler_sample` 函数。
 ###### **llama_decode**
-`llama_context::decode` 是 llama.cpp 中负责执行模型前向传播（即推理）的核心函数。它将一个批次的输入 Token（存储在 llama_batch 中）转化为模型的输出（Logits 或嵌入向量），并同时管理模型的 KV 缓存。
+`llama_context::decode` 是 llama.cpp 中负责执行模型前向传播（即推理）的核心函数。它将一个批次的输入 Token（存储在 `llama_batch` 中）转化为模型的输出（Logits 或嵌入向量），并同时管理模型的 KV 缓存。
 
 ```cpp
 /**
@@ -1025,7 +1026,7 @@ llama_token llama_sampler_sample(struct llama_sampler * smpl, struct llama_conte
 ```
 
 ##### 返回阶段性推理结果
-模型的前向推理和采样完成之后，最后一步就是结合模型的词汇表。转换为可读的string数据：
+模型的前向推理和采样完成之后，最后一步就是结合模型的词汇表。转换为可读的string字符串数据：
 
 ```cpp
 std::string common_token_to_piece(const struct llama_context * ctx, llama_token token, bool special) {

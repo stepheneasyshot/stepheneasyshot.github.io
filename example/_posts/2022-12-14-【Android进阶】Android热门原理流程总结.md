@@ -680,12 +680,12 @@ protected void onPause() {
 ```
 
 ## 事件分发
-Android 的点击事件分发机制是一个典型的责任链模式，事件从最外层的 ViewGroup 开始，沿着视图层级依次传递，直到被某个 View 消费为止。下面我将全面解析这一复杂而精妙的事件分发系统。
+Android 的点击事件分发机制是一个典型的 **责任链模式** ，事件从最外层的 ViewGroup 开始，沿着视图层级依次传递，直到被某个 View 消费为止。
 
 ### 事件分发三大核心方法
-* dispatchTouchEvent(MotionEvent event) - 事件分发入口
-* onInterceptTouchEvent(MotionEvent event) - 事件拦截（仅ViewGroup）
-* onTouchEvent(MotionEvent event) - 事件处理
+* **`dispatchTouchEvent(MotionEvent event)`** - 事件分发入口
+* **`onInterceptTouchEvent(MotionEvent event)`** - 事件拦截（仅ViewGroup）
+* **`onTouchEvent(MotionEvent event)`** - 事件处理
 
 ### 完整分发流程
 1. Activity 层级分发

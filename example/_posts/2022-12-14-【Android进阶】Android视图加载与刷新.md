@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了 Android 领域重难点面试题精选
+  本文介绍了 Android 的Activity组件内部的视图加载与刷新流程
 image: 
   path: /assets/img/blog/blogs_android_common_cover.png
   srcset: 

@@ -177,9 +177,13 @@ inline fun testInline(lambdaParams:()->Unit) {
 noinline 就是用来局部地、指向性地关掉函数的内联优化的。既然是优化，为什么要关掉？因为这种优化会导致函数中的函数类型的参数无法被当做对象使用，也就是说，这种优化会对 Kotlin 的功能做出一定程度的收窄。而当你需要这个功能的时候，就要手动关闭优化了。这也是 inline 默认是关闭、需要手动开启的另一个原因：它会收窄 Kotlin 的功能。
 
 ## crossinline
+当 `inline` 函数将 Lambda 参数**传递给另一个执行上下文**（如另一个函数、另一个线程、协程或其他作用域）时，为了**防止非局部返回**，必须使用 `crossinline`。
+
+保持 Lambda 的内联优化，但**禁止**在 Lambda 内部使用裸奔的 `return` 关键字（即非局部返回）。它确保 Lambda 只能使用**标签返回 (`return@label`)** 或**隐式返回**。使用 `crossinline` 确保内联函数的行为符合预期，避免 Lambda 内部的 `return` 意外地跳出外部的非内联函数。
+
 看这样一个情景：
 
-一个内联函数，它的参数是一个函数类型的参数。
+一个内联函数，接受一个 lambda 参数。
 
 ```kotlin
 inline fun lambdaReturnTest(insertAction: () -> Unit) {
@@ -187,7 +191,7 @@ inline fun lambdaReturnTest(insertAction: () -> Unit) {
 }
 ```
 
-调用处加一个return：
+如果在调用处，lambda参数里带一个return：
 
 ```kotlin
 override fun onCreate() {
@@ -211,6 +215,53 @@ override fun onCreate() {
 * 但只有内联函数的 Lambda 参数可以使用 return。
 
 > 目前的Kotlin版本其实也可以在return后面使用\@来指明返回的哪一级的函数。
+
+**示例：异步或嵌套执行**
+
+假设您有一个 `safeRun` 函数，它在一个内部（非内联）的 `Runnable` 中执行您的 Lambda。
+
+```kotlin
+// 内部非内联函数，它接受一个普通 Lambda/Runnable
+fun executeInExecutor(block: () -> Unit) {
+    // 实际的 Android/Java 场景可能是：Executor.execute(Runnable { ... })
+    println("任务被包装并排队...")
+    block() // 模拟执行
+}
+
+// 场景：创建一个安全的执行块，但其中的任务会被传递到另一个函数中执行
+inline fun safeRun(crossinline block: () -> Unit) {
+    println("--- 准备执行 ---")
+    // 如果这里没有 crossinline，编译器无法保证 block() 不会被非局部返回跳出 safeRun 之外
+    executeInExecutor {
+        // block 的代码在这里被执行
+        block() 
+    }
+    println("--- 执行完毕 ---")
+}
+
+fun main() {
+    fun callSafeRun() {
+        safeRun {
+            println("开始任务")
+            // return // ❌ 编译错误：禁止非局部返回
+            return @ safeRun // ✅ 允许：只能使用标签返回，只跳出 safeRun 
+        }
+        println("callSafeRun 结束")
+    }
+    
+    callSafeRun() 
+}
+
+/* 输出：
+--- 准备执行 ---
+任务被包装并排队...
+开始任务
+--- 执行完毕 ---
+callSafeRun 结束
+*/
+```
+
+如果没有 `crossinline`，Lambda **`{ return }`** 理论上可以执行非局部返回，直接跳出 `callSafeRun` 函数。但由于 Lambda 实际是在非内联的 `executeInExecutor` 内部执行的，这种行为是不允许的，因此 `crossinline` 强制阻止了非局部返回，以保证程序的控制流是清晰且安全的。
 
 ### 双层嵌套的lambda场景
 

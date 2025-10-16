@@ -183,20 +183,19 @@ Unity Rendering as Service（简称URAS） 的渲染方案是团结引擎特有�
 
 BufferQueue 本质上是一个队列，但它管理的不是数据本身，而是**图形缓冲区 (Graphic Buffers)** 的句柄。
 
-生产者调用 `dequeueBuffer()` 从队列中获取一个**空闲**的缓冲区。将图形数据（例如一帧画面）绘制到这个缓冲区中。调用 `queueBuffer()`：将填充好的缓冲区**排入队列**，通知消费者数据已准备好。
-
-消费者是需要使用图形数据进行显示的组件，调用 `acquireBuffer()`，从队列中**获取**一个生产者刚刚填充好的缓冲区。使用缓冲区中的数据进行合成、显示或进一步处理。调用 `releaseBuffer()` 将缓冲区**释放**回队列，使其再次变为**空闲**，供生产者重复使用。
+* 生产者调用 `dequeueBuffer()` 从队列中获取一个**空闲**的缓冲区。将图形数据（例如一帧画面）绘制到这个缓冲区中。调用 `queueBuffer()`：将填充好的缓冲区**排入队列**，通知消费者数据已准备好。
+* 消费者是需要使用图形数据进行显示的组件，调用 `acquireBuffer()`，从队列中**获取**一个生产者刚刚填充好的缓冲区。使用缓冲区中的数据进行合成、显示或进一步处理。调用 `releaseBuffer()` 将缓冲区**释放**回队列，使其再次变为**空闲**，供生产者重复使用。
 
 ##### BufferQueue 的工作流程
 1.  **初始化：** 生产者和消费者通过 Binder IPC 建立连接，并协商 BufferQueue 的参数（例如最大缓冲区数量）。`BufferQueue` 会根据需求，通过 **`Gralloc`** 内存分配器分配实际的图形内存（通常在 GPU 可访问的共享内存中）。
 2.  **生产者获取缓冲区：** 生产者调用 `dequeueBuffer()`，从 BufferQueue 中拿到一个空闲的缓冲区句柄（ID = n）。
-3.  **生产者渲染：** 生产者（通常是 GPU）将一帧画面渲染到缓冲区 $n$ 中。
-4.  **生产者入队：** 生产者调用 `queueBuffer()`，将缓冲区 $n$ 放入待消费队列。
+3.  **生产者渲染：** 生产者（通常是 GPU）将一帧画面渲染到缓冲区 n 中。
+4.  **生产者入队：** 生产者调用 `queueBuffer()`，将缓冲区 n 放入待消费队列。
 5.  **消费者通知：** BufferQueue 通知消费者（例如 `SurfaceFlinger`），新数据已到达。
-6.  **消费者获取缓冲区：** 消费者调用 `acquireBuffer()`，从队列中取出缓冲区 $n$ 的句柄。
-7.  **消费者处理/显示：** 消费者（例如 `SurfaceFlinger`）使用缓冲区 $n$ 的数据进行合成，最终交给硬件显示。
-8.  **消费者释放：** 消费者完成对缓冲区 $n$ 的使用后，调用 `releaseBuffer()`，将缓冲区 $n$ 返回给空闲列表。
-9.  **循环：** 缓冲区 $n$ 再次变为“空闲”，生产者可以再次获取并重复使用。
+6.  **消费者获取缓冲区：** 消费者调用 `acquireBuffer()`，从队列中取出缓冲区 n 的句柄。
+7.  **消费者处理/显示：** 消费者（例如 `SurfaceFlinger`）使用缓冲区 n 的数据进行合成，最终交给硬件显示。
+8.  **消费者释放：** 消费者完成对缓冲区 n 的使用后，调用 `releaseBuffer()`，将缓冲区 n 返回给空闲列表。
+9.  **循环：** 缓冲区 n 再次变为“空闲”，生产者可以再次获取并重复使用。
 
 ##### 跨进程渲染
 使用 `Surface` / `SurfaceTexture` / `SurfaceView`，这是Android中实现跨进程图形数据共享和渲染的最核心机制，尤其适用于高性能的3D渲染（如游戏、AR/VR、视频播放、复杂图形引擎等）。
@@ -211,7 +210,7 @@ Android的图形系统基于 **`BufferQueue`** 机制。一个 `Surface` 本质�
 
 也可以使用 `TextureView` + `SurfaceTexture` + Binder IPC，这是一种特殊的组合，`TextureView` 将内容渲染到一个 `SurfaceTexture` 上，而 `SurfaceTexture` 也可以跨进程共享，通常用于更灵活的纹理操作（例如对渲染内容进行旋转、缩放等 View 级别的变换）。它的底层原理与 `SurfaceView` 类似，也是基于 `BufferQueue` 。
 #### URAS集成与使用方式
-我们只需要在gradle里引入这个客户端aar。在gradle sync之后，将远程的UnityView添加到自己的布局中去，配置好display参数(用来给服务端区分是哪个引擎的内容)，并指定服务端的包名。承载的View类型有SurfaceView和TextureView两种，而我的应用界面因为是一个悬浮窗口，设计有进出场的渐隐渐出动效，而SurfaceView不可以线性地设置alpha动画，所以选取TextureView来当作容器。
+我们只需要在 `gradle` 里引入这个客户端aar。在gradle sync之后，将远程的 `UnityView` 添加到自己的布局中去，配置好display参数(用来给服务端区分是哪个引擎的内容)，并指定服务端的包名。承载的View类型有 `SurfaceView` 和 `TextureView` 两种，而我的应用界面因为是一个悬浮窗口，设计有进出场的渐隐渐出动效，而 `SurfaceView` 不可以线性地设置alpha动画，所以选取 `TextureView` 来当作容器。
 
 ```xml
 <com.unity3d.renderservice.client.TuanjieView
@@ -223,9 +222,9 @@ Android的图形系统基于 **`BufferQueue`** 机制。一个 `Surface` 本质�
     app:tuanjieViewType="TextureView" />
 ```
 
-剩余的代码逻辑仅仅是服务端Service的启动，添加服务连接的回调，消息回调。由于服务端为若干个Client的公共引擎，所以连resume和pause都不需要处理，因为这两个操作会对所有的客户端都生效。我们只需要确保启动服务，并使用正确的display即可，面板退到后台可以使用setVisbility来控制其显示隐藏。
+剩余的代码逻辑仅仅是服务端 `Service` 的启动，添加服务连接的回调，消息回调。由于服务端为若干个 `Client` 的公共引擎，所以连 `resume` 和 `pause` 都不需要处理，因为这两个操作会对所有的客户端都生效。我们只需要确保启动服务，并使用正确的display即可，面板退到后台可以使用 `setVisbility` 来控制其显示隐藏。
 
-除此之外，我们的通信工具类，UnityMessageHelper还需要实现两个接口，一个服务连接状态接口，一个业务数据的消息回调接口，代码如下：
+除此之外，我们的通信工具类， `UnityMessageHelper` 还需要实现两个接口，一个服务连接状态接口，一个业务数据的消息回调接口，代码如下：
 
 ```kotlin
 object UnityMessageHelper : TuanjieRenderService.Callback, SendMessageCallback {
@@ -251,4 +250,4 @@ object UnityMessageHelper : TuanjieRenderService.Callback, SendMessageCallback {
 }
 ```
 
-可以说URAS方案由于其统一管控，一对多的特点，在性能和客户端的易集成性方面，是优于UAAL方案的。可以从架构层面上，联动更多的动效使用模块，实现一镜到底的丝滑转场。
+可以说URAS方案由于其统一管控，一对多的特点，在性能和客户端的易集成性方面，是优于UAAL方案的。另外，还可以从架构层面上，联动更多的动效使用模块，实现一镜到底的丝滑转场。

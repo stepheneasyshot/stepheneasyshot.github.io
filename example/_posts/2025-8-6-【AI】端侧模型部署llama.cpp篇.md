@@ -1070,3 +1070,6 @@ std::string common_token_to_piece(const struct llama_context * ctx, llama_token 
 ![](/assets/img/blog/blogs_ai_llamacpp_running_live_telemetry.png)
 
 在加载模型是有一段巨大的爬升，将整个模型包括权重数据都对应读取到了 Native 堆中等待使用。在推理时可以看到CPU是程锯齿状一段一段地起伏，说明LLM正在执行一轮一轮的 **自回归生成** 。
+
+## 多模态展望
+在5个月前，llama.cpp已经启动多模态的集成开发，仅支持llama-server的模式启动，目前还没有尝试使用JNI的模式集成到app内，待有空了再研究下图像和音频的处理。

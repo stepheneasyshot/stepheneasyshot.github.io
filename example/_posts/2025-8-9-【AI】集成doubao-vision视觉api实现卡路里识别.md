@@ -151,10 +151,9 @@ class DoubaoVisionRepository(private val ktorClient: KtorClient) {
 
 ### 相册上传
 
-<div style="display: flex; justify-content: center;">
-  <img src="/assets/img/blog/blogs_ai_peachassistant_calorie.png" alt="Image 1" style="width: 45%; margin-right: 5%;">
-  <img src="/assets/img/blog/blogs_ai_peachassistant_calorie_success.png" alt="Image 2" style="width: 45%;">
-</div>
+运行截图：
+
+![](/assets/img/blog/blogs_ai_peachassistant_calorie_success.png){:width="200" height="450" loading="lazy"}
 
 ### 实时拍照上传
 

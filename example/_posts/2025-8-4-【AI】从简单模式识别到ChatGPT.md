@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文介绍了AI领域的不同范围的分层概念
+  本文介绍了AI领域的不同范围的分层概念，以及现在强大的LLM是如何进化而来的
 image: 
   path: /assets/img/blog/blogs_ai_history_cover.png
   srcset: 
@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_ai_history_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 【AI】LLM大语言模型是如何工作的
+# 【AI】从简单模式识别到ChatGPT
 手动翻译自：
 
 [How Large Language Models work? From zero to ChatGPT](https://medium.com/data-science-at-microsoft/how-large-language-models-work-91c362f5b78f)

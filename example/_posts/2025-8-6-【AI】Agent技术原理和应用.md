@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_ai_agent_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# Agent技术原理和应用
+# 【AI】Agent技术原理和应用
 原文：
 
 [万字长文解析AI Agent技术原理和应用](https://developer.huawei.com/consumer/cn/forum/topic/0202155833118560037)

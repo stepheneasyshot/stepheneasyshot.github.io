@@ -232,3 +232,134 @@ fun AiCoreChatDemo(paddingValues: PaddingValues) {
     }
 }
 ```
+
+
+## LiteRT 使用入门
+本指南介绍了在设备上运行 LiteRT（简称 Lite Runtime）模型以根据输入数据进行预测的过程。这是 使用 LiteRT 解释器来实现，该解释器使用静态图排序和 自定义（非动态）内存分配器，以确保将负载、初始化 和执行延迟时间
+
+LiteRT 推理通常遵循以下步骤：
+1. 加载模型：将 .tflite 模型加载到内存中，其中包含模型的执行图。
+2. 转换数据：将输入数据转换为预期格式并 维度。模型的原始输入数据通常与模型预期的输入数据格式不匹配。例如，您可能需要调整图片大小或更改图片格式，以使其与模型兼容。
+3. 运行推理：执行 LiteRT 模型以进行预测。这个 这个步骤涉及使用 LiteRT API 执行模型。它涉及 例如构建解释器和分配张量等步骤。
+4. 解释输出：以有意义的方式解释输出张量 对您的应用非常有用例如，一个模型可能只返回 概率列表。您可以将概率映射到相关类别并设置输出格式。
+
+本指南介绍了如何访问 LiteRT 解释器，以及如何使用 C++、Java 和 Python 执行推理。
+
+### 支持的平台
+TensorFlow 推理 API 适用于最常见的移动设备和嵌入式设备 Android、iOS 和 Linux 等平台， 多种编程语言。
+
+在大多数情况下，API 设计反映的是性能优先于易用性。LiteRT 专为在小型设备上快速推理而设计，因此 API 会避免不必要的复制，但会牺牲便捷性。
+
+在所有库中，LiteRT API 可让您加载模型、提供输入并检索推理输出。
+
+#### Android 平台
+在 Android 上，可以使用 Java 或 C++ API 执行 LiteRT 推理。通过 Java API 提供了便利，可以直接在 Android 应用中使用 activity 类。C++ API 提供了更高的灵活性和速度，但可能需要 编写 JNI 封装容器以在 Java 层和 C++ 层之间移动数据。
+
+如需了解详情，请参阅 C++ 和 Java 部分；或者 按照 Android 快速入门操作。
+
+#### iOS 平台
+在 iOS 上，LiteRT 可在 Swift 和 Objective-C iOS 库中使用。您也可以使用 C API 编写代码。
+
+请参阅 Swift、Objective-C 和 C API 部分，或按照 iOS 快速入门中的说明操作。
+
+#### Linux 平台
+在 Linux 平台上，您可以使用 C++ 中提供的 LiteRT API 运行推理。
+
+### 加载并运行模型
+加载和运行 LiteRT 模型涉及以下步骤：
+* 将模型加载到内存中。
+* 根据现有模型构建 Interpreter。
+* 设置输入张量值。
+* 调用推理。
+* 输出张量值。
+
+#### Android (Java)
+使用 LiteRT 运行推理的 Java API 主要用于 因此它可作为 Android 库依赖项使用: `com.google.ai.edge.litert` 。
+
+在 Java 中，您将使用 Interpreter 类加载模型并驱动模型推理。在许多情况下，这可能是您所需的唯一 API。
+
+您可以使用 FlatBuffers (.tflite) 文件初始化 Interpreter：
+
+```java
+public Interpreter(@NotNull File modelFile);
+```
+
+或者使用 MappedByteBuffer：
+
+```java
+public Interpreter(@NotNull MappedByteBuffer mappedByteBuffer);
+```
+
+在这两种情况下，您都必须提供有效的 `LiteRT` 模型，否则 API 会抛出 `IllegalArgumentException` 。如果您使用 `MappedByteBuffer` 初始化 `Interpreter` ，则在 Interpreter 的整个生命周期内，该值必须保持不变。
+
+在模型上运行推断的首选方法是使用签名 - 可用 适用于从 TensorFlow 2.5 开始转换的模型
+
+```java
+try (Interpreter interpreter = new Interpreter(file_of_tensorflowlite_model)) {
+  Map<String, Object> inputs = new HashMap<>();
+  inputs.put("input_1", input1);
+  inputs.put("input_2", input2);
+  Map<String, Object> outputs = new HashMap<>();
+  outputs.put("output_1", output1);
+  interpreter.runSignature(inputs, outputs, "mySignature");
+}
+```
+
+runSignature 方法采用三个参数：
+* 输入：将输入从签名中的输入名称映射到输入 对象。
+* 输出：从签名中的输出名称到输出的输出映射的映射 数据。
+* 签名名称（可选）：签名名称（如果模型只有一个签名，可以留空）。
+
+当模型未定义签名时，另一种运行推理的方法。 只需调用 Interpreter.run() 即可。例如：
+
+```java
+try (Interpreter interpreter = new Interpreter(file_of_a_tensorflowlite_model)) {
+  interpreter.run(input, output);
+}
+```
+
+`run()` 方法仅接受一个输入，并仅返回一个输出。因此，如果您的 模型具有多个输入或多个输出，请改用：
+
+```java
+interpreter.runForMultipleInputsOutputs(inputs, map_of_indices_to_outputs);
+```
+
+在这种情况下，inputs 中的每个条目都对应于一个输入张量，map_of_indices_to_outputs 会将输出张量的索引映射到相应的输出数据。
+
+在这两种情况下，张量索引都应与您提供给 在创建模型时访问 LiteRT Converter。请注意 input 中的张量顺序必须与提供给 LiteRT 的顺序一致 转换器。
+
+Interpreter 类还提供了一些便捷的函数，可让您使用操作名称获取任何模型输入或输出的索引：
+
+```java
+public int getInputIndex(String opName);
+public int getOutputIndex(String opName);
+```
+
+如果 opName 不是模型中的有效操作，则会抛出 IllegalArgumentException。
+
+另请注意，Interpreter 拥有资源。为了避免内存泄漏， 以下资源必须在使用后释放：
+
+```java
+interpreter.close();
+```
+
+如需查看使用 Java 的示例项目，请参阅 Android 对象检测示例应用。
+
+### 支持的数据类型
+如需使用 LiteRT，输入和输出张量的数据类型必须为以下基元类型之一：
+* float
+* int
+* long
+* byte
+
+String 类型也受支持，但它们的编码方式与 基元类型。特别是，字符串张量的形状决定了 张量中字符串的排列，其中每个元素本身都是一个 可变长度的字符串。从这个意义上讲，不能仅根据形状和类型计算张量的字节大小，因此不能将字符串作为单个扁平的 ByteBuffer 参数提供。
+
+如果使用其他数据类型（包括 Integer 和 Float 等封装类型），系统会抛出 IllegalArgumentException。
+
+#### 输入
+每个输入都应是支持的原始类型的数组或多维数组，或者大小适当的原始 ByteBuffer。如果输入 数组或多维数组，关联的输入张量将是 在推理时隐式地调整为数组维度的大小。如果输入是 ByteBuffer，调用方应先手动调整关联的输入张量大小（通过 Interpreter.resizeInput()），然后再运行推理。
+
+使用 ByteBuffer 时，请优先使用直接字节缓冲区，因为这样 Interpreter 就可以避免不必要的复制。如果 ByteBuffer 是直接字节 缓冲区，其顺序必须为 ByteOrder.nativeOrder()。在使用 模型推断，在模型推断完成之前必须保持不变。
+
+#### 输出
+每个输出都应是受支持基元类型的数组或多维数组，或者是大小适当的 ByteBuffer。请注意，某些模型具有动态输出，其中输出张量的形状可能会因输入而异。对于现有的 Java 推理 API，但通过计划中的扩展可以实现。

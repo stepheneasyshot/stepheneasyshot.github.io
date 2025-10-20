@@ -84,11 +84,11 @@ LiteRT 主要用于**推理**（Inference），它可以运行各种类型的经
    <img src="/assets/img/blog/blogs_ai_gallery_gemma_audio_scribe.png" alt="Image 2" style="width: 30%;">
 </div>
 
-`Gallery` 性能测试：
+### `Gallery` 性能测试
+整体占用和 `llama.cpp` 持平，主要区别就是分了两段加载，在刚进入对话 `loadModel()` 时，没有加载全部权重数据到内存，在推理真正调用再加载的。
 
 ![](/assets/img/blog/blogs_ai_gallery_performance.png)
 
-整体占用和 `llama.cpp` 持平，主要区别就是分了两段加载，在刚进入对话时 `loadModel()` 没有加载全部权重数据到内存，在推理时再加载的。
 ### 简化方式一 MediaPipe Tasks 
 底层依然基于 `LiteRT` 的运行时来运行端侧AI模型，只是在应用层进行了封装，提供了更方便的接口。
 

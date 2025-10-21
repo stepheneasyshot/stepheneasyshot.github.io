@@ -84,11 +84,179 @@ LiteRT 主要用于**推理**（Inference），它可以运行各种类型的经
    <img src="/assets/img/blog/blogs_ai_gallery_gemma_audio_scribe.png" alt="Image 2" style="width: 30%;">
 </div>
 
-### `Gallery` 性能测试
-整体占用和 `llama.cpp` 持平，主要区别就是分了两段加载，在刚进入对话 `loadModel()` 时，没有加载全部权重数据到内存，在推理真正调用再加载的。
+### Gallery 运行流程追踪
+#### 初始化读取到内存
+应用最开始的步骤其实是模型文件检查，以及获取 Token 认证 Hugginface 社区去下载模型，这一步分析省略，因为各家的部署肯定是放置于自己的服务器上，或者直接存在assets文件夹岁随应用打包。
+
+第一步看整个应用模型加载到内存的关键节点，模型初始化流程，用户在UI界面选择一个模型后， `ModelManagerViewModel.initializeModel()` 方法被调用，会开始检查模型是否已经初始化或正在初始化，避免重复操作。测试中，我加载一个自己下载导入的 `gemma3-1b-it-int4` 模型，可以看到如下信息：
+
+```
+initializeModel: Model(
+name=gemma3-1b-it-int4.litertlm, 
+displayName=, 
+info=, 
+configs=[com.google.ai.edge.gallery.data.LabelConfig@4061738, com.google.ai.edge.gallery.data.NumberSliderConfig@efb2311, com.google.ai.edge.gallery.data.NumberSliderConfig@5c34c76, com.google.ai.edge.gallery.data.NumberSliderConfig@eb7b277, com.google.ai.edge.gallery.data.SegmentedButtonConfig@ba16ee4], 
+learnMoreUrl=, 
+bestForTaskIds=[], 
+minDeviceMemoryInGb=null, 
+url=, 
+sizeInBytes=584417280, 
+downloadFileName=__imports/gemma3-1b-it-int4.litertlm, 
+version=_, 
+extraDataFiles=[], 
+localFileRelativeDirPathOverride=, 
+localModelFilePathOverride=, 
+showRunAgainButton=false, 
+showBenchmarkButton=false, 
+isZip=false, 
+unzipDir=, 
+llmPromptTemplates=[], 
+llmSupportImage=false, 
+llmSupportAudio=false, 
+imported=true, 
+normalizedName=gemma3_1b_it_int4_litertlm, 
+instance=null, 
+initializing=false, 
+cleanUpAfterInit=false, 
+configValues={Max tokens=1024, TopK=40.0, TopP=0.9, Temperature=1.0, Choose accelerator=CPU},
+totalBytes=584417280, 
+acessToken=null)
+```
+
+在各种初始化和清除资源检查完成之后，会调用到 `LlmChatModelHelper.initialize()` 方法。创建 `EngineConfig` 对象，配置模型路径、后端（CPU/GPU）、最大token数等参数。使用配置创建 `Engine` 实例并初始化，通过 `engine.createConversation()` 创建对话实例，将引擎和对话实例包装在 `LlmModelInstance` 对象中，并赋值给 `Model.instance` 属性。
+
+**关键代码实现：**
+```kotlin
+// LlmChatModelHelper.kt
+val engineConfig = EngineConfig(
+  modelPath = model.getPath(context = context),
+  backend = preferredBackend,
+  visionBackend = if (shouldEnableImage) Backend.GPU else null,
+  audioBackend = if (shouldEnableAudio) Backend.CPU else null,
+  maxNumTokens = maxTokens,
+  enableBenchmark = true,
+)
+
+val engine = Engine(engineConfig)
+engine.initialize()
+
+val conversation = engine.createConversation(ConversationConfig(...))
+model.instance = LlmModelInstance(engine = engine, conversation = conversation) 
+```
+
+这一步初始化完成之后，就有了和模型进行对话的环境，本地AI模型可以接收输入和进行推理。
+
+#### 输入和输出缓存处理
+##### 输入处理
+`Gemma-3n-E2B` 和 `Gemma-3n-E4B` 具有多模态输入支持，可以接收文本、图像、音频等多种输入类型。在 `LlmChatModelHelper.runInference()` 方法中处理不同类型的输入。
+
+如果用户输入时，有带上图像和音频类型的文件，会将图像和音频转换为字节数组：
+
+```kotlin
+val contents = mutableListOf<Content>()
+for (image in images) {
+  contents.add(Content.ImageBytes(image.toPngByteArray()))
+}
+for (audioClip in audioClips) {
+  contents.add(Content.AudioBytes(audioClip))
+}
+// add the text after image and audio for the accurate last token
+if (input.trim().isNotEmpty()) {
+  contents.add(Content.Text(input))
+}
+```
+
+所有内容被封装在 `Content` 对象列表中。再使用 `conversation.sendMessageAsync()` 异步发送消息，并且提供回调接口处理推理过程中的事件。
+
+```kotlin
+conversation.sendMessageAsync(
+Message.of(contents),
+object : MessageCallbacks {
+    override fun onMessage(message: Message) {
+        message.contents.filterIsInstance<Content.Text>().forEach {
+            resultListener(it.text, false)
+        }
+    }
+
+    override fun onDone() {
+        resultListener("", true)
+    }
+
+    override fun onError(throwable: Throwable) {
+        if (throwable is CancellationException) {
+            Log.i(TAG, "The inference is canncelled.")
+            resultListener("", true)
+        } else {
+            Log.e(TAG, "onError", throwable)
+            resultListener("Error: ${throwable.message}", true)
+        }
+    }
+},
+)
+```
+
+##### 输出处理流程
+在上面触发消息发送那里，可以看到是通过 `MessageCallbacks` 接口处理输出：
+- `onMessage()` 回调处理中间结果，支持流式输出
+- `onDone()` 回调标记推理完成
+- `onError()` 回调处理错误情况
+
+内部已经自动处理完了从向量到tokenid再查词汇表的对应过程，直接返回的string结果。
+
+#### 模型生命周期管理
+如果是建立新对话，就调用的对话重置方法 `LlmChatModelHelper.resetConversation()` ，会停止并关闭当前对话并创建新的对话实例，保持引擎实例不变，仅重新创建对话对象。
+
+如果是要退出页面，这时候就需要执行资源释放步骤。
+
+`LlmChatModelHelper.cleanUp()` 方法负责清理模型资源，关闭本轮对话和引擎，将持有的模型实例置空。
+
+```kotlin
+fun cleanUp(model: Model, onDone: () -> Unit) {
+    if (model.instance == null) {
+        return
+    }
+
+    val instance = model.instance as LlmModelInstance
+
+    try {
+        instance.conversation.close()
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to close the LLM Inference conversation: ${e.message}")
+    }
+
+    try {
+        instance.engine.close()
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to close the LLM Inference engine: ${e.message}")
+    }
+
+    val onCleanUp = cleanUpListeners.remove(model.name)
+    if (onCleanUp != null) {
+        onCleanUp()
+    }
+    model.instance = null
+
+    onDone()
+    Log.d(TAG, "Clean up done.")
+}
+```
+
+退出对话重新进入的内存表现：
+
+![](/assets/img/blog/blogs_ai_galery_exit_conversation.png)
+
+### `Gallery` 整体性能测试
+整体使用时的占用和 `llama.cpp` 持平，主要区别就是分了两段加载，在刚进入对话 `loadModel()` 时，没有加载全部权重数据到内存，在推理真正调用再加载的。
 
 ![](/assets/img/blog/blogs_ai_gallery_performance.png)
 
+这条有别于llama.cpp的路线，在集成gguf模型时，主要的权重张量全部读取到了Native堆中，另外可以看到 **Others** 是占用最多的一块内存，核心原因可能是硬件加速与内存委托，端侧模型很可能在推理开始时，将计算任务委托给了**专用的硬件加速器**，例如 GPU、DSP 或 NPU，并通过 **Android 神经网络 API (NNAPI)** 或厂商特定的 SDK 实现。
+
+在推理开始之前，模型权重、输入/输出张量等可能已经被加载到内存中，并通过标准的 C/C++ `malloc`/`new` 在 Native Heap 上分配。当推理开始并决定使用硬件加速时，模型运行时（例如 TensorFlow Lite Runtime）会 **释放** Native Heap 上的一些大型张量（特别是那些将在硬件上处理的中间结果和输出张量）。这导致 Native Heap 内存下降。
+
+为了实现高效的硬件加速，数据（张量）需要被放置在**硬件驱动可以直接访问的内存区域**。模型运行时会使用特殊的系统 API 来分配这些内存，而不是标准的 `malloc`。Android Studio Profiler 的 Native Heap 类别主要跟踪标准的 C/C++ 运行时分配。当内存被分配到 Ashmem、ION 或其他驱动管理的内存池时，它们在 `dumpsys meminfo` 的分类中可能被归类为 `Shared`、`Private Clean` 或未被精确识别的系统保留内存，最终落入 Profiler 的 **Others**（其他）类别中。
+
+另外一个可能的原因是系统或运行时内部调整。如果模型运行时（如 TFLite）在推理时创建了新的执行图（Execution Plan）或缓存了更多的上下文信息，这些非张量数据可能以系统未明确分类的方式被分配，计入 Others。某些高性能计算库会尝试使用大内存页来提高内存访问效率，这些内存页在某些 Profiler 版本中可能不会被准确地归类到 Native Heap。
 ### 简化方式一 MediaPipe Tasks 
 底层依然基于 `LiteRT` 的运行时来运行端侧AI模型，只是在应用层进行了封装，提供了更方便的接口。
 
@@ -168,7 +336,7 @@ fun closeChatResponse() {
 }
 ```
 
-## Android 平台使用 LiteRT
+## Android 平台自定义使用 LiteRT
 在 Android 上，可以使用 Java 或 C++ API 执行 LiteRT 推理。通过 Java API 提供了便利，可以直接在 Android 应用中使用 activity 类。C++ API 提供了更高的灵活性和速度，但可能需要 编写 JNI 封装容器以在 Java 层和 C++ 层之间移动数据。
 ### 运行架构解析
 `LiteRT` 模型需要特殊的运行时环境才能执行，并且传入模型的数据必须采用特定的数据格式（称为张量）。当模型处理数据（称为运行推理）时，它会将预测结果生成为新的张量，并将其传递给 Android 应用，以便应用执行操作，例如向用户显示结果或执行其他业务逻辑。

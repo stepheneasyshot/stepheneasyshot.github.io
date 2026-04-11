@@ -595,3 +595,9 @@ override fun onDestroy() {
 某些高级自定义操作可能需要自己构建LiteRT的整个依赖库，直接参考官方指南：
 
 [Build LiteRT for Android](https://ai.google.dev/edge/litert/build/android)
+
+
+## 20260411 Litert Android SDK使用
+[在Android上使用LiteRT库](https://ai.google.dev/edge/litert-lm/android?hl=zh-cn)
+
+[在NPU上运行LiteRT](https://ai.google.dev/edge/litert/next/litert_lm_npu?hl=zh-cn#NPU)

@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_ai_agent_cover.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# 【AI】从基础模型搭建一个Agent系统
+# 【AI】LLM Powered Autonomous Agents
 OpenAI 的应用研究主管 Lilian Weng 撰写了一篇博客，认为 AI Agent 可能会成为新时代的开端。她提出了 Agent=LLM + 规划技能 + 记忆 + 工具使用的基础架构，其中 LLM 扮演了 Agent 的 “大脑”，在这个系统中提供推理、规划等能力。
 
 结构图：

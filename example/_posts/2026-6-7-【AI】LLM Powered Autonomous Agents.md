@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文旨在介绍一个AI Agent系统中有哪些模块，以及他们是如何协作的。
+  本文转载自OpenAI 的应用研究主管 Lilian Weng 的github博客文章
 image: 
   path: /assets/img/blog/blogs_ai_agent_cover.png
   srcset: 

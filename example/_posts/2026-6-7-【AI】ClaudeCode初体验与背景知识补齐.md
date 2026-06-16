@@ -1,7 +1,7 @@
 ---
 layout: post
 description: > 
-  本文旨在介绍一个AI Agent系统中有哪些模块，以及他们是如何协作的。
+  本文旨在介绍初次使用ClaudeCode的记录，还有一些基础规则
 image: 
   path: /assets/img/blog/blogs_cover_claudecode.png
   srcset: 

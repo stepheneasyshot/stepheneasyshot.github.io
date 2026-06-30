@@ -686,5 +686,3 @@ Performance
 真正决定 Agent 是否可靠的，往往不是模型本身，而是模型所处的运行环境：上下文如何组织、工具如何接入、权限如何控制、失败后如何恢复、结果如何验证。社区越来越多的实践也在强调："更好的 Harness 往往比更换模型带来的收益更大。所以 `Harness Engineering` 并不是一种新的 AI 模型，也不是一种新的 Prompt 技巧。它是一种面向 AI Agent 的软件工程方法论，其核心目标是为智能体构建一个可观察、可验证、可反馈、可控制的运行环境。
 
 未来的软件开发，竞争的重点将不再只是"谁拥有更强的大模型"，而是**谁能够设计出更优秀的 Harness**。在 Agent 时代，工程师创造价值的方式，也将从"亲自编写代码"逐渐转向"设计能够持续放大 AI 能力的系统"。
-
-[Harness engineering: leveraging Codex in an agent-first world | OpenAI](https://openai.com/index/harness-engineering/?utm_source=chatgpt.com)

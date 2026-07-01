@@ -12,7 +12,7 @@ accent_image: /assets/img/blog/blogs_cover_ai_engineeering.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---
-# AI】VibeCoding最佳姿势
+# 【AI】VibeCoding最佳姿势
 作为一名每天和代码打交道的 Android 工程师，我见证了 AI 如何彻底改变编程。现在，一个最前沿的词汇正风靡开发者圈子——**Vibe Coding（氛围感编程/情绪流编程）**。
 
 简单来说，Vibe Coding 就是**你只管提需求、出思路、把握方向（负责 Vibe），而把敲键盘、写具体代码的脏活累活全丢给 AI**。

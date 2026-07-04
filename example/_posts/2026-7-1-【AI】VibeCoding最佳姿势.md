@@ -3,12 +3,12 @@ layout: post
 description: > 
   本文旨在给跨领域或者不懂编程的人，推荐一种Vibe Coding的方案
 image: 
-  path: /assets/img/blog/blogs_cover_ai_engineeering.png
+  path: /assets/img/blog/blogs_vibe_coding.png
   srcset: 
-    1920w: /assets/img/blog/blogs_cover_ai_engineeering.png
-    960w:  /assets/img/blog/blogs_cover_ai_engineeering.png
-    480w:  /assets/img/blog/blogs_cover_ai_engineeering.png
-accent_image: /assets/img/blog/blogs_cover_ai_engineeering.png
+    1920w: /assets/img/blog/blogs_vibe_coding.png
+    960w:  /assets/img/blog/blogs_vibe_coding.png
+    480w:  /assets/img/blog/blogs_vibe_coding.png
+accent_image: /assets/img/blog/blogs_vibe_coding.png
 excerpt_separator: <!--more-->
 sitemap: false
 ---

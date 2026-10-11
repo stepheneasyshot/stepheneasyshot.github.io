@@ -38,7 +38,7 @@ export const site = {
   timeline: [
     {
       title: 'Android AI 应用工程师',
-      period: '2025.11 — 至今 ｜ 头部手机厂商 · AI 中心',
+      period: '2025.11 — 至今 ｜ OPPO · AI 中心',
       description:
         '移动端个人记忆助理与端侧 AI 效率工具研发。探索大模型与移动操作系统的深度融合，推进端侧智能应用的架构设计与工程落地。',
       active: true,
